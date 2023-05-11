@@ -1,5 +1,19 @@
+# test coverage
+coverage/
+
+# build
+dist/
+
 # dependencies
 node_modules/
 
+# database
+*.sqlite
+
 # environment variables
+.env
 .envrc
+
+# secrets
+secrets/*
+!secrets/README.md
