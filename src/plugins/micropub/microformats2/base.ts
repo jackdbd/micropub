@@ -49,7 +49,7 @@ export const longitude = Type.Number({
  * - https://en.wikipedia.org/wiki/Geo_URI_scheme
  * - https://regex101.com/r/k7bl7r/1
  */
-export const geo_uri = Type.RegEx(
+export const geo_uri = Type.RegExp(
   /geo:-?[0-9]{1,2}\.[0-9]*,-?[0-9]{1,3}\.?[0-9]*(;u=[0-9]{1,2})?/,
   {
     title: 'geo URI',

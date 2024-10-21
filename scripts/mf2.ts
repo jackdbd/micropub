@@ -37,7 +37,7 @@ const main = async () => {
   describe(geo_uri)
 
   const {
-    validateGeoURI,
+    // validateGeoURI,
     validateH_adr,
     validateH_card,
     validateH_cite,
@@ -122,12 +122,12 @@ const main = async () => {
 
   check('geo', { latitude: -89.99, longitude: 179.99 }, validateH_geo)
 
-  check('Geo URI with lat/long', 'geo:46.772673,-71.282945', validateGeoURI)
-  check(
-    'Geo URI with lat/long and uncertainty',
-    'geo:46.772673,-71.282945;u=35',
-    validateGeoURI
-  )
+  // check('Geo URI with lat/long', 'geo:46.772673,-71.282945', validateGeoURI)
+  // check(
+  //   'Geo URI with lat/long and uncertainty',
+  //   'geo:46.772673,-71.282945;u=35',
+  //   validateGeoURI
+  // )
 
   check(
     'adr',

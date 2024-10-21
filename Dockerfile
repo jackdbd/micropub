@@ -7,11 +7,11 @@ LABEL maintainer="giacomo@giacomodebidda.com"
 # was defined.
 # To use an arg in multiple stages, EACH STAGE must include the ARG instruction.
 # https://docs.docker.com/engine/reference/builder/#scope
-ARG APP_NAME
+ARG APP_NAME=micropub
 RUN if [ -z "${APP_NAME}" ] ; then echo "The APP_NAME argument is missing!" ; exit 1; fi
 
-RUN apt-get update && apt-get install --quiet --assume-yes sudo \
-  tree
+# RUN apt-get update && apt-get install --quiet --assume-yes sudo \
+#   tree
 
 ENV APP_DIR=/usr/src/app
 ENV TYPE_ROOTS="${APP_DIR}/node_modules/@types"
@@ -21,9 +21,9 @@ WORKDIR ${APP_DIR}
 COPY package*.json ./
 COPY tsconfig.json ./
 
-RUN npm install --location=global typescript
-RUN npm install --omit=dev
-RUN npm install --save-dev @types/node
+RUN npm install --location=global typescript@5.6.3 && \
+    npm install --omit=dev && \
+    npm install --save-dev @types/node@22.7.7
 
 COPY src ./src
 
@@ -36,7 +36,7 @@ RUN tsc --project tsconfig.json --typeRoots ${TYPE_ROOTS}
 
 # check source code (TS), compiled code (JS), don't show dependencies and types
 # https://zaiste.net/posts/tree-ignore-directories-patterns/
-RUN tree -I 'custom-types|node_modules' -a -L 3 ${APP_DIR}
+# RUN tree -I 'custom-types|node_modules' -a -L 3 ${APP_DIR}
 
 # === STAGE 2 ================================================================ #
 FROM node:20.1-bullseye-slim
@@ -45,9 +45,9 @@ FROM node:20.1-bullseye-slim
 # defined. That's why we have to repeat it here in this stage.
 ARG APP_NAME
 
-RUN apt-get update && apt-get install --quiet --assume-yes sudo \
-  lsb-release \
-  tree
+# RUN apt-get update && apt-get install --quiet --assume-yes sudo \
+#   lsb-release \
+#   tree
 
 ENV APP_GROUP=micropub-group \
     APP_USER=micropub-user \
@@ -76,11 +76,11 @@ RUN chown -R ${APP_USER} ./
 USER ${APP_USER}
 
 # check source code and installed dependencies
-RUN tree -a -L 3 .
+# RUN tree -a -L 3 .
 # check permissions
-RUN ls -1la
+# RUN ls -1la
 
 # I like to keep this line for troubleshooting
-RUN echo "App ${APP_NAME} will be run by user $(whoami) on $(lsb_release -i -s) $(lsb_release -r -s) and will listen on port ${APP_PORT}"
+# RUN echo "App ${APP_NAME} will be run by user $(whoami) on $(lsb_release -i -s) $(lsb_release -r -s) and will listen on port ${APP_PORT}"
 
 ENTRYPOINT ["node", "dist/server.js"]

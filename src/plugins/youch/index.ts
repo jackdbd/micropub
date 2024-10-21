@@ -1,8 +1,4 @@
-import {
-  FastifyInstance,
-  //   FastifyPluginOptions,
-  DoneFuncWithErrOrRes
-} from 'fastify'
+import type { DoneFuncWithErrOrRes, FastifyInstance } from 'fastify'
 import fp from 'fastify-plugin'
 import Youch from 'youch'
 import { applyToDefaults } from '@hapi/hoek'
@@ -181,6 +177,8 @@ const fastifyYouch = (
 }
 
 export default fp(fastifyYouch, {
-  fastify: '^4.x.x',
+  // See here how to specify a semver range
+  // https://github.com/npm/node-semver#ranges
+  fastify: '>=4.0.0 <6.0.0',
   name: NAME
 })

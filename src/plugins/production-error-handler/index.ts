@@ -49,6 +49,6 @@ const fastifyProductionErrorHandler = (
 }
 
 export default fp(fastifyProductionErrorHandler, {
-  fastify: '^4.x.x',
+  fastify: '>=4.0.0 <6.0.0',
   name: NAME
 })

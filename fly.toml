@@ -1,0 +1,29 @@
+# fly.toml app configuration file generated for micropub on 2024-10-21T10:32:46+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'micropub'
+primary_region = 'fra'
+kill_timeout = 180
+
+[build]
+
+[deploy]
+  strategy = 'immediate'
+
+[env]
+  DEBUG = 'micropub:*'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

@@ -10,10 +10,10 @@ node_modules/
 # database
 *.sqlite
 
-# environment variables
-.env
-.envrc
+.devenv*
+devenv.local.nix
 
-# secrets
-secrets/*
-!secrets/README.md
+# direnv
+.direnv
+
+.pre-commit-config.yaml

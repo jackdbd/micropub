@@ -1,11 +1,11 @@
 import {
   FastifyInstance,
-  DoneFuncWithErrOrRes,
-  FastifyRequest,
-  FastifyReply
+  DoneFuncWithErrOrRes
+  // FastifyRequest,
+  // FastifyReply
 } from 'fastify'
 import fp from 'fastify-plugin'
-import * as jose from 'jose'
+// import * as jose from 'jose'
 import { applyToDefaults } from '@hapi/hoek'
 import { micropub_get_request, micropub_post_request } from './schemas.js'
 // import { type H_entry } from './microformats2/h-entry.js'
@@ -82,6 +82,9 @@ const fastifyMicropub = (
     opts
   ) as Required<PluginOptions>
 
+  fastify.log.debug(`${PREFIX} config ${JSON.stringify(config, null, 2)}`)
+  fastify.log.debug(`${PREFIX} compile schemas and create validate functions`)
+
   const {
     validatePluginOptions,
     validateMicropubGetRequest,
@@ -102,87 +105,92 @@ const fastifyMicropub = (
     `${PREFIX} validated config ${JSON.stringify(config, null, 2)}`
   )
 
-  fastify.decorate(
-    'validateAccessToken',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      fastify.log.debug(`${PREFIX} validate access token`)
+  // TODO: this seems completely changed in Fastify v5.0.0. Do I need
+  // decorateRequest and decorateReple?
+  // https://fastify.dev/docs/latest/Reference/Decorators/
+  // fastify.decorate(
+  //   'validateAccessToken',
+  //   async (request: FastifyRequest, reply: FastifyReply) => {
+  //     fastify.log.debug(`${PREFIX} validate access token`)
 
-      // if (request.method.toUpperCase() !== 'POST') {
-      //   fastify.log.warn(
-      //     `${PREFIX} request ID ${request.id} is a ${request.method} request, not a POST`
-      //   )
-      //   reply.code(415)
-      //   reply.send({
-      //     ok: false,
-      //     message: `${request.method} requests not allowed to this endpoint`
-      //   })
-      // }
+  //     // if (request.method.toUpperCase() !== 'POST') {
+  //     //   fastify.log.warn(
+  //     //     `${PREFIX} request ID ${request.id} is a ${request.method} request, not a POST`
+  //     //   )
+  //     //   reply.code(415)
+  //     //   reply.send({
+  //     //     ok: false,
+  //     //     message: `${request.method} requests not allowed to this endpoint`
+  //     //   })
+  //     // }
 
-      const auth = request.headers.authorization
+  //     const auth = request.headers.authorization
 
-      if (!auth) {
-        fastify.log.warn(
-          `${PREFIX} request ID ${request.id} has no 'Authorization' header`
-        )
-        reply.code(401)
-        reply.send({ ok: false, message: `missing Authorization header` })
-      }
+  //     if (!auth) {
+  //       fastify.log.warn(
+  //         `${PREFIX} request ID ${request.id} has no 'Authorization' header`
+  //       )
+  //       reply.code(401)
+  //       reply.send({ ok: false, message: `missing Authorization header` })
+  //     }
 
-      if (auth.indexOf('Bearer') === -1) {
-        fastify.log.warn(
-          `${PREFIX} request ID ${request.id} has no 'Bearer' in Authorization header`
-        )
-        reply.code(401)
-        reply.send({ ok: false, message: `access token is required` })
-      }
+  //     if (auth.indexOf('Bearer') === -1) {
+  //       fastify.log.warn(
+  //         `${PREFIX} request ID ${request.id} has no 'Bearer' in Authorization header`
+  //       )
+  //       reply.code(401)
+  //       reply.send({ ok: false, message: `access token is required` })
+  //     }
 
-      const jwt = auth.split(' ')[1]
-      const claims = jose.decodeJwt(jwt) as unknown as DecodedToken
-      fastify.log.debug(
-        `${PREFIX} access token claims ${JSON.stringify(claims, null, 2)}`
-      )
+  //     const jwt = auth.split(' ')[1]
+  //     const claims = jose.decodeJwt(jwt) as unknown as DecodedToken
+  //     fastify.log.debug(
+  //       `${PREFIX} access token claims ${JSON.stringify(claims, null, 2)}`
+  //     )
 
-      // const scopes = claims.scope.split(' ')
+  //     // const scopes = claims.scope.split(' ')
 
-      if (claims.me !== config.me) {
-        reply.code(403)
-        reply.send({
-          ok: false,
-          message: `received access token whose 'me' claim is not ${config.me}`
-        })
-      }
+  //     if (claims.me !== config.me) {
+  //       reply.code(403)
+  //       reply.send({
+  //         ok: false,
+  //         message: `received access token whose 'me' claim is not ${config.me}`
+  //       })
+  //     }
 
-      if (claims.issued_by !== config.tokenEndpoint) {
-        reply.code(403)
-        reply.send({
-          ok: false,
-          message: `received access token issued by an unexpected token endpoint`
-        })
-      }
+  //     if (claims.issued_by !== config.tokenEndpoint) {
+  //       reply.code(403)
+  //       reply.send({
+  //         ok: false,
+  //         message: `received access token issued by an unexpected token endpoint`
+  //       })
+  //     }
 
-      // const date = new Date(claims.issued_at * 1000)
+  //     // const date = new Date(claims.issued_at * 1000)
 
-      // fastify.log.debug(
-      //   `${PREFIX} access token issued by ${claims.client_id} at ${
-      //     claims.issued_at
-      //   } (${date.toISOString()} GMT)`
-      // )
+  //     // fastify.log.debug(
+  //     //   `${PREFIX} access token issued by ${claims.client_id} at ${
+  //     //     claims.issued_at
+  //     //   } (${date.toISOString()} GMT)`
+  //     // )
 
-      // const message = `access token for ${claims.me} issued by ${claims.client_id} at ${claims.issued_at}`
+  //     // const message = `access token for ${claims.me} issued by ${claims.client_id} at ${claims.issued_at}`
 
-      // reply.send({
-      //   ok: true,
-      //   client_id: claims.client_id,
-      //   me: claims.me,
-      //   message,
-      //   scopes
-      // })
-    }
-  )
+  //     // reply.send({
+  //     //   ok: true,
+  //     //   client_id: claims.client_id,
+  //     //   me: claims.me,
+  //     //   message,
+  //     //   scopes
+  //     // })
+  //   }
+  // )
 
   fastify.get(
     '/micropub',
-    { onRequest: [fastify.validateAccessToken], schema: micropub_get_request },
+    // { onRequest: [fastify.validateAccessToken], schema: micropub_get_request },
+    // { onRequest: someFunc, schema: micropub_get_request },
+    { schema: micropub_get_request },
     async function (request, reply) {
       const log_entry = {
         message: `got GET request ${request.id} at micropub endpoint`,
@@ -227,7 +235,9 @@ const fastifyMicropub = (
 
   fastify.post(
     '/micropub',
-    { onRequest: [fastify.validateAccessToken], schema: micropub_post_request },
+    // { onRequest: [fastify.validateAccessToken], schema: micropub_post_request },
+    // { onRequest: someFunc schema: micropub_post_request },
+    { schema: micropub_post_request },
     async function (request, reply) {
       const log_entry = {
         message: `got POST request ${request.id} at micropub endpoint`,
@@ -309,6 +319,6 @@ const fastifyMicropub = (
 }
 
 export default fp(fastifyMicropub, {
-  fastify: '^4.x.x',
+  fastify: '>=4.0.0 <6.0.0',
   name: NAME
 })

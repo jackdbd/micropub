@@ -1,7 +1,7 @@
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import {
-  geo_uri,
+  // geo_uri,
   h_adr,
   h_card,
   h_cite,
@@ -46,7 +46,7 @@ const ajv = addFormats(
  * The order of the schemas is important, because some schemas reference other.
  */
 export const compileSchemasAndGetValidateFunctions = () => {
-  const validateGeoURI = ajv.compile(geo_uri)
+  // const validateGeoURI = ajv.compile(geo_uri)
   const validateH_geo = ajv.compile(h_geo)
   const validateH_adr = ajv.compile(h_adr)
   const validateH_card = ajv.compile(h_card)
@@ -60,7 +60,7 @@ export const compileSchemasAndGetValidateFunctions = () => {
   const validateMicropubPostRequest = ajv.compile(micropub_post_request)
 
   return {
-    validateGeoURI,
+    // validateGeoURI,
     validateH_adr,
     validateH_card,
     validateH_cite,
