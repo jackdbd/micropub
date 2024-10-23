@@ -42,6 +42,8 @@ jobs:
       - name: 🔍 Test app
         run: npm run test
 
+      - uses: superfly/flyctl-actions/setup-flyctl@1
+
       - name: Deploy to Fly
         id: fly_deploy
         env:
@@ -62,7 +64,9 @@ jobs:
           format: html
           disable_web_page_preview: false
           message: |
-            <b>Deploy to Fly</b>
+            <b>🚀 Micropub deployed to Fly</b>
+
+            <a href="https://micropub.fly.dev/">https://micropub.fly.dev/</a>
 
             Repository: <a href="${{ github.event.repository.html_url }}">${{ github.event.repository.full_name }}</a>
 

@@ -1,5 +1,7 @@
 # Micropub
 
+[![CI workflow](https://github.com/jackdbd/micropub/actions/workflows/ci.yaml/badge.svg)](https://github.com/jackdbd/micropub/actions/workflows/ci.yaml)
+
 ## Installation
 
 ```sh
@@ -31,7 +33,7 @@ curl "${HOST}:3001/micropub" \
   -H "Authorization: Bearer invalid-token" | jq
 ```
 
-Obtain a valid access token using a micropub client, for example [Quill](https://quill.p3k.io/) or [Micropublish](https://micropublish.net/).
+Obtain a valid access token using a micropub client, for example [Quill](https://quill.p3k.io/), [Micropublish](https://micropublish.net/) or [Indiekit](https://getindiekit.com/).
 
 ### Note
 
@@ -80,18 +82,4 @@ curl "${HOST}:3001/micropub" \
   -d "repost-of=https://example.com/post" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $(cat secrets/token-endpoint-response.json | jq .access_token)" | jq
-```
-
-## Test
-
-```sh
-npm run test
-```
-
-## Deploy
-
-Deploy to Google Cloud Platform.
-
-```sh
-npm run deploy
 ```
