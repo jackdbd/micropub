@@ -49,11 +49,22 @@ export const longitude = Type.Number({
  * - https://en.wikipedia.org/wiki/Geo_URI_scheme
  * - https://regex101.com/r/k7bl7r/1
  */
-export const geo_uri = Type.RegExp(
-  /geo:-?[0-9]{1,2}\.[0-9]*,-?[0-9]{1,3}\.?[0-9]*(;u=[0-9]{1,2})?/,
-  {
-    title: 'geo URI',
-    description: `The geo URI scheme is a Uniform Resource Identifier (URI) scheme defined by the Internet Engineering Task Force's RFC 5870`,
-    examples: ['geo:37.786971,-122.399677', 'geo:37.786971,-122.399677;u=35']
-  }
-)
+export const geo_uri = Type.String({
+  pattern: 'geo:-?[0-9]{1,2}.[0-9]*,-?[0-9]{1,3}.?[0-9]*(;u=[0-9]{1,2})?',
+  minLength: 8,
+  // maxLength: 32,
+  title: 'geo URI',
+  description: `The geo URI scheme is a Uniform Resource Identifier (URI) scheme defined by the Internet Engineering Task Force's RFC 5870`,
+  examples: ['geo:37.786971,-122.399677', 'geo:37.786971,-122.399677;u=35']
+})
+
+// I'm pretty sure this was working before, but now ajv cannot compile it.
+// export const geo_uri = Type.RegExp(
+//   /geo:-?[0-9]{1,2}\.[0-9]*,-?[0-9]{1,3}\.?[0-9]*(;u=[0-9]{1,2})?/,
+//   {
+//     minLength: 8,
+//     title: 'geo URI',
+//     description: `The geo URI scheme is a Uniform Resource Identifier (URI) scheme defined by the Internet Engineering Task Force's RFC 5870`,
+//     examples: ['geo:37.786971,-122.399677', 'geo:37.786971,-122.399677;u=35']
+//   }
+// )

@@ -68,7 +68,15 @@ export const h_cite = Type.Object(
     $id: 'h-cite',
     title: 'microformats2 h-cite',
     description:
-      'h-cite is a simple, open format for publishing citations and references to online and other publications.'
+      'h-cite is a simple, open format for publishing citations and references to online and other publications.',
+    examples: [
+      {
+        author: 'Isaac Newton',
+        name: 'The Correspondence of Isaac Newton: Volume 5',
+        content:
+          'If I have seen further it is by standing on the shoulders of Giants.'
+      }
+    ]
   }
 )
 

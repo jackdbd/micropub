@@ -22,6 +22,8 @@ export const h_entry = Type.Object(
      */
     author: Type.Optional(Type.Union([Type.String(), Type.Ref(h_card)])),
 
+    // 'bookmark-of': Type.Optional(Type.String({ format: 'uri' })),
+
     /**
      * entry categories/tags
      */
