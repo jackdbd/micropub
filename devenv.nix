@@ -62,7 +62,7 @@ in {
     '';
     container-run.exec = ''
       docker run \
-        --env DEBUG="indiekit:*,-indiekit:request,indiekit-store:*" \
+        --env DEBUG="micropub:*" \
         --env LOG_LEVEL=debug \
         --env NODE_ENV=development \
         --env PORT=${config.env.PORT} \
