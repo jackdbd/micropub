@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Micropub server",
+      "request": "launch",
+      "type": "node",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/dist/server.js",
+      "args": [],
+      "env": {
+        "DEBUG": "*",
+        "LOG_LEVEL": "debug",
+        "NODE_ENV": "development",
+        "PORT": "${env:PORT}"
+      },
+      "preLaunchTask": "Compile TypeScript",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    },
+    {
+      // First, launch the server with NODE_OPTIONS='--inspect'. Then attach to it.
+      "name": "Attach to local Micropub server",
+      "request": "attach",
+      "type": "node",
+      "port": 9229,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
