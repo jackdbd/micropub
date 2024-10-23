@@ -1,0 +1,27 @@
+meta {
+  name: /token
+  type: http
+  seq: 4
+}
+
+post {
+  url: https://tokens.indieauth.com/token
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/x-www-form-urlencoded
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZSI6Imh0dHBzOi8vd3d3LmdpYWNvbW9kZWJpZGRhLmNvbS8iLCJzY29wZSI6ImNyZWF0ZSB1cGRhdGUgZGVsZXRlIG1lZGlhIiwiaWF0IjoxNzI5NzE1NDY1LCJleHAiOjE3Mzc0OTE0NjV9.Xjf708qRVlcWmWeVu_HsDBVHMqUjeF8j7u4IkxXqbG4
+}
+
+body:multipart-form {
+  grant_type: authorization_code
+  me: https://giacomodebidda.com
+  code: dfc92865b3069643139b&state=2c62391e7ca6e7f2f51a7adaf560997ccc7606e85b1edfd0
+  redirect_uri: {{redirect_uri}}
+  client_id: {{client_id}}
+}

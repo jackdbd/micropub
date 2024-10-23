@@ -1,0 +1,24 @@
+meta {
+  name: create cite
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:{{PORT}}/micropub
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZSI6Imh0dHBzOi8vd3d3LmdpYWNvbW9kZWJpZGRhLmNvbS8iLCJzY29wZSI6ImNyZWF0ZSB1cGRhdGUgZGVsZXRlIG1lZGlhIiwiaWF0IjoxNzI5NzE1NDY1LCJleHAiOjE3Mzc0OTE0NjV9.3UpA5q7ddgURRVVjPerntgdOl9xmWRAtvGuFpDgvYyw
+}
+
+body:json {
+  {
+    "h": "cite",
+    "author": "Isaac Newton",
+    "name": "The Correspondence of Isaac Newton: Volume 5",
+    "content": "If I have seen further it is by standing on the shoulders of Giants."
+  }
+}

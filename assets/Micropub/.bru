@@ -1,0 +1,15 @@
+meta {
+  name: /
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:{{PORT}}/
+  body: none
+  auth: bearer
+}
+
+script:post-response {
+  bru.setVar('access_token', res.body.hello);
+}
