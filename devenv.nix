@@ -21,6 +21,7 @@ in {
     # DEBUG = "micropub:*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
     PORT = "3001";
+    TELEGRAM = builtins.readFile /run/secrets/telegram/jackdbd_github_bot;
     # TOKEN_ENDPOINT_RESPONSE = "";
   };
 
@@ -30,6 +31,7 @@ in {
 
   packages = with pkgs; [
     dive # tool for exploring each layer in a docker image
+    entr # run arbitrary commands when files change
     git
     nodejs
   ];

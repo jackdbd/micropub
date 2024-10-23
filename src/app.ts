@@ -4,18 +4,21 @@ import youch from './plugins/youch/index.js'
 import productionErrorHandler from './plugins/production-error-handler/index.js'
 import micropub from './plugins/micropub/index.js'
 
-export type Level = 'info' | 'debug' | 'warn' | 'error'
+export type Level = 'debug' | 'info' | 'warn' | 'error'
 
 export interface Options {
   logger: { level: Level; transport: any }
 }
 
+/**
+ * Instantiates the Fastify app.
+ */
 export async function build(
   opts: Options = { logger: { level: 'info', transport: undefined } }
 ) {
   const fastify = Fastify(opts)
 
-  // this plugin allows parses content type application/x-www-form-urlencoded
+  // plugin to parse x-www-form-urlencoded bodies
   // https://github.com/fastify/fastify-formbody
   fastify.register(formbody)
 
@@ -26,7 +29,11 @@ export async function build(
   }
 
   fastify.register(micropub, {
-    me: 'https://giacomodebidda.com/'
+    // authorizationEndpoint: '',
+    // tokenEndpoint: '',
+    // Not sure if I have to include www in `me`
+    me: 'https://www.giacomodebidda.com/'
+    // me: 'https://giacomodebidda.com/'
   })
 
   fastify.get('/', async (_request, reply) => {

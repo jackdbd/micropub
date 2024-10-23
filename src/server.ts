@@ -6,11 +6,11 @@ const opts: Options = {
   logger: { level: 'info', transport: undefined as any }
 }
 
+opts.logger.level = (process.env.LOG_LEVEL as Level) || 'info'
 // We want to use pino-pretty only if there is a human watching this,
 // otherwise we log as newline-delimited JSON.
 if (process.stdout.isTTY) {
   opts.logger.transport = { target: 'pino-pretty' }
-  opts.logger.level = (process.env.LOG_LEVEL as Level) || 'info'
 }
 
 const host = process.env.HOST || '0.0.0.0'
@@ -21,7 +21,7 @@ const fastify = await build(opts)
 const start = async () => {
   try {
     const address = await fastify.listen({ host, port })
-    fastify.log.info(`server is now listening on ${address}`)
+    fastify.log.info(`server listening at ${address}`)
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)

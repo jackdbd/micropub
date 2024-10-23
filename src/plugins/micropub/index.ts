@@ -1,18 +1,14 @@
-import {
-  FastifyInstance,
-  DoneFuncWithErrOrRes
-  // FastifyRequest,
-  // FastifyReply
+import type {
+  FastifyPluginCallback,
+  FastifyPluginOptions,
+  onRequestHookHandler
 } from 'fastify'
 import fp from 'fastify-plugin'
-// import * as jose from 'jose'
+import * as jose from 'jose'
 import { applyToDefaults } from '@hapi/hoek'
+import type { H_card, H_cite, H_entry, H_event } from './microformats2/index.js'
 import { micropub_get_request, micropub_post_request } from './schemas.js'
-// import { type H_entry } from './microformats2/h-entry.js'
 import { compileSchemasAndGetValidateFunctions } from './utils.js'
-import { H_event } from './microformats2/h-event.js'
-import { H_card } from './microformats2/h-card.js'
-import { H_cite } from './microformats2/h-cite.js'
 
 declare module 'fastify' {
   export interface FastifyInstance {
@@ -21,10 +17,10 @@ declare module 'fastify' {
 }
 
 const EMOJI = '✒️'
-const NAME = 'fastify-micropub'
+const NAME = '@jackdbd/fastify-micropub'
 const PREFIX = `[${EMOJI} ${NAME}]`
 
-export interface PluginOptions {
+export interface PluginOptions extends FastifyPluginOptions {
   /**
    * Micropub clients that want to post to a user's Micropub endpoint need to
    * obtain authorization from the user in order to get an access token.
@@ -62,24 +58,132 @@ const defaultOptions: Partial<PluginOptions> = {
 
 export interface DecodedToken {
   me: string
-  issued_by: string
+  // issued_by: string
   client_id: string
-  issued_at: number
+  exp: number // will expire at timestamp
+  iat: number // issued at timestamp
+  // issued_at: number
   scope: string
   nonce: number
 }
 
-/**
- * https://indieweb.org/Micropub#Handling_a_micropub_request
- */
-const fastifyMicropub = (
-  fastify: FastifyInstance,
-  opts: PluginOptions,
-  done: DoneFuncWithErrOrRes
+const defValidateAccessToken = (config: Required<PluginOptions>) => {
+  const validateAccessToken: onRequestHookHandler = (request, reply, done) => {
+    request.log.debug(`${PREFIX} validate access token`)
+
+    if (request.method.toUpperCase() !== 'POST') {
+      request.log.warn(
+        `${PREFIX} request ID ${request.id} is a ${request.method} request, not a POST`
+      )
+      reply.code(415)
+      reply.send({
+        ok: false,
+        message: `${request.method} requests not allowed to this endpoint`
+      })
+    }
+
+    const auth = request.headers.authorization
+
+    if (!auth) {
+      request.log.warn(
+        `${PREFIX} request ID ${request.id} has no 'Authorization' header`
+      )
+      reply.code(401)
+      return reply.send({ ok: false, message: `missing Authorization header` })
+    }
+
+    if (auth.indexOf('Bearer') === -1) {
+      request.log.warn(
+        `${PREFIX} request ID ${request.id} has no 'Bearer' in Authorization header`
+      )
+      reply.code(401)
+      reply.send({ ok: false, message: `access token is required` })
+    }
+
+    const splits = auth.split(' ')
+    if (splits.length !== 2) {
+      request.log.warn(
+        `${PREFIX} request ID ${request.id} has no value for 'Bearer' in Authorization header`
+      )
+      reply.code(401)
+      reply.send({ ok: false, message: `access token is required` })
+    }
+
+    const jwt = splits[1]
+
+    let claims: DecodedToken
+    try {
+      claims = jose.decodeJwt(jwt) as unknown as DecodedToken
+    } catch (err) {
+      request.log.warn(
+        `${PREFIX} request ID ${request.id} sent invalid JWT: ${jwt}`
+      )
+      reply.code(401)
+      return reply.send({ ok: false, message: `invalid JWT` })
+    }
+
+    request.log.info(
+      `${PREFIX} access token claims ${JSON.stringify(claims, null, 2)}`
+    )
+
+    const scopes = claims.scope.split(' ')
+    request.log.info(`${PREFIX} access token scopes ${scopes.join(' ')}`)
+
+    if (claims.me !== config.me) {
+      reply.code(403)
+      reply.send({
+        ok: false,
+        message: `received access token whose 'me' claim is not ${config.me}`
+      })
+    }
+
+    // if (claims.issued_by !== config.tokenEndpoint) {
+    //   reply.code(403)
+    //   reply.send({
+    //     ok: false,
+    //     message: `received access token issued by an unexpected token endpoint`
+    //   })
+    // }
+
+    // Some token endpoint might issue a token that has `issued_at` in its
+    // claims. Some other times we find `iat` in claims.
+    // const date = new Date(claims.issued_at * 1000)
+    const iat_utc = new Date(claims.iat * 1000).toUTCString()
+    const exp_utc = new Date(claims.exp * 1000).toUTCString()
+
+    // Tokens returned by Indiekit have no client ID?
+    const client_id = 'Indiekit'
+    // const client_id = claims.client_id
+
+    request.log.info(
+      `${PREFIX} access token issued by ${client_id} at ${claims.iat} (${iat_utc}), will expire at ${claims.exp} (${exp_utc})`
+    )
+
+    // const message = `access token for ${claims.me} issued by ${client_id} at ${iat_utc}, will expire at ${exp_utc}`
+
+    // reply.send({
+    //   ok: true,
+    //   client_id,
+    //   iat: claims.iat,
+    //   exp: claims.exp,
+    //   me: claims.me,
+    //   message,
+    //   scopes
+    // })
+    done()
+  }
+
+  return validateAccessToken
+}
+
+const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
+  fastify,
+  options,
+  done
 ) => {
   const config = applyToDefaults(
     defaultOptions,
-    opts
+    options
   ) as Required<PluginOptions>
 
   fastify.log.debug(`${PREFIX} config ${JSON.stringify(config, null, 2)}`)
@@ -92,6 +196,7 @@ const fastifyMicropub = (
   } = compileSchemasAndGetValidateFunctions()
 
   validatePluginOptions(config)
+
   if (validatePluginOptions.errors) {
     const details = validatePluginOptions.errors.map((err) => {
       return `${err.instancePath.slice(1)} ${err.message}`
@@ -105,92 +210,11 @@ const fastifyMicropub = (
     `${PREFIX} validated config ${JSON.stringify(config, null, 2)}`
   )
 
-  // TODO: this seems completely changed in Fastify v5.0.0. Do I need
-  // decorateRequest and decorateReple?
-  // https://fastify.dev/docs/latest/Reference/Decorators/
-  // fastify.decorate(
-  //   'validateAccessToken',
-  //   async (request: FastifyRequest, reply: FastifyReply) => {
-  //     fastify.log.debug(`${PREFIX} validate access token`)
-
-  //     // if (request.method.toUpperCase() !== 'POST') {
-  //     //   fastify.log.warn(
-  //     //     `${PREFIX} request ID ${request.id} is a ${request.method} request, not a POST`
-  //     //   )
-  //     //   reply.code(415)
-  //     //   reply.send({
-  //     //     ok: false,
-  //     //     message: `${request.method} requests not allowed to this endpoint`
-  //     //   })
-  //     // }
-
-  //     const auth = request.headers.authorization
-
-  //     if (!auth) {
-  //       fastify.log.warn(
-  //         `${PREFIX} request ID ${request.id} has no 'Authorization' header`
-  //       )
-  //       reply.code(401)
-  //       reply.send({ ok: false, message: `missing Authorization header` })
-  //     }
-
-  //     if (auth.indexOf('Bearer') === -1) {
-  //       fastify.log.warn(
-  //         `${PREFIX} request ID ${request.id} has no 'Bearer' in Authorization header`
-  //       )
-  //       reply.code(401)
-  //       reply.send({ ok: false, message: `access token is required` })
-  //     }
-
-  //     const jwt = auth.split(' ')[1]
-  //     const claims = jose.decodeJwt(jwt) as unknown as DecodedToken
-  //     fastify.log.debug(
-  //       `${PREFIX} access token claims ${JSON.stringify(claims, null, 2)}`
-  //     )
-
-  //     // const scopes = claims.scope.split(' ')
-
-  //     if (claims.me !== config.me) {
-  //       reply.code(403)
-  //       reply.send({
-  //         ok: false,
-  //         message: `received access token whose 'me' claim is not ${config.me}`
-  //       })
-  //     }
-
-  //     if (claims.issued_by !== config.tokenEndpoint) {
-  //       reply.code(403)
-  //       reply.send({
-  //         ok: false,
-  //         message: `received access token issued by an unexpected token endpoint`
-  //       })
-  //     }
-
-  //     // const date = new Date(claims.issued_at * 1000)
-
-  //     // fastify.log.debug(
-  //     //   `${PREFIX} access token issued by ${claims.client_id} at ${
-  //     //     claims.issued_at
-  //     //   } (${date.toISOString()} GMT)`
-  //     // )
-
-  //     // const message = `access token for ${claims.me} issued by ${claims.client_id} at ${claims.issued_at}`
-
-  //     // reply.send({
-  //     //   ok: true,
-  //     //   client_id: claims.client_id,
-  //     //   me: claims.me,
-  //     //   message,
-  //     //   scopes
-  //     // })
-  //   }
-  // )
+  const validateAccessToken = defValidateAccessToken(config)
 
   fastify.get(
     '/micropub',
-    // { onRequest: [fastify.validateAccessToken], schema: micropub_get_request },
-    // { onRequest: someFunc, schema: micropub_get_request },
-    { schema: micropub_get_request },
+    { onRequest: [validateAccessToken], schema: micropub_get_request },
     async function (request, reply) {
       const log_entry = {
         message: `got GET request ${request.id} at micropub endpoint`,
@@ -223,7 +247,7 @@ const fastifyMicropub = (
         }
       ]
 
-      // fastify.log.debug(`${PREFIX} received valid micropub request`)
+      fastify.log.debug(`${PREFIX} received valid micropub request`)
 
       // https://quill.p3k.io/docs/syndication
       reply.send({
@@ -235,9 +259,7 @@ const fastifyMicropub = (
 
   fastify.post(
     '/micropub',
-    // { onRequest: [fastify.validateAccessToken], schema: micropub_post_request },
-    // { onRequest: someFunc schema: micropub_post_request },
-    { schema: micropub_post_request },
+    { onRequest: [validateAccessToken], schema: micropub_post_request },
     async function (request, reply) {
       const log_entry = {
         message: `got POST request ${request.id} at micropub endpoint`,
@@ -261,13 +283,13 @@ const fastifyMicropub = (
 
       // const req = request as MicropubRequest
 
-      // fastify.log.debug(`=== ${PREFIX} received valid micropub request ===`)
+      fastify.log.debug(`=== ${PREFIX} received valid micropub request ===`)
 
       // TODO: JSON schema to TypeScript type/interface?
       // https://github.com/bcherny/json-schema-to-typescript
-      const h = (request.body as any).h
+      const h = (request.body as any).h // microformats2
 
-      // fastify.log.debug(`${PREFIX} TODO: persist ${h}`)
+      fastify.log.debug(`${PREFIX} TODO: persist ${h}`)
 
       switch (h) {
         case 'card':
@@ -281,9 +303,13 @@ const fastifyMicropub = (
           reply.send(h_cite)
           break
         case 'entry':
+          const h_entry = request.body as H_entry
           // permalink of the newly created post
           const permalink =
-            'https://www.giacomodebidda.com/posts/inspect-container-images-with-dive/'
+            h_entry['like-of'] ||
+            h_entry['repost-of'] ||
+            h_entry['in-reply-to'] ||
+            h_entry.url
           // Must return a Location response header?
           // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
           reply.header('Location', permalink)
@@ -318,6 +344,9 @@ const fastifyMicropub = (
   done()
 }
 
+/**
+ * https://indieweb.org/Micropub#Handling_a_micropub_request
+ */
 export default fp(fastifyMicropub, {
   fastify: '>=4.0.0 <6.0.0',
   name: NAME

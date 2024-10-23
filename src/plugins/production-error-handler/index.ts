@@ -1,39 +1,32 @@
 import Fastify from 'fastify'
-import {
-  FastifyInstance,
-  FastifyPluginOptions,
-  DoneFuncWithErrOrRes
-} from 'fastify'
+import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 
 const EMOJI = '🔍'
-const NAME = 'fastify-production-error-handler'
+const NAME = '@jackdbd/fastify-production-error-handler'
 const PREFIX = `[${EMOJI} ${NAME}]`
 
-const fastifyProductionErrorHandler = (
-  fastify: FastifyInstance,
-  opts: FastifyPluginOptions,
-  done: DoneFuncWithErrOrRes
+export interface PluginOptions extends FastifyPluginOptions {
+  // Not defined at the moment. Used just to show how to define plugin options.
+  verbose?: boolean
+}
+
+const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
+  fastify,
+  options,
+  done
 ) => {
-  fastify.log.debug(`${PREFIX} config ${JSON.stringify(opts, null, 2)}}`)
+  fastify.log.debug(`${PREFIX} config ${JSON.stringify(options, null, 2)}}`)
+
+  // TODO: use something like Sentry, or GCP Error Reporting, or port to Fastify this Hapi plugin.
+  // https://github.com/jackdbd/matsuri/tree/main/packages/hapi-github-issue-plugin
 
   fastify.setErrorHandler(function (error, request, reply) {
     const status = error.statusCode || request.raw.statusCode || 500
 
-    // console.log('🚀 ~ request content-type', request.headers['content-type'])
-    // console.log('🚀 ~ error:', error)
-
     request.log.error(error.message)
 
-    // reply.status(status).send({
-    //   ok: false,
-    //   message: 'There was an error processing your request.'
-    // })
-
     if (error instanceof Fastify.errorCodes.FST_ERR_BAD_STATUS_CODE) {
-      //   fastify.log.error(error)
-      request.log.error(error.message)
-
       reply.status(status).send({
         ok: false,
         message: 'There was an error processing your request!'
@@ -48,7 +41,7 @@ const fastifyProductionErrorHandler = (
   done()
 }
 
-export default fp(fastifyProductionErrorHandler, {
+export default fp<PluginOptions>(fastifyProductionErrorHandler, {
   fastify: '>=4.0.0 <6.0.0',
   name: NAME
 })

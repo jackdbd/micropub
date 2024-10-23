@@ -33,8 +33,9 @@
 
     "outDir": "./dist",
 
-    // "pretty": true,
-    // "sourceMap": true,
+    "sourceMap": true,
+    "strict": true,
+
     // https://www.typescriptlang.org/tsconfig#target
     // https://node.green/
     "target": "es2022",
@@ -42,7 +43,9 @@
     // https://www.typescriptlang.org/tsconfig#typeRoots
     "typeRoots": ["./node_modules/@types"]
   },
+
   "include": ["./src/**/*.ts"],
+
   // https://www.typescriptlang.org/docs/handbook/configuring-watch.html
   "watchOptions": {
     "excludeDirectories": ["**/node_modules", "dist"],
