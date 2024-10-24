@@ -13,7 +13,7 @@ kill_timeout = 180
   strategy = 'immediate'
 
 [env]
-  DEBUG = 'micropub:*'
+  LOG_LEVEL = "info"
 
 [http_service]
   internal_port = 3000

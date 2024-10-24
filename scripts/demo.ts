@@ -8,7 +8,7 @@ const assets_dir = path.join(process.cwd(), 'assets')
 const queries_dir = path.join(process.cwd(), 'assets', 'queries')
 const migrations_dir = path.join(process.cwd(), 'migrations')
 
-const DATABASE = 'foobar.sqlite'
+const DATABASE = 'micropub.sqlite'
 
 const preparedStatements = (db: Database) => {
   const CREATE_POST = fs.readFileSync(

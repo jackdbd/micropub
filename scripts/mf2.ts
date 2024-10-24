@@ -1,12 +1,13 @@
 import { ValidateFunction } from 'ajv'
 import { TSchema } from '@sinclair/typebox'
-import { h_geo } from '../src/plugins/micropub/microformats2/index.js'
-import { geo_uri } from '../src/plugins/micropub/microformats2/base.js'
+import { geo_uri, h_geo } from '../src/plugins/micropub/microformats2/index.js'
 import {
   micropub_get_request,
   micropub_post_request
 } from '../src/plugins/micropub/schemas.js'
 import { compileSchemasAndGetValidateFunctions } from '../src/plugins/micropub/utils.js'
+
+// TODO: convert most of this stuff to tests for the microformats2 library
 
 const check = (what: string, value: any, validate: ValidateFunction) => {
   const valid = validate(value)
@@ -37,7 +38,7 @@ const main = async () => {
   describe(geo_uri)
 
   const {
-    // validateGeoURI,
+    validateGeoURI,
     validateH_adr,
     validateH_card,
     validateH_cite,
@@ -122,12 +123,12 @@ const main = async () => {
 
   check('geo', { latitude: -89.99, longitude: 179.99 }, validateH_geo)
 
-  // check('Geo URI with lat/long', 'geo:46.772673,-71.282945', validateGeoURI)
-  // check(
-  //   'Geo URI with lat/long and uncertainty',
-  //   'geo:46.772673,-71.282945;u=35',
-  //   validateGeoURI
-  // )
+  check('Geo URI with lat/long', 'geo:46.772673,-71.282945', validateGeoURI)
+  check(
+    'Geo URI with lat/long and uncertainty',
+    'geo:46.772673,-71.282945;u=35',
+    validateGeoURI
+  )
 
   check(
     'adr',

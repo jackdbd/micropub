@@ -37,7 +37,7 @@ const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
     }
   })
 
-  fastify.log.debug(`${PREFIX} registered`)
+  fastify.log.info(`${PREFIX} registered`)
   done()
 }
 

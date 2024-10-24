@@ -169,10 +169,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
     }
   })
 
-  fastify.log.debug({
-    message: `${PREFIX} registered`,
-    severity: 'DEBUG'
-  })
+  fastify.log.info(`${PREFIX} registered`)
   done()
 }
 

@@ -16,17 +16,18 @@ In one terminal, start the web server in watch mode:
 npm run watch
 ```
 
-In another terminal make some requests to the `/micropub` endpoint. You could also use any other HTTP client to make requests, for example Postman.
+In another terminal, make some requests to the `/micropub` endpoint. You could copy and paste these cURL command, or use API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).
 
 ```sh
-curl "${HOST}:3001/micropub" \
+curl "${BASE_URL}/micropub" \
+  -X POST \
   -d h=entry \
   -d "content=Hello World" \
   -H "Accept: application/json" | jq
 ```
 
 ```sh
-curl "${HOST}:3001/micropub" \
+curl "${BASE_URL}/micropub" \
   -d h=entry \
   -d "content=Hello World" \
   -H "Accept: application/json" \
@@ -42,22 +43,22 @@ Create an [h-entry](http://microformats.org/wiki/h-entry) representing a [note](
 The `content` of an `h-entry` could be either a string...
 
 ```sh
-curl "${HOST}:3001/micropub" \
+curl "${BASE_URL}/micropub" \
   -d h=entry \
   -d "content=Hello World" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer $(cat secrets/token-endpoint-response.json | jq .access_token)" | jq
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq
 ```
 
 ...or a JSON object with keys `value` and `html`.
 
 ```sh
-curl "${HOST}:3001/micropub" \
+curl "${BASE_URL}/micropub" \
   -d h=entry \
   -d "content={ \"value\": \"Hello World\", \"html\": \"<b>Hello</b> World\" }" \
   -d "published=1985-04-12T23:20:50.52Z" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer $(cat secrets/token-endpoint-response.json | jq .access_token)" | jq
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq
 ```
 
 ### Like
@@ -65,11 +66,11 @@ curl "${HOST}:3001/micropub" \
 Create an `h-entry` representing a [like](https://indieweb.org/like).
 
 ```sh
-curl "${HOST}:3001/micropub" \
+curl "${BASE_URL}/micropub" \
   -d h=entry \
   -d "like-of=http://othersite.example.com/permalink47" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer $(cat secrets/token-endpoint-response.json | jq .access_token)" | jq
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq
 ```
 
 ### Repost
@@ -77,9 +78,9 @@ curl "${HOST}:3001/micropub" \
 Create an `h-entry` representing a [repost](https://indieweb.org/repost).
 
 ```sh
-curl "${HOST}:3001/micropub" \
+curl "${BASE_URL}/micropub" \
   -d h=entry \
   -d "repost-of=https://example.com/post" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer $(cat secrets/token-endpoint-response.json | jq .access_token)" | jq
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq
 ```
