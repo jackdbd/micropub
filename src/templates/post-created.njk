@@ -1,0 +1,11 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<div>
+  <p><a href="https://indieweb.org/posts">Post</a> created.</p>
+  <p>Response from the <code>/micropub</code> endpoint</p>
+  <pre>
+    <code>{{ data }}</code>
+  </pre>
+</div>
+{% endblock %}

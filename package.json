@@ -35,6 +35,7 @@
     "nuke": "rm -rf node_modules/ package-lock.json",
     "script:demo": "tsm ./scripts/demo.ts",
     "script:mf2": "tsm ./scripts/mf2.ts",
+    "secure-session-secret": "npx @fastify/secure-session > secrets/secure-session-key",
     "start": "NODE_ENV=production node ./dist/server.js",
     "pretest": "npm run build",
     "test": "c8 node --test --test-reporter=spec ./dist/test.js",
@@ -42,6 +43,7 @@
   },
   "dependencies": {
     "@fastify/formbody": "^8.0.1",
+    "@fastify/secure-session": "^8.1.0",
     "@fastify/static": "^8.0.2",
     "@fastify/view": "^10.0.1",
     "@hapi/hoek": "^11.0.4",

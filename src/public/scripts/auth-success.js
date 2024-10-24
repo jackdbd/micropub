@@ -10,7 +10,11 @@ const onClick = async () => {
   // https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API
   try {
     await navigator.clipboard.writeText(code)
-    alert(`Authorization code copied to clipboard`)
+    // alert(`Authorization code copied to clipboard`)
+    const input = document.getElementById('code')
+    if (input) {
+      input.setAttribute('value', code)
+    }
   } catch (err) {
     console.error(err)
   }

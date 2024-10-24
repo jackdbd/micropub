@@ -9,7 +9,7 @@ import {
   h_event,
   h_geo,
   h_item
-} from './microformats2/index.js'
+} from '../../lib/microformats2/index.js'
 import {
   micropub_get_request,
   micropub_post_request,

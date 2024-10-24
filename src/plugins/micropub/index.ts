@@ -6,19 +6,30 @@ import type {
 import fp from 'fastify-plugin'
 import * as jose from 'jose'
 import { applyToDefaults } from '@hapi/hoek'
-import type { H_card, H_cite, H_entry, H_event } from './microformats2/index.js'
+import type {
+  H_card,
+  H_cite,
+  H_entry,
+  H_event
+} from '../../lib/microformats2/index.js'
 import { micropub_get_request, micropub_post_request } from './schemas.js'
 import { compileSchemasAndGetValidateFunctions } from './utils.js'
+import {
+  authCallback,
+  defLogin,
+  defSubmit,
+  defTokenPost,
+  editor,
+  logout,
+  postCreated
+} from './routes.js'
 
-declare module 'fastify' {
-  export interface FastifyInstance {
-    validateAccessToken(): void
-  }
+export interface SecureSessionData {
+  jwt: string
+  state: string
 }
 
-const EMOJI = '✒️'
 const NAME = '@jackdbd/fastify-micropub'
-const PREFIX = `[${EMOJI} ${NAME}]`
 
 export interface PluginOptions extends FastifyPluginOptions {
   /**
@@ -41,6 +52,9 @@ export interface PluginOptions extends FastifyPluginOptions {
    * Micropub clients will be able to obtain an access token from this endpoint
    * after you have granted authorization. The Micropub client will then use
    * this access token when making requests to your Micropub endpoint.
+   *
+   * See: https://indieweb.org/token-endpoint
+   * See: https://tokens.indieauth.com/
    */
   tokenEndpoint?: string
 }
@@ -68,32 +82,41 @@ export interface DecodedToken {
 
 const defValidateAccessToken = (config: Required<PluginOptions>) => {
   const validateAccessToken: onRequestHookHandler = (request, reply, done) => {
-    request.log.debug(`${PREFIX} validate access token`)
+    request.log.debug(
+      `${NAME} validating access token from Authorization header`
+    )
 
-    if (request.method.toUpperCase() !== 'POST') {
-      request.log.warn(
-        `${PREFIX} request ID ${request.id} is a ${request.method} request, not a POST`
-      )
-      reply.code(415)
-      return reply.send({
-        ok: false,
-        message: `${request.method} requests not allowed to this endpoint`
-      })
-    }
+    // TODO: why is this the case? I can't remember if the micropub specs says
+    // anything against non-POST requests.
+    // if (request.method.toUpperCase() !== 'POST') {
+    //   request.log.warn(
+    //     `${NAME} request ID ${request.id} is a ${request.method} request, not a POST`
+    //   )
+    //   reply.code(415)
+    //   return reply.send({
+    //     ok: false,
+    //     message: `${request.method} requests not allowed to this endpoint`
+    //   })
+    // }
 
     const auth = request.headers.authorization
 
     if (!auth) {
       request.log.warn(
-        `${PREFIX} request ID ${request.id} has no 'Authorization' header`
+        `${NAME} request ID ${request.id} has no 'Authorization' header`
       )
       reply.code(401)
-      return reply.send({ ok: false, message: `missing Authorization header` })
+      // return reply.send({ ok: false, message: `missing Authorization header` })
+      return reply.view('error.njk', {
+        message: `missing Authorization header`,
+        description: 'Auth error page',
+        title: 'Auth error'
+      })
     }
 
     if (auth.indexOf('Bearer') === -1) {
       request.log.warn(
-        `${PREFIX} request ID ${request.id} has no 'Bearer' in Authorization header`
+        `${NAME} request ID ${request.id} has no 'Bearer' in Authorization header`
       )
       reply.code(401)
       return reply.send({ ok: false, message: `access token is required` })
@@ -102,7 +125,7 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
     const splits = auth.split(' ')
     if (splits.length !== 2) {
       request.log.warn(
-        `${PREFIX} request ID ${request.id} has no value for 'Bearer' in Authorization header`
+        `${NAME} request ID ${request.id} has no value for 'Bearer' in Authorization header`
       )
       reply.code(401)
       return reply.send({ ok: false, message: `access token is required` })
@@ -115,18 +138,18 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
       claims = jose.decodeJwt(jwt) as unknown as DecodedToken
     } catch (err) {
       request.log.warn(
-        `${PREFIX} request ID ${request.id} sent invalid JWT: ${jwt}`
+        `${NAME} request ID ${request.id} sent invalid JWT: ${jwt}`
       )
       reply.code(401)
       return reply.send({ ok: false, message: `invalid JWT` })
     }
 
     request.log.info(
-      `${PREFIX} access token claims ${JSON.stringify(claims, null, 2)}`
+      `${NAME} access token claims ${JSON.stringify(claims, null, 2)}`
     )
 
     const scopes = claims.scope.split(' ')
-    request.log.info(`${PREFIX} access token scopes ${scopes.join(' ')}`)
+    request.log.info(`${NAME} access token scopes: ${scopes.join(' ')}`)
 
     if (claims.me !== config.me) {
       reply.code(403)
@@ -155,7 +178,7 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
     // const client_id = claims.client_id
 
     request.log.info(
-      `${PREFIX} access token issued by ${client_id} at ${claims.iat} (${iat_utc}), will expire at ${claims.exp} (${exp_utc})`
+      `${NAME} access token issued by ${client_id} at ${claims.iat} (${iat_utc}), will expire at ${claims.exp} (${exp_utc})`
     )
 
     // const message = `access token for ${claims.me} issued by ${client_id} at ${iat_utc}, will expire at ${exp_utc}`
@@ -202,13 +225,43 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       return `${err.instancePath.slice(1)} ${err.message}`
     })
     throw new Error(
-      `${PREFIX} plugin registered using invalid options: ${details.join('; ')}`
+      `${NAME} plugin registered using invalid options: ${details.join('; ')}`
     )
   }
 
   fastify.log.debug(`${NAME} validated its configuration`)
 
   const validateAccessToken = defValidateAccessToken(config)
+
+  // auth callback (I wanted to use /auth/callback but it's a bit problematic for static assets)
+  fastify.get('/callback', authCallback)
+
+  fastify.get('/editor', editor)
+
+  // authorization_endpoint: 'https://indielogin.com/auth',
+  // client ID and redirect URI of the GitHub OAuth app used to authenticate users
+  // The client must be registered in the IndieLogin database. We need ask Aaron Parecki for this registration.
+  // See here:
+  // https://github.com/aaronpk/indielogin.com/blob/35c8aa0ae627517d9c9a9578b901740736ded428/app/Authenticate.php#L51
+  // And here:
+  // https://github.com/aaronpk/indielogin.com/issues/20
+  // client_id: 'https://matsuri-demo-app-45eyyotfta-ey.a.run.app',
+  // redirect_uri:
+  //   'http://matsuri-demo-app-45eyyotfta-ey.a.run.app/auth/github',
+
+  // https://indielogin.com/api
+  // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
+  // https://github.com/aaronpk/indielogin.com/blob/35c8aa0ae627517d9c9a9578b901740736ded428/.env.example#L17
+  const login = defLogin({
+    authorization_endpoint: config.authorizationEndpoint,
+    client_id: 'https://indieauth.com',
+    prefix: NAME,
+    // redirect_uri: 'https://indieauth.com/success',
+    redirect_uri: process.env.BASE_URL + '/callback'
+  })
+
+  fastify.get('/login', login)
+  fastify.get('/logout', logout)
 
   fastify.get(
     '/micropub',
@@ -225,7 +278,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       const valid = validateMicropubGetRequest(request)
 
       if (!valid) {
-        fastify.log.warn(`${PREFIX} received invalid micropub GET request`)
+        fastify.log.warn(`${NAME} received invalid micropub GET request`)
         reply.code(400)
         return reply.send({
           ok: false,
@@ -245,7 +298,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       //   }
       // ]
 
-      fastify.log.debug(`${PREFIX} received valid micropub request`)
+      fastify.log.debug(`${NAME} received valid micropub request`)
 
       // https://quill.p3k.io/docs/syndication
       // reply.send({
@@ -264,18 +317,10 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     '/micropub',
     { onRequest: [validateAccessToken], schema: micropub_post_request },
     async function (request, reply) {
-      const log_entry = {
-        message: `got POST request ${request.id} at micropub endpoint`,
-        body: request.body,
-        headers: request.headers,
-        severity: 'INFO'
-      }
-      fastify.log.info(log_entry)
-
       const valid = validateMicropubPostRequest(request)
 
       if (!valid) {
-        fastify.log.warn(`${PREFIX} received invalid micropub POST request`)
+        fastify.log.warn(`${NAME} received invalid micropub POST request`)
         reply.code(400)
         return reply.send({
           ok: false,
@@ -286,13 +331,13 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
 
       // const req = request as MicropubRequest
 
-      fastify.log.debug(`=== ${PREFIX} received valid micropub request ===`)
+      fastify.log.debug(`${NAME} received valid micropub request`)
 
       // TODO: JSON schema to TypeScript type/interface?
       // https://github.com/bcherny/json-schema-to-typescript
       const h = (request.body as any).h // microformats2
 
-      fastify.log.debug(`${PREFIX} TODO: persist ${h}`)
+      fastify.log.debug(`${NAME} TODO: persist ${h}`)
 
       switch (h) {
         case 'card':
@@ -305,16 +350,27 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
           return reply.send(h_cite)
         case 'entry':
           const h_entry = request.body as H_entry
-          // permalink of the newly created post
+          const content = h_entry['content']
+
           const permalink =
             h_entry['like-of'] ||
             h_entry['repost-of'] ||
             h_entry['in-reply-to'] ||
             h_entry.url
-          // Must return a Location response header?
+
+          fastify.log.debug({ content, permalink }, `${NAME} post created`)
+
+          // Should we return a Location response header?
           // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
           reply.header('Location', permalink)
-          return reply.code(201)
+          reply.code(201)
+
+          return reply.send(h_entry)
+
+        // return reply.view('post-created.njk', {
+        //   description: 'Post created page',
+        //   title: 'Post created'
+        // })
         // const h_entry = request.body as H_entry
         // reply.send({ ...h_entry, url: 'https://example.com/1' })
         case 'event':
@@ -336,6 +392,24 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     }
   )
 
+  fastify.get('/post-created', postCreated)
+
+  const submit = defSubmit({
+    micropub_endpoint: process.env.BASE_URL! + '/micropub',
+    prefix: NAME
+  })
+
+  fastify.post('/submit', submit)
+
+  const tokenPost = defTokenPost({
+    issuer: process.env.BASE_URL!, // indiekit uses application.url
+    me: config.me,
+    prefix: NAME
+  })
+
+  // For now we call this route by submitting the form where we enter the authorization code.
+  fastify.post('/token', tokenPost)
+
   done()
 }
 
@@ -343,6 +417,6 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
  * https://indieweb.org/Micropub#Handling_a_micropub_request
  */
 export default fp(fastifyMicropub, {
-  fastify: '>=4.0.0 <6.0.0',
+  fastify: '5.x',
   name: NAME
 })
