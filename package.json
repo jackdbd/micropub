@@ -30,7 +30,7 @@
     "copy:njk": "cp -r src/templates dist/templates",
     "clean": "rm -rf dist/ tsconfig.tsbuildinfo",
     "debug": "NODE_OPTIONS='--inspect' node dist/server.js",
-    "dev": "NODE_ENV=development tsm ./src/server.ts",
+    "dev": "NODE_ENV=development tsm ./src/server.ts | pino-pretty",
     "nuke": "rm -rf node_modules/ package-lock.json",
     "script:demo": "tsm ./scripts/demo.ts",
     "script:mf2": "tsm ./scripts/mf2.ts",

@@ -9,12 +9,6 @@ const config: Required<Options> = {
   }
 }
 
-// We want to use pino-pretty only if there is a human watching this,
-// otherwise we log as newline-delimited JSON.
-if (process.stdout.isTTY) {
-  config.logger.transport = { target: 'pino-pretty' }
-}
-
 const host = process.env.HOST || '0.0.0.0'
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
 
