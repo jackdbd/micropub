@@ -1,22 +1,24 @@
-import { build } from './app.js'
+import { defFastify } from './app.js'
 import type { Level, Options } from './app.js'
 import closeWithGrace from 'close-with-grace'
 
-const opts: Options = {
-  logger: { level: 'info', transport: undefined as any }
+const config: Required<Options> = {
+  logger: {
+    level: (process.env.LOG_LEVEL as Level) || 'info',
+    transport: undefined
+  }
 }
 
-opts.logger.level = (process.env.LOG_LEVEL as Level) || 'info'
 // We want to use pino-pretty only if there is a human watching this,
 // otherwise we log as newline-delimited JSON.
 if (process.stdout.isTTY) {
-  opts.logger.transport = { target: 'pino-pretty' }
+  config.logger.transport = { target: 'pino-pretty' }
 }
 
 const host = process.env.HOST || '0.0.0.0'
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
 
-const fastify = await build(opts)
+const fastify = await defFastify(config)
 
 const start = async () => {
   try {

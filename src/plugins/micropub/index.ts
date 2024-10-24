@@ -76,7 +76,7 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
         `${PREFIX} request ID ${request.id} is a ${request.method} request, not a POST`
       )
       reply.code(415)
-      reply.send({
+      return reply.send({
         ok: false,
         message: `${request.method} requests not allowed to this endpoint`
       })
@@ -97,7 +97,7 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
         `${PREFIX} request ID ${request.id} has no 'Bearer' in Authorization header`
       )
       reply.code(401)
-      reply.send({ ok: false, message: `access token is required` })
+      return reply.send({ ok: false, message: `access token is required` })
     }
 
     const splits = auth.split(' ')
@@ -106,7 +106,7 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
         `${PREFIX} request ID ${request.id} has no value for 'Bearer' in Authorization header`
       )
       reply.code(401)
-      reply.send({ ok: false, message: `access token is required` })
+      return reply.send({ ok: false, message: `access token is required` })
     }
 
     const jwt = splits[1]
@@ -131,7 +131,7 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
 
     if (claims.me !== config.me) {
       reply.code(403)
-      reply.send({
+      return reply.send({
         ok: false,
         message: `received access token whose 'me' claim is not ${config.me}`
       })
@@ -214,7 +214,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
 
   fastify.get(
     '/micropub',
-    { onRequest: [validateAccessToken], schema: micropub_get_request },
+    { onRequest: [], schema: micropub_get_request },
     async function (request, reply) {
       const log_entry = {
         message: `got GET request ${request.id} at micropub endpoint`,
@@ -229,30 +229,35 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       if (!valid) {
         fastify.log.warn(`${PREFIX} received invalid micropub GET request`)
         reply.code(400)
-        reply.send({
+        return reply.send({
           ok: false,
           message: `invalid micropub request`,
           errors: validateMicropubGetRequest.errors || []
         })
       }
 
-      const fake_syndicate_to = [
-        {
-          uid: 'https://twitter.com/aaronpk',
-          name: 'twitter.com/aaronpk'
-        },
-        {
-          uid: 'https://news.indieweb.org/en',
-          name: 'IndieNews'
-        }
-      ]
+      // const fake_syndicate_to = [
+      //   {
+      //     uid: 'https://twitter.com/aaronpk',
+      //     name: 'twitter.com/aaronpk'
+      //   },
+      //   {
+      //     uid: 'https://news.indieweb.org/en',
+      //     name: 'IndieNews'
+      //   }
+      // ]
 
       fastify.log.debug(`${PREFIX} received valid micropub request`)
 
       // https://quill.p3k.io/docs/syndication
-      reply.send({
-        message: 'TODO: implement /micropub?q=syndicate-to',
-        'syndicate-to': fake_syndicate_to
+      // reply.send({
+      //   message: 'TODO: implement /micropub?q=syndicate-to',
+      //   'syndicate-to': fake_syndicate_to
+      // })
+
+      return reply.view('micropub.njk', {
+        description: 'Micropub page',
+        title: 'Micropub'
       })
     }
   )
@@ -274,7 +279,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       if (!valid) {
         fastify.log.warn(`${PREFIX} received invalid micropub POST request`)
         reply.code(400)
-        reply.send({
+        return reply.send({
           ok: false,
           message: `invalid micropub request`,
           errors: validateMicropubPostRequest.errors || []
@@ -295,13 +300,11 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
         case 'card':
           const h_card = request.body as H_card
           reply.code(201)
-          reply.send(h_card)
-          break
+          return reply.send(h_card)
         case 'cite':
           const h_cite = request.body as H_cite
           reply.code(201)
-          reply.send(h_cite)
-          break
+          return reply.send(h_cite)
         case 'entry':
           const h_entry = request.body as H_entry
           // permalink of the newly created post
@@ -313,15 +316,13 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
           // Must return a Location response header?
           // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
           reply.header('Location', permalink)
-          reply.code(201)
-          // const h_entry = request.body as H_entry
-          // reply.send({ ...h_entry, url: 'https://example.com/1' })
-          return
+          return reply.code(201)
+        // const h_entry = request.body as H_entry
+        // reply.send({ ...h_entry, url: 'https://example.com/1' })
         case 'event':
           const h_event = request.body as H_event
           reply.code(201)
-          reply.send(h_event)
-          break
+          return reply.send(h_event)
         default:
           throw new Error(`h=${h} not implemented`)
       }
