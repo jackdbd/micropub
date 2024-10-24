@@ -1,0 +1,12 @@
+{% extends "base.njk" %}
+
+{% block js %}
+<script defer src="scripts/auth-success.js"></script>
+{% endblock %}
+
+{% block content %}
+<div>
+  <p>Sign in with Web Sign-in as described on <a href="https://indielogin.com/api">IndieLogin.com</a>.</p>
+  {% include "sign-in-form.njk" %}
+</div>
+{% endblock %}

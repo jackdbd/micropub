@@ -46,9 +46,8 @@ export interface PluginOptions extends FastifyPluginOptions {
 }
 
 const defaultOptions: Partial<PluginOptions> = {
-  /**
-   * By default, we delegate authorization to indieauth.com
-   */
+  // https://indielogin.com/api
+  // authorizationEndpoint: 'https://indielogin.com/auth',
   authorizationEndpoint: 'https://indieauth.com/auth',
   /**
    * By default, we delegate token generation to the IndieAuth token endpoint.
@@ -185,15 +184,16 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     defaultOptions,
     options
   ) as Required<PluginOptions>
-
-  fastify.log.debug(`${PREFIX} config ${JSON.stringify(config, null, 2)}`)
-  fastify.log.debug(`${PREFIX} compile schemas and create validate functions`)
+  fastify.log.debug(config, `${NAME} configuration`)
 
   const {
     validatePluginOptions,
     validateMicropubGetRequest,
     validateMicropubPostRequest
   } = compileSchemasAndGetValidateFunctions()
+  fastify.log.debug(
+    `${NAME} compiled JSON schemas and created validate functions`
+  )
 
   validatePluginOptions(config)
 
@@ -206,9 +206,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     )
   }
 
-  fastify.log.debug(
-    `${PREFIX} validated config ${JSON.stringify(config, null, 2)}`
-  )
+  fastify.log.debug(`${NAME} validated its configuration`)
 
   const validateAccessToken = defValidateAccessToken(config)
 
@@ -338,7 +336,6 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     }
   )
 
-  fastify.log.info(`${PREFIX} registered`)
   done()
 }
 

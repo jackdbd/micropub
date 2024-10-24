@@ -16,8 +16,7 @@ const fastify = await defFastify(config)
 
 const start = async () => {
   try {
-    const address = await fastify.listen({ host, port })
-    fastify.log.info(`server listening at ${address}`)
+    await fastify.listen({ host, port })
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)

@@ -1,23 +1,7 @@
-<!doctype html>
-<html lang="en">
+{% extends "base.njk" %}
 
-{% include "head.njk" %}
-
-<body>
-  <div id="wrapper-for-sticky-footer">
-
-    {% include "header.njk" %}
-
-    <main class="wrapper">
-      <div class="flow region">
-        <h1>{{ title or "Default title" }}</h1>
-        <p>{{ title }}</p>
-      </div>
-    </main>
-
-    {% include "footer.njk" %}
-    
-  </div>
-</body>
-
-</html>
+{% block content %}
+<div>
+  <p>TODO token</p>
+</div>
+{% endblock %}

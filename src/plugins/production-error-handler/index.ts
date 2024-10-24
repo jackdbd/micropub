@@ -2,9 +2,9 @@ import Fastify from 'fastify'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 
-const EMOJI = '🔍'
+// const EMOJI = '🔍'
 const NAME = '@jackdbd/fastify-production-error-handler'
-const PREFIX = `[${EMOJI} ${NAME}]`
+// const PREFIX = `[${EMOJI} ${NAME}]`
 
 export interface PluginOptions extends FastifyPluginOptions {
   // Not defined at the moment. Used just to show how to define plugin options.
@@ -16,7 +16,7 @@ const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
   options,
   done
 ) => {
-  fastify.log.debug(`${PREFIX} config ${JSON.stringify(options, null, 2)}}`)
+  fastify.log.debug(options, `${NAME} options`)
 
   // TODO: use something like Sentry, or GCP Error Reporting, or port to Fastify this Hapi plugin.
   // https://github.com/jackdbd/matsuri/tree/main/packages/hapi-github-issue-plugin
@@ -37,7 +37,6 @@ const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
     }
   })
 
-  fastify.log.info(`${PREFIX} registered`)
   done()
 }
 

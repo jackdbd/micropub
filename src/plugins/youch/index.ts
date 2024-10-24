@@ -3,9 +3,9 @@ import fp from 'fastify-plugin'
 import Youch from 'youch'
 import { applyToDefaults } from '@hapi/hoek'
 
-const EMOJI = '🔍'
+// const EMOJI = '🔍'
 const NAME = '@jackdbd/fastify-youch'
-const PREFIX = `[${EMOJI} ${NAME}]`
+// const PREFIX = `[${EMOJI} ${NAME}]`
 
 export interface YouchOptions {
   /**
@@ -93,7 +93,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
   done
 ) => {
   const config = applyToDefaults(defaultOptions, options)
-  fastify.log.debug(`${PREFIX} config ${JSON.stringify(config, null, 2)}`)
+  fastify.log.debug(config, `${NAME} configuration`)
 
   fastify.setErrorHandler(function (error, request, reply) {
     const youch = new Youch(error, request.raw, {
@@ -169,7 +169,6 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
     }
   })
 
-  fastify.log.info(`${PREFIX} registered`)
   done()
 }
 

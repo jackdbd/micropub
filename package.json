@@ -24,10 +24,11 @@
   "license": "MIT",
   "main": "dist/server.js",
   "scripts": {
-    "build": "npm run compile:ts && npm run copy:njk",
+    "build": "npm run compile:ts && npm run copy:njk && npm run copy:static",
     "compile:njk": "node ./scripts/compile-templates.js",
     "compile:ts": "tsc -p tsconfig.json",
     "copy:njk": "cp -r src/templates dist/templates",
+    "copy:static": "cp -r src/public dist/public",
     "clean": "rm -rf dist/ tsconfig.tsbuildinfo",
     "debug": "NODE_OPTIONS='--inspect' node dist/server.js",
     "dev": "NODE_ENV=development tsm ./src/server.ts | pino-pretty",
@@ -41,6 +42,7 @@
   },
   "dependencies": {
     "@fastify/formbody": "^8.0.1",
+    "@fastify/static": "^8.0.2",
     "@fastify/view": "^10.0.1",
     "@hapi/hoek": "^11.0.4",
     "@sinclair/typebox": "^0.33.17",

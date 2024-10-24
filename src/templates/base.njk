@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{{ description | tap('description') }}">
+
+  <title>{{ title or "Default title" }}</title>
+
+  {% block css %}
+  <link rel="stylesheet" href="https://unpkg.com/mvp.css"> 
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/utils.css">
+  {% endblock %}
+  
+  {% block js %}
+  {% endblock %}
+</head>
+
+<body>
+  <div id="wrapper-for-sticky-footer">
+
+    {% include "header.njk" %}
+
+    <main class="wrapper">
+      <div class="flow region">
+        <h1>{{ title or "Default title" }}</h1>
+        {% block content %}
+          <div>content here</div>
+        {% endblock %}
+      </div>
+    </main>
+
+    {% include "footer.njk" %}
+    
+  </div>
+</body>
+
+</html>

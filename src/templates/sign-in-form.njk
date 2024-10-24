@@ -1,0 +1,8 @@
+<form action="{{ authorization_endpoint }}" method="get">
+  <label for="url">Web Address</label>
+  <input id="url" type="text" name="me" placeholder="yourdomain.com" />
+  <p><button type="submit">Sign In</button></p>
+  <input type="hidden" name="client_id" value="{{ client_id }}" />
+  <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
+  <input type="hidden" name="state" value="{{ state }}" />
+</form>

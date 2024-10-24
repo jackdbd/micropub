@@ -20,7 +20,7 @@ in {
     ACCESS_TOKEN = "todo";
     DEBUG = "*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
-    # LOG_LEVEL = "debug";
+    LOG_LEVEL = "debug";
     PORT = "3001";
     BASE_URL = "http://localhost:${config.env.PORT}";
     TELEGRAM = builtins.readFile /run/secrets/telegram/jackdbd_github_bot;
