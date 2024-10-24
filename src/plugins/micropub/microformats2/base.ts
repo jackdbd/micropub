@@ -22,11 +22,13 @@ export const date_time = Type.String({ format: 'date-time' })
 export type DateTime = Static<typeof date_time>
 
 export const altitude = Type.Number({
+  $id: 'altitude',
   title: 'Altitude',
   description: `Distance in metres from the nominal sea level along the tangent of the earth’s curve, i.e. the geoid height. For more information refer to the WGS84 specification and the geo URI scheme.`
 })
 
 export const latitude = Type.Number({
+  $id: 'latitude',
   minimum: -90,
   maximum: 90,
   title: 'Latitude',
@@ -34,6 +36,7 @@ export const latitude = Type.Number({
 })
 
 export const longitude = Type.Number({
+  $id: 'longitude',
   minimum: -180,
   maximum: 180,
   title: 'Longitude',
@@ -50,6 +53,7 @@ export const longitude = Type.Number({
  * - https://regex101.com/r/k7bl7r/1
  */
 export const geo_uri = Type.String({
+  $id: 'geo-uri',
   pattern: 'geo:-?[0-9]{1,2}.[0-9]*,-?[0-9]{1,3}.?[0-9]*(;u=[0-9]{1,2})?',
   minLength: 8,
   // maxLength: 32,
