@@ -2,6 +2,9 @@
 
 {% block content %}
 <div>
-  <p>TODO token</p>
+  <p>You have an <strong>access token</strong>. Use it to <code>POST</code> to <code>/micropub</code> and publish to <a href="{{ me }}">{{ me }}</a>.</p>
+  <pre>
+    <code id="access-token-payload">{{ payload }}</code>
+  </pre>
 </div>
 {% endblock %}

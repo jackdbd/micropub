@@ -1,5 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
-import { h_card, h_cite, h_entry, h_event } from './microformats2/index.js'
+import {
+  h_card,
+  h_cite,
+  h_entry,
+  h_event
+} from '../../lib/microformats2/index.js'
 
 export const plugin_options = Type.Object(
   {

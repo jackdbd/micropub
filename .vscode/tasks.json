@@ -2,10 +2,40 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Copy Nunjucks Templates",
+      "type": "shell",
+      "command": "npm run copy:njk",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Copy Static",
+      "type": "shell",
+      "command": "npm run copy:static",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
       "label": "Compile TypeScript",
       "type": "typescript",
       "tsconfig": "tsconfig.json",
       "problemMatcher": ["$tsc"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Build All",
+      "dependsOn": [
+        "Copy Nunjucks Templates",
+        "Copy Static",
+        "Compile TypeScript"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true

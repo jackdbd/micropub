@@ -1,0 +1,10 @@
+<form action="{{ token_endpoint }}" method="post">
+  {# exchange the authorization code for an access token #}
+  {# https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code #}
+  <label for="code">Authorization code</label>
+  <input id="code" type="text" name="code" placeholder="code-received-from-authorization-endpoint" />
+  <p><button type="submit">Exchange code for token</button></p>
+  <input type="hidden" name="grant_type" value="authorization_code" />
+  <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
+  <input type="hidden" name="code_verifier" value="{{ code_verifier }}" />
+</form>

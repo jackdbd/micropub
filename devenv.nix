@@ -17,12 +17,13 @@ in {
   '';
 
   env = {
-    ACCESS_TOKEN = "todo";
-    DEBUG = "*";
+    # ACCESS_TOKEN = "todo";
+    # DEBUG = "*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
-    LOG_LEVEL = "debug";
+    LOG_LEVEL = "info";
     PORT = "3001";
     BASE_URL = "http://localhost:${config.env.PORT}";
+    # SECURE_SESSION_KEY = builtins.readFile secrets/secure-session-key;
     TELEGRAM = builtins.readFile /run/secrets/telegram/jackdbd_github_bot;
   };
 
@@ -79,9 +80,9 @@ in {
       npx tsm ./src/server.ts
     '';
     fly-deploy.exec = "fly deploy --ha=false --debug --verbose";
-    # fly-secrets-set.exec = ''
-    #   fly secrets set SECRET="${config.env.SECRET}"
-    # '';
+    fly-secrets-set.exec = ''
+      fly secrets set SECURE_SESSION_KEY="$(cat ./secrets/secure-session-key)"
+    '';
     versions.exec = ''
       echo "=== Versions ==="
       dive --version

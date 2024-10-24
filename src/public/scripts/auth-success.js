@@ -1,7 +1,8 @@
 const onClick = async () => {
-  const el = document.getElementById('code-block')
-
+  const id = 'authorization-code-received'
+  const el = document.getElementById(id)
   if (!el) {
+    alert(`id ${id} not found on this page`)
     return
   }
 
@@ -9,19 +10,27 @@ const onClick = async () => {
 
   // https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API
   try {
+    const id = 'code'
     await navigator.clipboard.writeText(code)
-    alert(`Authorization code copied to clipboard`)
+    const input = document.getElementById(id)
+    if (input) {
+      input.setAttribute('value', code)
+    } else {
+      alert(`id ${id} not found on this page`)
+    }
   } catch (err) {
     console.error(err)
+    alert(`could not write to clipboard: ${err.message}`)
   }
 }
 
-const main = async () => {
-  //   console.log(`=== auth success ===`)
-
-  const el = document.getElementById('copy-btn')
+const main = () => {
+  const id = 'copy-btn'
+  const el = document.getElementById(id)
   if (el) {
     el.addEventListener('click', onClick)
+  } else {
+    alert(`id ${id} not found on this page`)
   }
 }
 

@@ -14,8 +14,8 @@
         "NODE_ENV": "development",
         "PORT": "${env:PORT}"
       },
-      "preLaunchTask": "Compile TypeScript",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      "preLaunchTask": "Build All",
+      "outFiles": ["${workspaceFolder}/dist/**/*"]
     },
     {
       // First, launch the server with NODE_OPTIONS='--inspect'. Then attach to it.

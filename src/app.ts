@@ -1,16 +1,20 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
-import type { FastifyRequest } from 'fastify'
+import fastifyCsrf from '@fastify/csrf-protection'
+import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import fastifyView from '@fastify/view'
 import formbody from '@fastify/formbody'
-// @ts-ignore-next-line
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 import youch from './plugins/youch/index.js'
 import productionErrorHandler from './plugins/production-error-handler/index.js'
 import micropub from './plugins/micropub/index.js'
+import authorizationEndpoint from './plugins/authorization-endpoint/index.js'
+import revocationEndpoint from './plugins/revocation-endpoint/index.js'
+import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
 import { foo } from './nunjucks/globals.js'
 
@@ -23,12 +27,6 @@ export interface Options {
   logger?: { level?: Level; transport?: any }
 }
 
-interface AuthQuery {
-  code: string
-  me: string
-  state: string
-}
-
 /**
  * Instantiates the Fastify app.
  */
@@ -38,6 +36,33 @@ export async function defFastify(options?: Options) {
   // plugin to parse x-www-form-urlencoded bodies
   // https://github.com/fastify/fastify-formbody
   fastify.register(formbody)
+
+  const ssk = path.join(__dirname, '..', 'secrets', 'secure-session-key')
+  const sessionName = 'session'
+  const expiry = 60 * 60 // in seconds
+
+  fastify.register(secureSession, {
+    key: fs.readFileSync(ssk),
+    sessionName,
+    expiry,
+    cookie: {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production'
+    }
+  })
+  fastify.log.debug(
+    {
+      secret: ssk,
+      sessionName,
+      expiry
+    },
+    `secure session created`
+  )
+
+  fastify.register(fastifyCsrf, {
+    sessionPlugin: '@fastify/secure-session'
+  })
 
   fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'public')
@@ -49,13 +74,39 @@ export async function defFastify(options?: Options) {
     fastify.register(productionErrorHandler)
   }
 
+  const me = 'https://giacomodebidda.com/'
+  const client_id = 'https://indieauth.com'
+  // const redirectUri = 'https://indieauth.com/success'
+  const redirect_uri = process.env.BASE_URL! + '/callback'
+  const authorization_endpoint = 'https://indieauth.com/auth'
+  const token_endpoint = process.env.BASE_URL! + '/token'
+  // const token_endpoint = 'https://tokens.indieauth.com/token'
+  const issuer = process.env.BASE_URL!
+
   fastify.register(micropub, {
-    // authorizationEndpoint: '',
-    // tokenEndpoint: '',
-    // Not sure if I have to include www in `me`
-    me: 'https://www.giacomodebidda.com/'
-    // me: 'https://giacomodebidda.com/'
+    authorizationEndpoint: authorization_endpoint,
+    clientId: client_id,
+    tokenEndpoint: token_endpoint,
+    redirectUri: redirect_uri,
+    me
   })
+
+  fastify.register(authorizationEndpoint, {
+    clientId: client_id,
+    endpoint: authorization_endpoint,
+    redirectUri: redirect_uri,
+    tokenEndpoint: token_endpoint
+  })
+
+  fastify.register(tokenEndpoint, {
+    algorithm: 'HS256',
+    me,
+    endpoint: token_endpoint,
+    expiration: '1 hour',
+    issuer
+  })
+
+  fastify.register(revocationEndpoint, {})
 
   fastify.register(fastifyView, {
     engine: { nunjucks },
@@ -76,68 +127,19 @@ export async function defFastify(options?: Options) {
       name: 'Giacomo'
     })
   })
-  // https://indieauth.com/success?
-  //code=uID6KOOOoEHvrRS9FEzZSQ%3D%3D.V1LmTMregkddKUwsoHcLnoovHZcQhaNAmq3z9JmIUMjUjzymk1wH1pRb_fnTJTeNU6iyaSgPdyt7JXXC8o7eoYZPXP6DuqNc8dnYEgdoUbrsO-hi2p6s9UwNKgjoGk927ZPi96_uXgH0aMPcLWzjurzp2kmWCOoDf-T7I-NH2RfGPxAX0-5cMd4uLUDphQCWGikkJVrTyGAraVxVWH2sT4qeXf7UgVDhKvwELjIcc25oKqBzozvsEpJz5gS7TkUuHYINcSJRJ4DF_CyaZcSh9BkDpSymrpTRJj6KMzQWhVWC6TNXaH8-l_Z_jZEHvz5yN_KIfTLKTBAYps7p3VTwVX6baJCb7kVVc46B9NFah970HIbFRJWCxWLGT4CuunUWR3K4Ff8lZgG5C_n9Pp0dwpJtIqBMy_8JDjAWW-fuYJKNG2E2bIisDd75TM8GVos1UMWcVp5iwheykhUc13BRjTcMv01KIPv27hcos0aX0NLfyR7qe69Yi2sxeIIInyDML0goMO0EU5dCyQECKS8dhs4DqRDVZteMNDqKeP6C5PeM.T5K8t2q-KWxniOT7
-  // me=https%3A%2F%2Fgiacomodebidda.com%2F
-  //s tate=jwiusuerujs
 
-  fastify.get('/login', async (_request, reply) => {
-    return reply.view('login.njk', {
-      // authorization_endpoint: 'https://indielogin.com/auth',
-      // client ID and redirect URI of the GitHub OAuth app used to authenticate users
-      // The client must be registered in the IndieLogin database. We need ask Aaron Parecki for this registration.
-      // See here:
-      // https://github.com/aaronpk/indielogin.com/blob/35c8aa0ae627517d9c9a9578b901740736ded428/app/Authenticate.php#L51
-      // And here:
-      // https://github.com/aaronpk/indielogin.com/issues/20
-      // client_id: 'https://matsuri-demo-app-45eyyotfta-ey.a.run.app',
-      // redirect_uri:
-      //   'http://matsuri-demo-app-45eyyotfta-ey.a.run.app/auth/github',
-      authorization_endpoint: 'https://indieauth.com/auth',
-      client_id: 'https://indieauth.com',
-      // redirect_uri: 'https://indieauth.com/success',
-      redirect_uri: process.env.BASE_URL + '/callback',
-      // https://indielogin.com/api
-      // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
-      // https://github.com/aaronpk/indielogin.com/blob/35c8aa0ae627517d9c9a9578b901740736ded428/.env.example#L17
-      state: 'jwiusuerujs',
-      description: 'Login page',
-      title: 'Login'
-    })
-  })
+  fastify.get('/error', async (request, reply) => {
+    const message = (request.query as any).message
 
-  fastify.get(
-    '/callback',
-    async (request: FastifyRequest<{ Querystring: AuthQuery }>, reply) => {
-      const { code, me, state } = request.query
-
-      request.log.warn(`TODO: verify that state is the one we sent: ${state}`)
-
-      return reply.view('auth-success.njk', {
-        description: 'Auth success page',
-        title: 'Auth success',
-        me,
-        code
+    if (message) {
+      return reply.view('error.njk', {
+        description: 'Error page',
+        title: 'Error',
+        message
       })
-
-      // return reply.send({
-      //   message: 'got authorization code',
-      //   code,
-      //   me,
-      //   state
-      // })
+    } else {
+      throw new Error('Some unexpected error')
     }
-  )
-
-  fastify.get('/error', async (_request, _reply) => {
-    throw new Error('Some weird error')
-  })
-
-  fastify.get('/token', async (_request, reply) => {
-    return reply.view('token.njk', {
-      description: 'Token page',
-      title: 'Token'
-    })
   })
 
   return fastify

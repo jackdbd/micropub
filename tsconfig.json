@@ -14,7 +14,7 @@
     "forceConsistentCasingInFileNames": true,
 
     // https://www.typescriptlang.org/tsconfig#lib
-    "lib": ["es2021"],
+    "lib": ["es2021","DOM"],
 
     // https://www.typescriptlang.org/tsconfig#module
     // https://www.typescriptlang.org/tsconfig#moduleResolution
@@ -33,6 +33,7 @@
 
     "outDir": "./dist",
 
+    "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
 

@@ -40,6 +40,9 @@ jobs:
         run: npm run build
 
       - name: 🔍 Test app
+        env:
+          PORT: 3000
+          BASE_URL: http://localhost:3000
         run: npm run test
 
       - uses: superfly/flyctl-actions/setup-flyctl@1

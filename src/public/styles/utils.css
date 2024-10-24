@@ -1,7 +1,12 @@
+.error {
+  background-color: red;
+}
+
 .list-style\:none {
   list-style: none !important;
 }
 
-#code-block {
+#access-token-payload,
+#authorization-code-received {
   line-break: anywhere;
 }

@@ -9,8 +9,9 @@
   <p>You are now authenticated as <a href="{{ me }}">{{ me }}</a>.</p>
   <p>Send this <strong>authorization code</strong> to the token endpoint to obtain an access token.</p>
   <pre>
-    <code id="code-block">{{ code }}</code>
+    <code id="authorization-code-received">{{ code }}</code>
   </pre>
   <button id="copy-btn">Copy</button>
+  {% include "form-exchange-code-for-token.njk" %}
 </div>
 {% endblock %}
