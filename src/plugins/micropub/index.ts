@@ -32,6 +32,8 @@ const NAME = '@jackdbd/fastify-micropub'
 // https://developers.google.com/search/docs/crawling-indexing/canonicalization
 
 export interface PluginOptions extends FastifyPluginOptions {
+  authorizationCallbackRoute?: string
+
   /**
    * Micropub clients that want to post to a user's Micropub endpoint need to
    * obtain authorization from the user in order to get an access token.
@@ -39,9 +41,7 @@ export interface PluginOptions extends FastifyPluginOptions {
    * See: https://indieweb.org/obtaining-an-access-token
    * See: https://indieauth.com/setup
    */
-  authorizationEndpoint: string
-
-  authorizationCallbackRoute?: string
+  authorizationEndpoint?: string
 
   baseUrl: string
 
@@ -80,6 +80,7 @@ export interface PluginOptions extends FastifyPluginOptions {
 
 const defaultOptions: Partial<PluginOptions> = {
   authorizationCallbackRoute: '/auth/callback',
+  authorizationEndpoint: 'https://indieauth.com/auth',
   codeChallengeMethod: 'S256',
   codeVerifierLength: 128,
   reportAllAjvErrors: false

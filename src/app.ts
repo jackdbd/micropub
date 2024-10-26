@@ -104,18 +104,17 @@ export function defFastify(config: Config) {
 
   const me = 'https://giacomodebidda.com/'
 
-  const client_id = 'https://indieauth.com'
+  const client_id = base_url
 
-  const authorization_endpoint = 'https://indieauth.com/auth'
-  const token_endpoint = `${base_url}/token`
+  // const authorization_endpoint = 'https://indieauth.com/auth'
   // const token_endpoint = 'https://tokens.indieauth.com/token'
+  const token_endpoint = `${base_url}/token`
   const micropub_endpoint = `${base_url}/micropub`
   const submit_endpoint = `${base_url}/submit`
 
   const issuer = base_url
 
   fastify.register(micropub, {
-    authorizationEndpoint: authorization_endpoint,
     baseUrl: base_url,
     clientId: client_id,
     me,
@@ -127,7 +126,6 @@ export function defFastify(config: Config) {
 
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
-    authorizationEndpoint: authorization_endpoint,
     baseUrl: base_url,
     expiration: '1 hour',
     issuer

@@ -7,7 +7,7 @@ const NAME = '@jackdbd/fastify-indieauth-token-endpoint'
 
 export interface PluginOptions extends FastifyPluginOptions {
   algorithm?: string
-  authorizationEndpoint: string
+  authorizationEndpoint?: string
   baseUrl: string
   expiration?: string
   issuer: string
@@ -15,6 +15,7 @@ export interface PluginOptions extends FastifyPluginOptions {
 
 const defaultOptions: Partial<PluginOptions> = {
   algorithm: 'HS256',
+  authorizationEndpoint: 'https://indieauth.com/auth',
   expiration: '2 hours'
 }
 
