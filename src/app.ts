@@ -24,9 +24,10 @@ const __dirname = path.dirname(__filename)
 // https://github.com/fastify/fastify-secure-session?tab=readme-ov-file#add-typescript-types
 declare module '@fastify/secure-session' {
   interface SessionData {
-    jwt: string
     code_challenge: string
     code_verifier: string
+    jwt: string
+    scope: string
     state: string
   }
 }
@@ -128,15 +129,13 @@ export function defFastify(config: Config) {
 
   fastify.register(authorizationEndpoint, {
     clientId: client_id,
-    endpoint: authorization_endpoint,
     redirectUri: redirect_uri,
     tokenEndpoint: token_endpoint
   })
 
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
-    me,
-    endpoint: token_endpoint,
+    authorizationEndpoint: authorization_endpoint,
     expiration: '1 hour',
     issuer
   })

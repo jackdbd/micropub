@@ -7,7 +7,6 @@ const NAME = '@jackdbd/fastify-indieauth-authorization-endpoint'
 
 export interface PluginOptions extends FastifyPluginOptions {
   clientId: string
-  endpoint: string
   redirectUri: string
   tokenEndpoint: string
 }

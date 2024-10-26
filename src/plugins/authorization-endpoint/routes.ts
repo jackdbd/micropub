@@ -113,7 +113,8 @@ export const defCallback = (config: CallbackConfig) => {
     let payload: string
     try {
       const tokenResponse = await response.json()
-      payload = stringify(tokenResponse, undefined, 2)
+      // payload = stringify(tokenResponse, undefined, 2)
+      payload = stringify(tokenResponse.payload, undefined, 2)
     } catch (err) {
       const error = err as Error
       return reply.view('error.njk', {
@@ -124,6 +125,7 @@ export const defCallback = (config: CallbackConfig) => {
     }
 
     const auth = response.headers.get('Authorization')
+
     if (!auth) {
       reply.code(401)
       return reply.view('error.njk', {

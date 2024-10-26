@@ -4,16 +4,27 @@ import * as token from '../../lib/token.js'
 
 export interface TokenPostConfig {
   algorithm: string
+  authorization_endpoint: string
   expiration: string
   issuer: string
-  me: string
   prefix: string
 }
 
+interface ResponseBodyFromAuth {
+  client_id: string
+  code: string
+  code_verifier: string
+  grant_type: string
+  redirect_uri: string
+}
+
 export const defTokenPost = (config: TokenPostConfig) => {
-  const { algorithm, expiration, issuer, me, prefix } = config
+  const { algorithm, authorization_endpoint, expiration, issuer, prefix } =
+    config
+
   const tokenPost: RouteHandler = async (request, reply) => {
-    // const code_verifier = request.session.get('code_verifier')
+    const { client_id, code, redirect_uri } =
+      request.body as ResponseBodyFromAuth
 
     const { error: token_error, value: secret } = await token.secret({
       alg: algorithm
@@ -21,12 +32,47 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (token_error) {
       return reply.send({
+        ok: false,
         error: `Could not generate secret: ${token_error.message}`
       })
     }
 
-    // TODO: how do I get these?
-    const scope = 'create update'
+    ////////////////////////////////////////////////////////////////////////////
+    // https://indieweb.org/obtaining-an-access-token#Verifying_the_authorization_code
+    const authResponse = await fetch(authorization_endpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ client_id, code, redirect_uri })
+    })
+
+    if (!authResponse.ok) {
+      return reply.view('error.njk', {
+        message: `could not verify authorization code`,
+        description: 'Auth error page',
+        title: 'Auth error'
+      })
+    }
+
+    const auth_response = await authResponse.json()
+
+    const { me, scope } = auth_response
+    request.session.set('scope', scope)
+    request.log.debug(
+      `${prefix} verified authorization code and stored scope in secure session`
+    )
+    ////////////////////////////////////////////////////////////////////////////
+
+    if (!scope) {
+      return reply.send({ ok: false, error: `scope not found in session` })
+      // return reply.view('error.njk', {
+      //   message: `scope not found in session`,
+      //   description: 'Token error page',
+      //   title: 'Token error'
+      // })
+    }
 
     const payload = { me, scope }
 
@@ -40,6 +86,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (sign_error) {
       return reply.send({
+        ok: false,
         error: `Could not sign token: ${sign_error.message}`
       })
     }
@@ -53,6 +100,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (verify_error) {
       return reply.send({
+        ok: false,
         error: `Could not verify token: ${verify_error.message}`
       })
     }
@@ -84,12 +132,11 @@ export const defTokenPost = (config: TokenPostConfig) => {
 }
 
 export interface TokenGetConfig {
-  me: string
   prefix: string
 }
 
 export const defTokenGet = (config: TokenGetConfig) => {
-  const { me, prefix } = config
+  const { prefix } = config
 
   const tokenGet: RouteHandler = async (request, reply) => {
     const jwt = request.session.get('jwt')
@@ -112,7 +159,6 @@ export const defTokenGet = (config: TokenGetConfig) => {
     return reply.view('token.njk', {
       description: 'Token page',
       title: 'Token',
-      me,
       payload: stringify(payload, undefined, 2)
     })
   }
