@@ -8,6 +8,7 @@ const NAME = '@jackdbd/fastify-indieauth-token-endpoint'
 export interface PluginOptions extends FastifyPluginOptions {
   algorithm?: string
   authorizationEndpoint: string
+  baseUrl: string
   expiration?: string
   issuer: string
 }
@@ -47,10 +48,10 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
   // }
   // fastify.log.debug(`${NAME} validated its configuration`)
 
-  const { issuer } = config
+  const { baseUrl, issuer } = config
   const prefix = NAME
 
-  fastify.get('/token', defTokenGet({ prefix }))
+  fastify.get('/token', defTokenGet({ base_url: baseUrl, prefix }))
   fastify.log.debug(`${NAME} route registered: GET /token`)
 
   // indiekit for `issuer` uses `application.url`
@@ -59,6 +60,7 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
     defTokenPost({
       algorithm: config.algorithm,
       authorization_endpoint: config.authorizationEndpoint,
+      base_url: baseUrl,
       expiration: config.expiration,
       issuer,
       prefix

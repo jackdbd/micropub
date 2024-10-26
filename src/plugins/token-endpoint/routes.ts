@@ -5,6 +5,7 @@ import * as token from '../../lib/token.js'
 export interface TokenPostConfig {
   algorithm: string
   authorization_endpoint: string
+  base_url: string
   expiration: string
   issuer: string
   prefix: string
@@ -19,8 +20,14 @@ interface ResponseBodyFromAuth {
 }
 
 export const defTokenPost = (config: TokenPostConfig) => {
-  const { algorithm, authorization_endpoint, expiration, issuer, prefix } =
-    config
+  const {
+    algorithm,
+    authorization_endpoint,
+    base_url,
+    expiration,
+    issuer,
+    prefix
+  } = config
 
   const tokenPost: RouteHandler = async (request, reply) => {
     const { client_id, code, redirect_uri } =
@@ -50,6 +57,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (!authResponse.ok) {
       return reply.view('error.njk', {
+        base_url,
         message: `could not verify authorization code`,
         description: 'Auth error page',
         title: 'Auth error'
@@ -63,15 +71,12 @@ export const defTokenPost = (config: TokenPostConfig) => {
     request.log.debug(
       `${prefix} verified authorization code and stored scope in secure session`
     )
-    ////////////////////////////////////////////////////////////////////////////
 
     if (!scope) {
-      return reply.send({ ok: false, error: `scope not found in session` })
-      // return reply.view('error.njk', {
-      //   message: `scope not found in session`,
-      //   description: 'Token error page',
-      //   title: 'Token error'
-      // })
+      return reply.send({
+        ok: false,
+        error: `scope not found in authorization`
+      })
     }
 
     const payload = { me, scope }
@@ -132,19 +137,21 @@ export const defTokenPost = (config: TokenPostConfig) => {
 }
 
 export interface TokenGetConfig {
+  base_url: string
   prefix: string
 }
 
 export const defTokenGet = (config: TokenGetConfig) => {
-  const { prefix } = config
+  const { base_url, prefix } = config
 
   const tokenGet: RouteHandler = async (request, reply) => {
     const jwt = request.session.get('jwt')
 
     if (!jwt) {
       return reply.view('error.njk', {
-        message: `jwt not found in session`,
+        base_url,
         description: 'Token error page',
+        message: `jwt not found in session`,
         title: 'Token error'
       })
     }
@@ -157,9 +164,10 @@ export const defTokenGet = (config: TokenGetConfig) => {
     request.log.debug(`${prefix} decoded payload from jwt (access token)`)
 
     return reply.view('token.njk', {
+      base_url,
       description: 'Token page',
-      title: 'Token',
-      payload: stringify(payload, undefined, 2)
+      payload: stringify(payload, undefined, 2),
+      title: 'Token'
     })
   }
 

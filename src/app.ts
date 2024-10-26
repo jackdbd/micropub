@@ -12,7 +12,6 @@ import type { Environment } from 'nunjucks'
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
 import micropub from './plugins/micropub/index.js'
-import authorizationEndpoint from './plugins/authorization-endpoint/index.js'
 import revocationEndpoint from './plugins/revocation-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
@@ -104,9 +103,8 @@ export function defFastify(config: Config) {
   }
 
   const me = 'https://giacomodebidda.com/'
+
   const client_id = 'https://indieauth.com'
-  // const redirectUri = 'https://indieauth.com/success'
-  const redirect_uri = `${base_url}/callback`
 
   const authorization_endpoint = 'https://indieauth.com/auth'
   const token_endpoint = `${base_url}/token`
@@ -118,24 +116,19 @@ export function defFastify(config: Config) {
 
   fastify.register(micropub, {
     authorizationEndpoint: authorization_endpoint,
+    baseUrl: base_url,
     clientId: client_id,
     me,
     micropubEndpoint: micropub_endpoint,
-    redirectUri: redirect_uri,
     reportAllAjvErrors: report_all_ajv_errors,
     submitEndpoint: submit_endpoint,
-    tokenEndpoint: token_endpoint
-  })
-
-  fastify.register(authorizationEndpoint, {
-    clientId: client_id,
-    redirectUri: redirect_uri,
     tokenEndpoint: token_endpoint
   })
 
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
     authorizationEndpoint: authorization_endpoint,
+    baseUrl: base_url,
     expiration: '1 hour',
     issuer
   })

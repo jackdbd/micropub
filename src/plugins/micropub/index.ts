@@ -17,6 +17,7 @@ import type { AccessTokenPayload } from '../interfaces.js'
 import { micropub_get_request, micropub_post_request } from './schemas.js'
 import { compileSchemasAndGetValidateFunctions } from './utils.js'
 import {
+  defAuthCallback,
   defEditor,
   defLogin,
   defSubmit,
@@ -40,6 +41,10 @@ export interface PluginOptions extends FastifyPluginOptions {
    */
   authorizationEndpoint: string
 
+  authorizationCallbackRoute?: string
+
+  baseUrl: string
+
   clientId: string
 
   codeChallengeMethod?: string
@@ -54,8 +59,6 @@ export interface PluginOptions extends FastifyPluginOptions {
   me: string
 
   micropubEndpoint: string
-
-  redirectUri: string
 
   /**
    * https://ajv.js.org/security.html#security-risks-of-trusted-schemas
@@ -76,12 +79,20 @@ export interface PluginOptions extends FastifyPluginOptions {
 }
 
 const defaultOptions: Partial<PluginOptions> = {
+  authorizationCallbackRoute: '/auth/callback',
   codeChallengeMethod: 'S256',
   codeVerifierLength: 128,
   reportAllAjvErrors: false
 }
 
-const defValidateAccessToken = (config: Required<PluginOptions>) => {
+interface ValidateAccessTokenConfig {
+  base_url: string
+  me: string
+}
+
+const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
+  const { base_url, me } = config
+
   const validateAccessToken: onRequestHookHandler = (request, reply, done) => {
     request.log.debug(
       `${NAME} validating access token from Authorization header`
@@ -109,8 +120,9 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
       reply.code(401)
       // return reply.send({ ok: false, message: `missing Authorization header` })
       return reply.view('error.njk', {
-        message: `missing Authorization header`,
+        base_url,
         description: 'Auth error page',
+        message: `missing Authorization header`,
         title: 'Auth error'
       })
     }
@@ -152,11 +164,11 @@ const defValidateAccessToken = (config: Required<PluginOptions>) => {
     const scopes = claims.scope.split(' ')
     request.log.info(`${NAME} access token scopes: ${scopes.join(' ')}`)
 
-    if (claims.me !== config.me) {
+    if (claims.me !== me) {
       reply.code(403)
       return reply.send({
         ok: false,
-        message: `received access token whose 'me' claim is not ${config.me}`
+        message: `received access token whose 'me' claim is not ${me}`
       })
     }
 
@@ -234,7 +246,25 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
 
   fastify.log.debug(`${NAME} validated its configuration`)
 
-  const validateAccessToken = defValidateAccessToken(config)
+  const {
+    authorizationCallbackRoute: auth_callback,
+    authorizationEndpoint: authorization_endpoint,
+    baseUrl: base_url,
+    clientId: client_id,
+    me,
+    micropubEndpoint: micropub_endpoint,
+    tokenEndpoint: token_endpoint
+  } = config
+
+  const redirect_uri = `${base_url}${auth_callback}`
+
+  const validateAccessToken = defValidateAccessToken({ base_url, me })
+
+  fastify.get(
+    auth_callback,
+    defAuthCallback({ client_id, prefix: NAME, redirect_uri, token_endpoint })
+  )
+  fastify.log.debug(`${NAME} route registered: GET ${auth_callback}`)
 
   fastify.get('/editor', defEditor({ submit_endpoint: config.submitEndpoint }))
   fastify.log.debug(`${NAME} route registered: GET /editor`)
@@ -251,13 +281,13 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
   // https://github.com/aaronpk/indielogin.com/blob/35c8aa0ae627517d9c9a9578b901740736ded428/.env.example#L17
   const login = defLogin({
-    authorization_endpoint: config.authorizationEndpoint,
-    client_id: config.clientId,
+    authorization_endpoint,
+    client_id,
     code_challenge_method: config.codeChallengeMethod,
     len: config.codeVerifierLength,
-    me: config.me,
+    me,
     prefix: NAME,
-    redirect_uri: config.redirectUri
+    redirect_uri
   })
 
   fastify.get('/login', login)
@@ -310,6 +340,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       // })
 
       return reply.view('micropub.njk', {
+        base_url,
         description: 'Micropub page',
         title: 'Micropub'
       })
@@ -401,12 +432,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   fastify.get('/post-created', postCreated)
   fastify.log.debug(`${NAME} route registered: GET /post-created`)
 
-  const submit = defSubmit({
-    micropub_endpoint: config.micropubEndpoint,
-    prefix: NAME
-  })
-
-  fastify.post('/submit', submit)
+  fastify.post('/submit', defSubmit({ micropub_endpoint, prefix: NAME }))
   fastify.log.debug(`${NAME} route registered: POST /submit`)
 
   done()
