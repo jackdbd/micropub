@@ -5,6 +5,7 @@
   pkgs,
   ...
 }: let
+  micropub = builtins.fromJSON (builtins.readFile /run/secrets/micropub);
   fly_micropub = builtins.fromJSON (builtins.readFile /run/secrets/fly/micropub);
 in {
   enterShell = ''
@@ -23,7 +24,8 @@ in {
     LOG_LEVEL = "info";
     PORT = "3001";
     BASE_URL = "http://localhost:${config.env.PORT}";
-    # SECURE_SESSION_KEY = builtins.readFile secrets/secure-session-key;
+    SECURE_SESSION_KEY_ONE = micropub.session_key_one;
+    SECURE_SESSION_KEY_TWO = micropub.session_key_two;
     TELEGRAM = builtins.readFile /run/secrets/telegram/jackdbd_github_bot;
   };
 
@@ -81,7 +83,8 @@ in {
     '';
     fly-deploy.exec = "fly deploy --ha=false --debug --verbose";
     fly-secrets-set.exec = ''
-      fly secrets set SECURE_SESSION_KEY="$(cat ./secrets/secure-session-key)"
+      fly secrets set SECURE_SESSION_KEY_ONE="${config.env.SECURE_SESSION_KEY_ONE}"
+      fly secrets set SECURE_SESSION_KEY_TWO="${config.env.SECURE_SESSION_KEY_TWO}"
     '';
     versions.exec = ''
       echo "=== Versions ==="

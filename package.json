@@ -24,7 +24,7 @@
   "license": "MIT",
   "main": "dist/server.js",
   "scripts": {
-    "build": "npm run compile:ts && npm run copy:njk && npm run copy:static && npm run secure-session-secret",
+    "build": "npm run compile:ts && npm run copy:njk && npm run copy:static",
     "compile:njk": "node ./scripts/compile-templates.js",
     "compile:ts": "tsc -p tsconfig.json",
     "copy:njk": "cp -r src/templates dist/templates",
@@ -35,7 +35,7 @@
     "nuke": "rm -rf node_modules/ package-lock.json",
     "script:demo": "tsm ./scripts/demo.ts",
     "script:mf2": "tsm ./scripts/mf2.ts",
-    "secure-session-secret": "npx @fastify/secure-session > secrets/secure-session-key",
+    "secure-session-keys": "node scripts/secure-session-keys.js",
     "start": "NODE_ENV=production node ./dist/server.js",
     "test": "c8 node --test --test-reporter=spec ./dist/test.js",
     "watch": "find ./src -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run dev"
