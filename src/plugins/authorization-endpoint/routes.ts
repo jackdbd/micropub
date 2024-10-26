@@ -1,8 +1,5 @@
 import stringify from 'fast-safe-stringify'
 import type { RouteHandler } from 'fastify'
-import { type Session } from '@fastify/secure-session'
-// import type { AccessTokenPayload } from '../interfaces.js'
-import type { SecureSessionData } from '../interfaces.js'
 
 export interface CallbackConfig {
   client_id: string
@@ -136,9 +133,7 @@ export const defCallback = (config: CallbackConfig) => {
       })
     }
 
-    const session = request.session as Session<SecureSessionData>
-
-    session.set('jwt', auth)
+    request.session.set('jwt', auth)
     request.log.debug(`${prefix} set jwt in secure session`)
     // TODO: redirect to /editor?
 

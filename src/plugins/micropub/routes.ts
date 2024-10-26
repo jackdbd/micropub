@@ -1,8 +1,6 @@
 import stringify from 'fast-safe-stringify'
 import type { RouteHandler } from 'fastify'
-import { type Session } from '@fastify/secure-session'
 import { codeChallenge, codeVerifier } from './utils.js'
-import type { SecureSessionData } from '../interfaces.js'
 
 export interface SubmitConfig {
   micropub_endpoint: string
@@ -13,8 +11,7 @@ export const defSubmit = (config: SubmitConfig) => {
   const { micropub_endpoint, prefix } = config
 
   const submit: RouteHandler = async (request, reply) => {
-    const session = request.session as Session<SecureSessionData>
-    const jwt = session.get('jwt')
+    const jwt = request.session.get('jwt')
 
     if (!jwt) {
       request.log.debug(
@@ -40,7 +37,6 @@ export const defSubmit = (config: SubmitConfig) => {
       request.log.debug(`${prefix} redirect to /error`)
       const error = err as Error
       request.log.error(error)
-      //   return reply.status(500).send({ error: 'Failed to fetch data' })
       return reply.redirect(`/error?message=${error.message}`)
     }
   }
@@ -56,20 +52,29 @@ export const postCreated: RouteHandler = (request, reply) => {
   })
 }
 
-export const editor: RouteHandler = (request, reply) => {
-  const session = request.session as Session<SecureSessionData>
+export interface EditorConfig {
+  submit_endpoint: string
+}
 
-  const jwt = session.get('jwt')
-  if (!jwt) {
-    request.log.debug(`redirect to /login since jwt is not in secure session`)
-    return reply.redirect('/login')
+export const defEditor = (config: EditorConfig) => {
+  const { submit_endpoint } = config
+
+  const editor: RouteHandler = (request, reply) => {
+    const jwt = request.session.get('jwt')
+
+    if (!jwt) {
+      request.log.debug(`redirect to /login since jwt is not in secure session`)
+      return reply.redirect('/login')
+    }
+
+    return reply.view('editor.njk', {
+      description: 'Editor page',
+      submit_endpoint,
+      title: 'Editor'
+    })
   }
 
-  return reply.view('editor.njk', {
-    description: 'Editor page',
-    micropub_endpoint: process.env.BASE_URL! + '/submit',
-    title: 'Editor'
-  })
+  return editor
 }
 
 export interface LoginConfig {
@@ -94,17 +99,15 @@ export const defLogin = (config: LoginConfig) => {
   } = config
 
   const login: RouteHandler = (request, reply) => {
-    const session = request.session as Session<SecureSessionData>
-
     const state = reply.generateCsrf()
-    session.set('state', state)
+    request.session.set('state', state)
     request.log.debug(
       `${prefix} generated state (CSRF token) and set it in secure session`
     )
 
     const code_verifier = codeVerifier({ len })
     request.log.debug(`${prefix} generated code_verifier of ${len} characters`)
-    session.set('code_verifier', code_verifier)
+    request.session.set('code_verifier', code_verifier)
     request.log.debug(
       `${prefix} generated code_verifier and set it in secure session`
     )
@@ -114,7 +117,7 @@ export const defLogin = (config: LoginConfig) => {
       code_verifier
     })
 
-    session.set('code_challenge', code_challenge)
+    request.session.set('code_challenge', code_challenge)
     request.log.debug(
       `${prefix} generated ${code_challenge_method} code_challenge (PKCE) and set it in secure session`
     )

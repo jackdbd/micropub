@@ -2,8 +2,19 @@ import test from 'node:test'
 import assert from 'node:assert'
 import { defFastify } from './app.js'
 
+const defTestApp = () => {
+  return defFastify({
+    base_url: `http://localhost:${process.env.PORT}`,
+    logger: { level: 'silent' },
+    report_all_ajv_errors: true,
+    use_development_error_handler: false,
+    use_secure_flag_for_session_cookie: false
+  })
+}
+
 test('basic server', async (t) => {
-  const app = await defFastify()
+  const app = defTestApp()
+
   t.after(async () => {
     await app.close()
   })
@@ -18,7 +29,8 @@ test('basic server', async (t) => {
 })
 
 test('handles errors', async (t) => {
-  const app = await defFastify()
+  const app = defTestApp()
+
   t.after(async () => {
     await app.close()
   })
@@ -36,7 +48,8 @@ test('handles errors', async (t) => {
 })
 
 test('handles notfound', async (t) => {
-  const app = await defFastify()
+  const app = defTestApp()
+
   t.after(async () => {
     await app.close()
   })

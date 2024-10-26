@@ -1,10 +1,3 @@
-export interface SecureSessionData {
-  jwt: string
-  code_challenge: string
-  code_verifier: string
-  state: string
-}
-
 export interface AccessTokenPayload {
   me: string
   // issued_by: string

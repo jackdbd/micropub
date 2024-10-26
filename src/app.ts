@@ -1,4 +1,3 @@
-import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
@@ -7,10 +6,11 @@ import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import fastifyView from '@fastify/view'
 import formbody from '@fastify/formbody'
+import { PinoLoggerOptions } from 'fastify/types/logger.js'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 import youch from './plugins/youch/index.js'
-import productionErrorHandler from './plugins/production-error-handler/index.js'
+import errorHandler from './plugins/error-handler/index.js'
 import micropub from './plugins/micropub/index.js'
 import authorizationEndpoint from './plugins/authorization-endpoint/index.js'
 import revocationEndpoint from './plugins/revocation-endpoint/index.js'
@@ -21,39 +21,67 @@ import { foo } from './nunjucks/globals.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export type Level = 'debug' | 'info' | 'warn' | 'error'
+// https://github.com/fastify/fastify-secure-session?tab=readme-ov-file#add-typescript-types
+declare module '@fastify/secure-session' {
+  interface SessionData {
+    jwt: string
+    code_challenge: string
+    code_verifier: string
+    state: string
+  }
+}
 
-export interface Options {
-  logger?: { level?: Level; transport?: any }
+export interface Config {
+  base_url: string
+  logger: PinoLoggerOptions
+  report_all_ajv_errors: boolean
+  use_development_error_handler: boolean
+  use_secure_flag_for_session_cookie: boolean
 }
 
 /**
  * Instantiates the Fastify app.
  */
-export async function defFastify(options?: Options) {
-  const fastify = Fastify(options)
+export function defFastify(config: Config) {
+  const {
+    base_url,
+    logger,
+    report_all_ajv_errors,
+    use_development_error_handler,
+    use_secure_flag_for_session_cookie
+  } = config
+
+  const fastify = Fastify({ logger })
 
   // plugin to parse x-www-form-urlencoded bodies
   // https://github.com/fastify/fastify-formbody
   fastify.register(formbody)
 
-  const ssk = path.join(__dirname, '..', 'secrets', 'secure-session-key')
   const sessionName = 'session'
   const expiry = 60 * 60 // in seconds
 
+  const key_one_buf = process.env.SECURE_SESSION_KEY_ONE
+  if (!key_one_buf) {
+    throw new Error('SECURE_SESSION_KEY_ONE not set')
+  }
+
+  const key_two_buf = process.env.SECURE_SESSION_KEY_TWO
+  if (!key_two_buf) {
+    throw new Error('SECURE_SESSION_KEY_TWO not set')
+  }
+
   fastify.register(secureSession, {
-    key: fs.readFileSync(ssk),
+    key: [Buffer.from(key_one_buf, 'hex'), Buffer.from(key_two_buf, 'hex')],
     sessionName,
     expiry,
     cookie: {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production'
+      secure: use_secure_flag_for_session_cookie
     }
   })
   fastify.log.debug(
     {
-      secret: ssk,
       sessionName,
       expiry
     },
@@ -68,27 +96,34 @@ export async function defFastify(options?: Options) {
     root: path.join(__dirname, 'public')
   })
 
-  if (process.env.NODE_ENV === 'development') {
+  if (use_development_error_handler) {
     fastify.register(youch, { preLines: 5 })
   } else {
-    fastify.register(productionErrorHandler)
+    fastify.register(errorHandler)
   }
 
   const me = 'https://giacomodebidda.com/'
   const client_id = 'https://indieauth.com'
   // const redirectUri = 'https://indieauth.com/success'
-  const redirect_uri = process.env.BASE_URL! + '/callback'
+  const redirect_uri = `${base_url}/callback`
+
   const authorization_endpoint = 'https://indieauth.com/auth'
-  const token_endpoint = process.env.BASE_URL! + '/token'
+  const token_endpoint = `${base_url}/token`
   // const token_endpoint = 'https://tokens.indieauth.com/token'
-  const issuer = process.env.BASE_URL!
+  const micropub_endpoint = `${base_url}/micropub`
+  const submit_endpoint = `${base_url}/submit`
+
+  const issuer = base_url
 
   fastify.register(micropub, {
     authorizationEndpoint: authorization_endpoint,
     clientId: client_id,
-    tokenEndpoint: token_endpoint,
+    me,
+    micropubEndpoint: micropub_endpoint,
     redirectUri: redirect_uri,
-    me
+    reportAllAjvErrors: report_all_ajv_errors,
+    submitEndpoint: submit_endpoint,
+    tokenEndpoint: token_endpoint
   })
 
   fastify.register(authorizationEndpoint, {
@@ -124,7 +159,7 @@ export async function defFastify(options?: Options) {
     return reply.view('home.njk', {
       title: 'Home page',
       description: 'Home page',
-      name: 'Giacomo'
+      name: 'World'
     })
   })
 

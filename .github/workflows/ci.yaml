@@ -42,7 +42,8 @@ jobs:
       - name: 🔍 Test app
         env:
           PORT: 3000
-          BASE_URL: http://localhost:3000
+          SECURE_SESSION_KEY_ONE: ${{ secrets.SECURE_SESSION_KEY_ONE }}
+          SECURE_SESSION_KEY_TWO: ${{ secrets.SECURE_SESSION_KEY_TWO }}
         run: npm run test
 
       - uses: superfly/flyctl-actions/setup-flyctl@1
@@ -65,11 +66,15 @@ jobs:
           to: ${{ fromJSON(secrets.TELEGRAM).chat_id }}
           token: ${{ fromJSON(secrets.TELEGRAM).token }}
           format: html
-          disable_web_page_preview: false
+          disable_web_page_preview: true
           message: |
             <b>🚀 Micropub deployed to Fly</b>
 
             <a href="https://micropub.fly.dev/">https://micropub.fly.dev/</a>
+
+            <a href="https://fly.io/apps/micropub/monitoring">Live Logs</a>
+
+            <a href="https://fly-metrics.net/d/fly-logs/fly-logs?orgId=104142&var-app=micropub">Grafana</a>
 
             Repository: <a href="${{ github.event.repository.html_url }}">${{ github.event.repository.full_name }}</a>
 

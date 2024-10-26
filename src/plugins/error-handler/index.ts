@@ -2,16 +2,14 @@ import Fastify from 'fastify'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 
-// const EMOJI = '🔍'
-const NAME = '@jackdbd/fastify-production-error-handler'
-// const PREFIX = `[${EMOJI} ${NAME}]`
+const NAME = '@jackdbd/fastify-error-handler'
 
 export interface PluginOptions extends FastifyPluginOptions {
   // Not defined at the moment. Used just to show how to define plugin options.
   verbose?: boolean
 }
 
-const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
+const errorHandler: FastifyPluginCallback<PluginOptions> = (
   fastify,
   options,
   done
@@ -25,6 +23,8 @@ const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
     const status = error.statusCode || request.raw.statusCode || 500
 
     request.log.error(error.message)
+
+    // TODO: send error message to Telegram chat
 
     if (error instanceof Fastify.errorCodes.FST_ERR_BAD_STATUS_CODE) {
       reply.status(status).send({
@@ -40,7 +40,7 @@ const fastifyProductionErrorHandler: FastifyPluginCallback<PluginOptions> = (
   done()
 }
 
-export default fp<PluginOptions>(fastifyProductionErrorHandler, {
-  fastify: '>=4.0.0 <6.0.0',
+export default fp<PluginOptions>(errorHandler, {
+  fastify: '5.x',
   name: NAME
 })

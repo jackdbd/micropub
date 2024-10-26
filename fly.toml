@@ -13,7 +13,9 @@ kill_timeout = 180
   strategy = 'immediate'
 
 [env]
+  BASE_URL= "https://micropub.fly.dev"
   LOG_LEVEL = "info"
+  NODE_ENV = "production"
 
 [http_service]
   internal_port = 3000

@@ -6,21 +6,21 @@
 
 {% block content %}
 <div>
-  <form id="note-form" action="{{ micropub_endpoint }}" method="post">
+  <form id="note-form" action="{{ submit_endpoint }}" method="post">
     <label for="note">Note:</label>
     <textarea id="note" type="text" name="content" rows="10"></textarea>
     <p><button type="submit">Create note</button></p>
     <input type="hidden" name="h" value="entry" />
   </form>
 
-  <form id="like-of-form" action="{{ micropub_endpoint }}" method="post">
+  <form id="like-of-form" action="{{ submit_endpoint }}" method="post">
     <label for="like-of">Like of:</label>
     <input id="like-of" type="url" name="like-of" placeholder="URL you like" />
     <p><button type="submit">Like</button></p>
     <input type="hidden" name="h" value="entry" />
   </form>
 
-  <form id="repost-of-form" action="{{ micropub_endpoint }}" method="post">
+  <form id="repost-of-form" action="{{ submit_endpoint }}" method="post">
     <label for="repost-of">Repost of:</label>
     <input id="repost-of" type="url" name="repost-of" placeholder="URL you want to repost" />
     <p><button type="submit">Repost</button></p>

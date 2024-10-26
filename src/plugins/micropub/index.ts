@@ -16,12 +16,13 @@ import type {
 import type { AccessTokenPayload } from '../interfaces.js'
 import { micropub_get_request, micropub_post_request } from './schemas.js'
 import { compileSchemasAndGetValidateFunctions } from './utils.js'
-import { defLogin, defSubmit, editor, logout, postCreated } from './routes.js'
-
-export interface SecureSessionData {
-  jwt: string
-  state: string
-}
+import {
+  defEditor,
+  defLogin,
+  defSubmit,
+  logout,
+  postCreated
+} from './routes.js'
 
 const NAME = '@jackdbd/fastify-micropub'
 
@@ -37,9 +38,9 @@ export interface PluginOptions extends FastifyPluginOptions {
    * See: https://indieweb.org/obtaining-an-access-token
    * See: https://indieauth.com/setup
    */
-  authorizationEndpoint?: string
+  authorizationEndpoint: string
 
-  clientId?: string
+  clientId: string
 
   codeChallengeMethod?: string
 
@@ -50,9 +51,18 @@ export interface PluginOptions extends FastifyPluginOptions {
    *
    * See: https://indieweb.org/Web_sign-in
    */
-  me?: string
+  me: string
 
-  redirectUri?: string
+  micropubEndpoint: string
+
+  redirectUri: string
+
+  /**
+   * https://ajv.js.org/security.html#security-risks-of-trusted-schemas
+   */
+  reportAllAjvErrors?: boolean
+
+  submitEndpoint: string
 
   /**
    * Micropub clients will be able to obtain an access token from this endpoint
@@ -62,14 +72,13 @@ export interface PluginOptions extends FastifyPluginOptions {
    * See: https://indieweb.org/token-endpoint
    * See: https://tokens.indieauth.com/
    */
-  tokenEndpoint?: string
+  tokenEndpoint: string
 }
 
 const defaultOptions: Partial<PluginOptions> = {
-  authorizationEndpoint: 'https://indieauth.com/auth',
   codeChallengeMethod: 'S256',
   codeVerifierLength: 128,
-  tokenEndpoint: 'https://tokens.indieauth.com/token'
+  reportAllAjvErrors: false
 }
 
 const defValidateAccessToken = (config: Required<PluginOptions>) => {
@@ -205,7 +214,9 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     validatePluginOptions,
     validateMicropubGetRequest,
     validateMicropubPostRequest
-  } = compileSchemasAndGetValidateFunctions()
+  } = compileSchemasAndGetValidateFunctions({
+    allErrors: config.reportAllAjvErrors
+  })
   fastify.log.debug(
     `${NAME} compiled JSON schemas and created validate functions`
   )
@@ -225,7 +236,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
 
   const validateAccessToken = defValidateAccessToken(config)
 
-  fastify.get('/editor', editor)
+  fastify.get('/editor', defEditor({ submit_endpoint: config.submitEndpoint }))
   fastify.log.debug(`${NAME} route registered: GET /editor`)
 
   // authorization_endpoint: 'https://indielogin.com/auth',
@@ -391,7 +402,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   fastify.log.debug(`${NAME} route registered: GET /post-created`)
 
   const submit = defSubmit({
-    micropub_endpoint: process.env.BASE_URL! + '/micropub',
+    micropub_endpoint: config.micropubEndpoint,
     prefix: NAME
   })
 

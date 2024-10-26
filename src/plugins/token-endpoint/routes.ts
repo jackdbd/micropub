@@ -1,8 +1,6 @@
 import type { RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
-// import { type Session } from '@fastify/secure-session'
 import * as token from '../../lib/token.js'
-// import type { SecureSessionData } from '../interfaces.js'
 
 export interface TokenPostConfig {
   algorithm: string
@@ -15,19 +13,12 @@ export interface TokenPostConfig {
 export const defTokenPost = (config: TokenPostConfig) => {
   const { algorithm, expiration, issuer, me, prefix } = config
   const tokenPost: RouteHandler = async (request, reply) => {
-    // const session = request.session as Session<SecureSessionData>
-
-    // const code_verifier = session.get('code_verifier')
-
-    // const body = request.body
-
-    // https://github.com/jackdbd/indiekit/blob/840a9669bf5834d7a63365611b5e515c536684e5/packages/endpoint-auth/lib/controllers/token.js
-    // https://github.com/jackdbd/indiekit/blob/840a9669bf5834d7a63365611b5e515c536684e5/packages/indiekit/lib/indieauth.js#L52
-    // const alg = 'HS256'
+    // const code_verifier = request.session.get('code_verifier')
 
     const { error: token_error, value: secret } = await token.secret({
       alg: algorithm
     })
+
     if (token_error) {
       return reply.send({
         error: `Could not generate secret: ${token_error.message}`

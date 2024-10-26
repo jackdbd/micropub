@@ -26,8 +26,10 @@ RUN npm install --location=global typescript@5.6.3 && \
     npm install --save-dev @types/node@22.7.7
 
 COPY src ./src
+COPY src/templates ./dist/templates
+COPY src/public ./dist/public
 
-# this is for troubleshooting TypeScript configuration
+# This is for troubleshooting TypeScript configuration
 # RUN echo "Compiling using TypeScript $(tsc --version): typeRoots is ${TYPE_ROOTS}"
 # RUN tsc --project tsconfig.json --typeRoots ${TYPE_ROOTS} --showConfig
 

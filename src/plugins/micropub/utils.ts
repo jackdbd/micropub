@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-// @ts-ignore-next-line
 import seedrandom from 'seedrandom'
 import {
   geo_uri,
@@ -19,13 +18,24 @@ import {
   plugin_options
 } from './schemas.js'
 
-// Do NOT use allErrors in production
-// https://ajv.js.org/security.html#security-risks-of-trusted-schemas
-// We need these extra formats to fully support fluent-json-schema
-// https://github.com/ajv-validator/ajv-formats#formats
-const ajv = addFormats(
-  new Ajv({ allErrors: process.env.NODE_ENV === 'production' ? false : true }),
-  [
+export interface Config {
+  allErrors: boolean
+}
+
+/**
+ * Compile all schemas and return validate functions.
+ *
+ * The order of the schemas is important, because some schemas reference other.
+ */
+export const compileSchemasAndGetValidateFunctions = (config: Config) => {
+  // Do NOT use allErrors in production
+  // https://ajv.js.org/security.html#security-risks-of-trusted-schemas
+  // We need these extra formats to fully support fluent-json-schema
+  // https://github.com/ajv-validator/ajv-formats#formats
+  const { allErrors } = config
+
+  // TODO: can I get an existing Ajv instance somehow? Should I?
+  const ajv = addFormats(new Ajv({ allErrors }), [
     'date',
     'date-time',
     'email',
@@ -40,15 +50,8 @@ const ajv = addFormats(
     'uri-reference',
     'uri-template',
     'uuid'
-  ]
-)
+  ])
 
-/**
- * Compile all schemas and return validate functions.
- *
- * The order of the schemas is important, because some schemas reference other.
- */
-export const compileSchemasAndGetValidateFunctions = () => {
   const validateGeoURI = ajv.compile(geo_uri)
   const validateH_geo = ajv.compile(h_geo)
   const validateH_adr = ajv.compile(h_adr)

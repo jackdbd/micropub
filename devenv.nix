@@ -18,12 +18,10 @@ in {
   '';
 
   env = {
-    # ACCESS_TOKEN = "todo";
-    # DEBUG = "*";
+    DEBUG = "micropub:*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
-    LOG_LEVEL = "info";
+    LOG_LEVEL = "debug";
     PORT = "3001";
-    BASE_URL = "http://localhost:${config.env.PORT}";
     SECURE_SESSION_KEY_ONE = micropub.session_key_one;
     SECURE_SESSION_KEY_TWO = micropub.session_key_two;
     TELEGRAM = builtins.readFile /run/secrets/telegram/jackdbd_github_bot;
@@ -66,10 +64,12 @@ in {
     '';
     container-run.exec = ''
       docker run \
-        --env DEBUG="micropub:*" \
+        --env DEBUG="*" \
         --env LOG_LEVEL=debug \
         --env NODE_ENV=development \
         --env PORT=${config.env.PORT} \
+        --env SECURE_SESSION_KEY_ONE=${micropub.session_key_one} \
+        --env SECURE_SESSION_KEY_TWO=${micropub.session_key_two} \
         --network host \
         --rm -i -t \
         micropub:latest
@@ -83,8 +83,8 @@ in {
     '';
     fly-deploy.exec = "fly deploy --ha=false --debug --verbose";
     fly-secrets-set.exec = ''
-      fly secrets set SECURE_SESSION_KEY_ONE="${config.env.SECURE_SESSION_KEY_ONE}"
-      fly secrets set SECURE_SESSION_KEY_TWO="${config.env.SECURE_SESSION_KEY_TWO}"
+      fly secrets set SECURE_SESSION_KEY_ONE="${micropub.session_key_one}"
+      fly secrets set SECURE_SESSION_KEY_TWO="${micropub.session_key_two}"
     '';
     versions.exec = ''
       echo "=== Versions ==="
