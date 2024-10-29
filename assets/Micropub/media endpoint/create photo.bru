@@ -1,11 +1,11 @@
 meta {
   name: create photo
   type: http
-  seq: 7
+  seq: 1
 }
 
 post {
-  url: {{base_url}}/micropub
+  url: {{base_url}}/media
   body: multipartForm
   auth: bearer
 }
@@ -13,8 +13,8 @@ post {
 headers {
   Content-Disposition: form-data; name="h"
   Content-Disposition: form-data; name="content"
-  Content-Disposition: form-data; name="photo"; filename="aaronpk.png"
-  Content-Type: image/png
+  Content-Disposition: form-data; name="photo"; filename="henohenomoheji.jpeg"
+  Content-Type: image/jpeg
   Content-Transfer-Encoding: binary
 }
 
