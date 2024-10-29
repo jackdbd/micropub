@@ -1,11 +1,21 @@
 import * as jose from 'jose'
-import type { AccessTokenPayload } from '../plugins/interfaces.js'
 
-export interface SecretConfig {
+interface AccessTokenPayload {
+  me: string
+  // issued_by: string
+  client_id: string
+  exp: number // will expire at timestamp
+  iat: number // issued at timestamp
+  // issued_at: number
+  scope: string
+  //   nonce: number
+}
+
+interface SecretConfig {
   alg: string
 }
 
-export type Secret = jose.KeyLike | Uint8Array
+type Secret = jose.KeyLike | Uint8Array
 
 export const secret = async ({ alg }: SecretConfig) => {
   try {
@@ -82,4 +92,43 @@ export interface DecodeConfig {
 
 export const decode = ({ jwt }: DecodeConfig) => {
   return jose.decodeJwt(jwt) as unknown as AccessTokenPayload
+}
+
+interface ExpiredConfig {
+  exp: number
+}
+
+export const isExpired = ({ exp }: ExpiredConfig) => {
+  const now = Math.floor(new Date().getTime() / 1000)
+  return exp - now < 0 ? true : false
+}
+
+export interface BlacklistedConfig {
+  jwt: string
+}
+
+export const isBlacklisted = async ({ jwt }: BlacklistedConfig) => {
+  console.log(
+    `TODO: query the token database (maybe D1?) to see if JWT is blacklisted`,
+    jwt
+  )
+  // TODO: implement this
+  // const blacklisted = await Promise.resolve(true)
+  const blacklisted = await Promise.resolve(false)
+
+  return blacklisted
+}
+
+export interface RevokeConfig {
+  jwt: string
+}
+
+export const revoke = async ({ jwt }: RevokeConfig) => {
+  console.log(
+    `TODO: tell the token database (maybe D1?) that this JWT is revoked (i.e. blacklisted)`,
+    jwt
+  )
+
+  // return { error: new Error('some database error') }
+  return { value: { message: `token revoked` } }
 }

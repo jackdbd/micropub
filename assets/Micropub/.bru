@@ -5,11 +5,7 @@ meta {
 }
 
 get {
-  url: {{base_url}}
+  url: {{base_url}}/token
   body: none
-  auth: bearer
-}
-
-script:post-response {
-  bru.setVar('access_token', res.body.hello);
+  auth: none
 }

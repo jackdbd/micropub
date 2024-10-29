@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "Micropub",
+  "name": "IndieWeb",
   "type": "collection",
   "ignore": [
     "node_modules",

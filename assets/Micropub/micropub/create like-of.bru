@@ -1,17 +1,17 @@
 meta {
   name: create like-of
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
   url: {{base_url}}/micropub
-  body: json
+  body: formUrlEncoded
   auth: bearer
 }
 
 auth:bearer {
-  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtZSI6Imh0dHBzOi8vd3d3LmdpYWNvbW9kZWJpZGRhLmNvbS8iLCJzY29wZSI6ImNyZWF0ZSB1cGRhdGUgZGVsZXRlIG1lZGlhIiwiaWF0IjoxNzI5NzE1NDY1LCJleHAiOjE3Mzc0OTE0NjV9.3UpA5q7ddgURRVVjPerntgdOl9xmWRAtvGuFpDgvYyw
+  token: {{access_token}}
 }
 
 body:json {
@@ -19,4 +19,9 @@ body:json {
     "h": "entry",
     "like-of": "http://othersite.example.com/permalink47"
   }
+}
+
+body:form-urlencoded {
+  like-of: http://othersite.example.com/permalink47
+  h: entry
 }

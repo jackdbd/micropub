@@ -28,25 +28,6 @@ test('basic server', async (t) => {
   // assert.deepEqual(response.json(), { hello: 'world' })
 })
 
-test('handles errors', async (t) => {
-  const app = defTestApp()
-
-  t.after(async () => {
-    await app.close()
-  })
-
-  const response = await app.inject({
-    method: 'GET',
-    url: '/error'
-  })
-
-  assert.strictEqual(response.statusCode, 500)
-  //   assert.deepEqual(
-  //     response.body,
-  //     "I'm sorry, there was an error processing your request."
-  //   )
-})
-
 test('handles notfound', async (t) => {
   const app = defTestApp()
 

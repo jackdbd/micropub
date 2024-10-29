@@ -10,7 +10,7 @@ export interface PluginOptions extends FastifyPluginOptions {
   authorizationEndpoint?: string
   baseUrl: string
   expiration?: string
-  issuer: string
+  issuer: string // Indiekit uses `application.url`
 }
 
 const defaultOptions: Partial<PluginOptions> = {
@@ -55,7 +55,6 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
   fastify.get('/token', defTokenGet({ base_url: baseUrl, prefix }))
   fastify.log.debug(`${NAME} route registered: GET /token`)
 
-  // indiekit for `issuer` uses `application.url`
   fastify.post(
     '/token',
     defTokenPost({

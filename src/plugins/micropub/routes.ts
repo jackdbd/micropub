@@ -1,6 +1,13 @@
+import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
-import type { RouteHandler } from 'fastify'
-import { codeChallenge, codeVerifier } from './utils.js'
+import type { RouteGenericInterface, RouteHandler } from 'fastify'
+import type {
+  H_card,
+  H_cite,
+  H_entry,
+  H_event
+} from '../../lib/microformats2/index.js'
+import { defValidateMicroformats2 } from './mf2.js'
 
 export interface CallbackConfig {
   client_id: string
@@ -168,28 +175,44 @@ export const defSubmit = (config: SubmitConfig) => {
       return reply.redirect('/login')
     }
 
-    try {
-      const response = await fetch(micropub_endpoint, {
-        method: 'POST',
-        body: stringify(request.body),
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        }
-      })
+    const response = await fetch(micropub_endpoint, {
+      method: 'POST',
+      body: stringify(request.body),
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      }
+    })
 
-      const data = await response.json()
-      request.log.debug(`${prefix} redirect to /post-created`)
-      return reply.redirect(`/post-created?data=${stringify(data)}`)
-    } catch (err) {
-      request.log.debug(`${prefix} redirect to /error`)
-      const error = err as Error
-      request.log.error(error)
-      return reply.redirect(`/error?message=${error.message}`)
+    const data = await response.json()
+
+    if (response.status === 202) {
+      const location = response.headers.get('Location')
+      request.log.debug(`${prefix} redirect to /accepted`)
+      const uri = `/accepted?data=${encodeURIComponent(
+        stringify({ ...data, location }, undefined, 2)
+      )}`
+      // return reply.send({ ...data, location })
+      return reply.redirect(uri)
+    } else {
+      request.log.debug(`${prefix} redirect to /created`)
+      // return reply.send(data)
+      const uri = `/created?data=${encodeURIComponent(
+        stringify(data, undefined, 2)
+      )}`
+      return reply.redirect(uri)
     }
   }
 
   return submit
+}
+
+export const postAccepted: RouteHandler = (request, reply) => {
+  return reply.view('post-accepted.njk', {
+    description: 'Post accepted page',
+    title: 'Post accepted',
+    data: (request.query as any).data
+  })
 }
 
 export const postCreated: RouteHandler = (request, reply) => {
@@ -225,68 +248,186 @@ export const defEditor = (config: EditorConfig) => {
   return editor
 }
 
-export interface LoginConfig {
-  authorization_endpoint: string
-  client_id: string
-  code_challenge_method: string
-  len: number
-  me: string
-  prefix: string
-  redirect_uri: string
+interface Service {
+  name: string
+  url: string
+  photo?: string
 }
 
-export const defLogin = (config: LoginConfig) => {
-  const {
-    authorization_endpoint,
-    client_id,
-    code_challenge_method,
-    len,
-    me,
-    prefix,
-    redirect_uri
-  } = config
+interface User {
+  name: string
+  url: string
+  photo?: string
+}
 
-  const login: RouteHandler = (request, reply) => {
-    const state = reply.generateCsrf()
-    request.session.set('state', state)
-    request.log.debug(
-      `${prefix} generated state (CSRF token) and set it in secure session`
-    )
+export interface SyndicateToItem {
+  uid: string
+  name: string
+  service: Service
+  user: User
+}
 
-    const code_verifier = codeVerifier({ len })
-    request.log.debug(`${prefix} generated code_verifier of ${len} characters`)
-    request.session.set('code_verifier', code_verifier)
-    request.log.debug(
-      `${prefix} generated code_verifier and set it in secure session`
-    )
+export interface MicropubGetConfig {
+  media_endpoint: string
+  syndicate_to: SyndicateToItem[]
+}
 
-    const code_challenge = codeChallenge({
-      code_challenge_method,
-      code_verifier
-    })
+/**
+ * https://micropub.spec.indieweb.org/#configuration
+ */
+export const defMicropubGet = (config: MicropubGetConfig) => {
+  const { media_endpoint, syndicate_to } = config
 
-    request.session.set('code_challenge', code_challenge)
-    request.log.debug(
-      `${prefix} generated ${code_challenge_method} code_challenge (PKCE) and set it in secure session`
-    )
-
-    return reply.view('login.njk', {
-      authorization_endpoint,
-      client_id,
-      code_challenge,
-      code_challenge_method,
-      description: 'Login page',
-      me,
-      redirect_uri,
-      state,
-      title: 'Login'
+  const micropubGet: RouteHandler = (_request, reply) => {
+    return reply.send({
+      'media-endpoint': media_endpoint,
+      'syndicate-to': syndicate_to
     })
   }
 
-  return login
+  return micropubGet
 }
 
-export const logout: RouteHandler = (request, reply) => {
-  request.session.delete() // no need to log this, fastify-session already logs it
-  return reply.redirect('/')
+interface PostRequestBody {
+  h: string
+}
+
+interface PostRouteGeneric extends RouteGenericInterface {
+  Body: PostRequestBody
+}
+
+export interface MicropubPostConfig {
+  ajv: Ajv
+  base_url: string
+}
+
+export const defMicropubPost = (config: MicropubPostConfig) => {
+  const { ajv, base_url } = config
+
+  const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
+    defValidateMicroformats2(ajv)
+
+  const micropubPost: RouteHandler<PostRouteGeneric> = async (
+    request,
+    reply
+  ) => {
+    if (!request.body) {
+      return reply.badRequest('missing request body')
+    }
+
+    // TODO: JSON schema to TypeScript type/interface?
+    // https://github.com/bcherny/json-schema-to-typescript
+
+    // If no type is specified, the default type h-entry SHOULD be used.
+    // https://micropub.spec.indieweb.org/#create
+    const h = request.body.h || 'entry'
+
+    let fake_permalink = `${base_url}/fake/foo`
+
+    switch (h) {
+      case 'card': {
+        const valid = validateH_card(request.body)
+        if (!valid) {
+          return reply.badRequest('invalid_request')
+        }
+        const h_card = request.body as H_card
+
+        reply.header('Location', fake_permalink)
+
+        return reply.code(202).send({
+          h_card,
+          message: 'Request accepted. Starting to process task.',
+          taskId: '123',
+          monitorUrl: 'http://example.com/tasks/123/status'
+        })
+      }
+
+      case 'cite': {
+        const valid = validateH_cite(request.body)
+        if (!valid) {
+          return reply.badRequest('invalid_request')
+        }
+        const h_cite = request.body as any as H_cite
+
+        reply.header('Location', fake_permalink)
+
+        return reply.code(202).send({
+          h_cite,
+          message: 'Request accepted. Starting to process task.',
+          taskId: '123',
+          monitorUrl: 'http://example.com/tasks/123/status'
+        })
+      }
+
+      case 'entry': {
+        const valid = validateH_entry(request.body)
+        if (!valid) {
+          return reply.code(400).send({
+            error: 'invalid_request',
+            error_description: 'Invalid h-entry (TODO add details)'
+          })
+          // return reply.badRequest('invalid_request')
+        }
+        const h_entry = request.body as H_entry
+
+        if (h_entry['content']) {
+          fake_permalink = `${base_url}/notes/foo`
+        }
+
+        if (h_entry['like-of']) {
+          fake_permalink = `${base_url}/likes/foo`
+        }
+
+        if (h_entry['in-reply-to']) {
+          fake_permalink = `${base_url}/replies/foo`
+        }
+
+        if (h_entry['repost-of']) {
+          fake_permalink = `${base_url}/reposts/foo`
+        }
+
+        // We should return a Location response header if we can't (or don't
+        // want to) publish the post right away.
+        // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
+        reply.header('Location', fake_permalink)
+
+        return reply.code(202).send({
+          h_entry,
+          message: 'Request accepted. Starting to process task.',
+          taskId: '123',
+          monitorUrl: 'http://example.com/tasks/123/status'
+        })
+      }
+
+      case 'event': {
+        const valid = validateH_event(request.body)
+        if (!valid) {
+          return reply.badRequest('invalid_request')
+        }
+
+        const h_event = request.body as H_event
+
+        reply.header('Location', fake_permalink)
+
+        return reply.code(202).send({
+          h_event,
+          message: 'Request accepted. Starting to process task.',
+          taskId: '123',
+          monitorUrl: 'http://example.com/tasks/123/status'
+        })
+      }
+
+      default:
+        return reply.notImplemented(`h=${h} not implemented`)
+    }
+
+    // TODO: create, update, delete, undelete
+    // https://github.com/barryf/vibrancy/tree/master/src/http/post-micropub/micropub
+
+    // const result = await db.query(sql`
+    //   UPDATE quotes SET likes = likes + 1 WHERE id=${request.params.id} RETURNING likes
+    // `);
+  }
+
+  return micropubPost
 }

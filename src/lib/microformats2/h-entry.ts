@@ -51,9 +51,22 @@ export const h_entry = Type.Object(
      * location the entry was posted from, optionally embed h-card, h-adr, or
      * h-geo. We need to use Type.Ref(), otherwise we get this error:
      * Error: reference "h-card" resolves to more than one schema
+     *
+     * Location can be:
+     * 1. A plaintext string describing the location
+     * 2. A nested h-adr object
+     * 3. A URL that contains an h-card
+     * 4. A Geo URI [RFC5870], for example: geo:45.51533714,-122.646538633
+     *
+     * https://micropub.spec.indieweb.org/#examples-of-creating-objects
      */
     location: Type.Optional(
-      Type.Union([Type.Ref(h_adr), Type.Ref(h_card), Type.Ref(h_geo)])
+      Type.Union([
+        Type.String(),
+        Type.Ref(h_adr),
+        Type.Ref(h_card),
+        Type.Ref(h_geo)
+      ])
     ),
 
     /**

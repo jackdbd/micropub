@@ -1,13 +1,21 @@
 meta {
   name: /micropub
   type: http
-  seq: 2
+  seq: 3
 }
 
 get {
-  url: {{base_url}}/micropub
+  url: {{base_url}}/micropub?q=config
   body: none
   auth: bearer
+}
+
+params:query {
+  q: config
+}
+
+headers {
+  Accept: application/json
 }
 
 auth:bearer {

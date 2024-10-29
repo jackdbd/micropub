@@ -20,7 +20,7 @@ in {
   env = {
     DEBUG = "micropub:*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
-    LOG_LEVEL = "debug";
+    LOG_LEVEL = "info";
     PORT = "3001";
     SECURE_SESSION_KEY_ONE = micropub.session_key_one;
     SECURE_SESSION_KEY_TWO = micropub.session_key_two;

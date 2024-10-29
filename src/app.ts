@@ -6,13 +6,17 @@ import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import fastifyView from '@fastify/view'
 import formbody from '@fastify/formbody'
+import fastifySensible from '@fastify/sensible'
 import { PinoLoggerOptions } from 'fastify/types/logger.js'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
+import indieauth from './plugins/indieauth/index.js'
 import micropub from './plugins/micropub/index.js'
+import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
 import revocationEndpoint from './plugins/revocation-endpoint/index.js'
+import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
 import { foo } from './nunjucks/globals.js'
@@ -53,6 +57,8 @@ export function defFastify(config: Config) {
 
   const fastify = Fastify({ logger })
 
+  fastify.register(fastifySensible)
+
   // plugin to parse x-www-form-urlencoded bodies
   // https://github.com/fastify/fastify-formbody
   fastify.register(formbody)
@@ -62,6 +68,7 @@ export function defFastify(config: Config) {
 
   const key_one_buf = process.env.SECURE_SESSION_KEY_ONE
   if (!key_one_buf) {
+    // This is a configuration error, so I wouldn't use something like fastify.httpErrors
     throw new Error('SECURE_SESSION_KEY_ONE not set')
   }
 
@@ -102,27 +109,7 @@ export function defFastify(config: Config) {
     fastify.register(errorHandler)
   }
 
-  const me = 'https://giacomodebidda.com/'
-
-  const client_id = base_url
-
-  // const authorization_endpoint = 'https://indieauth.com/auth'
-  // const token_endpoint = 'https://tokens.indieauth.com/token'
-  const token_endpoint = `${base_url}/token`
-  const micropub_endpoint = `${base_url}/micropub`
-  const submit_endpoint = `${base_url}/submit`
-
   const issuer = base_url
-
-  fastify.register(micropub, {
-    baseUrl: base_url,
-    clientId: client_id,
-    me,
-    micropubEndpoint: micropub_endpoint,
-    reportAllAjvErrors: report_all_ajv_errors,
-    submitEndpoint: submit_endpoint,
-    tokenEndpoint: token_endpoint
-  })
 
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
@@ -131,7 +118,57 @@ export function defFastify(config: Config) {
     issuer
   })
 
+  const client_id = base_url
+  const me = 'https://giacomodebidda.com/'
+
+  fastify.register(introspectionEndpoint, { clientId: client_id, me })
   fastify.register(revocationEndpoint, {})
+  fastify.register(userinfoEndpoint, {})
+
+  fastify.register(indieauth, {
+    // authorizationCallbackRoute: '/auth/callback',
+    // authorizationEndpoint: 'https://indieauth.com/auth',
+    baseUrl: base_url,
+    clientId: client_id,
+    me
+  })
+
+  // const token_endpoint = 'https://tokens.indieauth.com/token'
+  const token_endpoint = `${base_url}/token`
+  const micropub_endpoint = `${base_url}/micropub`
+  // const cloudflare_account_id = '43f9884041661b778e95a26992850715'
+  // const media_endpoint = `https://${cloudflare_account_id}.r2.cloudflarestorage.com/media`
+  const media_endpoint = `https://content.giacomodebidda.com/media`
+  const submit_endpoint = `${base_url}/submit`
+  const syndicate_to = [
+    {
+      uid: 'https://fosstodon.org/@jackdbd',
+      name: 'jackdbd on Mastodon',
+      service: {
+        name: 'Mastodon',
+        url: 'https://fosstodon.org/'
+        // photo: 'https://myfavoritesocialnetwork.example/img/icon.png'
+      },
+      user: {
+        name: 'jackdbd',
+        url: 'https://fosstodon.org/@jackdbd',
+        photo:
+          'https://cdn.fosstodon.org/accounts/avatars/109/632/759/548/530/989/original/7662659b2847db84.jpeg'
+      }
+    }
+  ]
+
+  fastify.register(micropub, {
+    baseUrl: base_url,
+    clientId: client_id,
+    me,
+    mediaEndpoint: media_endpoint,
+    micropubEndpoint: micropub_endpoint,
+    reportAllAjvErrors: report_all_ajv_errors,
+    submitEndpoint: submit_endpoint,
+    syndicateTo: syndicate_to,
+    tokenEndpoint: token_endpoint
+  })
 
   fastify.register(fastifyView, {
     engine: { nunjucks },
@@ -151,20 +188,6 @@ export function defFastify(config: Config) {
       description: 'Home page',
       name: 'World'
     })
-  })
-
-  fastify.get('/error', async (request, reply) => {
-    const message = (request.query as any).message
-
-    if (message) {
-      return reply.view('error.njk', {
-        description: 'Error page',
-        title: 'Error',
-        message
-      })
-    } else {
-      throw new Error('Some unexpected error')
-    }
   })
 
   return fastify
