@@ -22,8 +22,31 @@ const authorizationHeaderToToken = (auth?: string) => {
   return { value: splits[1] }
 }
 
+export const validateAuthorizationHeader: onRequestHookHandler = (
+  request,
+  reply,
+  done
+) => {
+  const auth = request.headers.authorization
+
+  if (!auth) {
+    return reply
+      .code(invalid_authorization.code)
+      .send(invalid_authorization.payload(`missing Authorization header`))
+  }
+
+  if (auth.indexOf('Bearer') === -1) {
+    return reply
+      .code(invalid_authorization.code)
+      .send(
+        invalid_authorization.payload(`missing Bearer in Authorization header`)
+      )
+  }
+
+  done()
+}
+
 export interface ValidateAccessTokenConfig {
-  base_url: string
   me: string
 }
 
@@ -32,44 +55,26 @@ export interface ValidateAccessTokenConfig {
 // has a matching `me` claim, BUT that has insufficient scopes for the action
 // requested by the user should return HTTP 403.
 
-export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
-  const { base_url, me } = config
+export const defValidateMeClaimInAccessToken = (
+  config: ValidateAccessTokenConfig
+) => {
+  const { me } = config
 
-  const validateAccessToken: onRequestHookHandler = (request, reply, done) => {
-    request.log.debug(
-      `${NAME} validating access token from Authorization header`
-    )
-
+  const validateMeClaimInAccessToken: onRequestHookHandler = (
+    request,
+    reply,
+    done
+  ) => {
     const auth = request.headers.authorization
 
     if (!auth) {
-      request.log.warn(
-        `${NAME} request ID ${request.id} has no 'Authorization' header`
-      )
-
-      return reply.code(invalid_authorization.code).view('error.njk', {
-        base_url,
-        description: 'Auth error page',
-        message: `missing Authorization header`,
-        title: 'Auth error'
-      })
-    }
-
-    if (auth.indexOf('Bearer') === -1) {
-      request.log.warn(
-        `${NAME} request ID ${request.id} has no 'Bearer' in Authorization header`
-      )
-
       return reply
         .code(invalid_authorization.code)
-        .send(
-          invalid_authorization.payload(
-            `missing Bearer in Authorization header`
-          )
-        )
+        .send(invalid_authorization.payload(`missing Authorization header`))
     }
 
     const splits = auth.split(' ')
+
     if (splits.length !== 2) {
       request.log.warn(
         `${NAME} request ID ${request.id} has no value for 'Bearer' in Authorization header`
@@ -109,7 +114,7 @@ export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
     done()
   }
 
-  return validateAccessToken
+  return validateMeClaimInAccessToken
 }
 
 export interface ValidateGetConfig {

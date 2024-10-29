@@ -6,10 +6,11 @@ import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
 import { NAME } from './constants.js'
 import {
-  defValidateAccessToken,
   defValidateGetRequest,
+  defValidateMeClaimInAccessToken,
   validateAccessTokenNotExpired,
-  validateAccessTokenNotBlacklisted
+  validateAccessTokenNotBlacklisted,
+  validateAuthorizationHeader
 } from './hooks.js'
 import {
   defAuthCallback,
@@ -152,7 +153,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
 
   const redirect_uri = `${base_url}${auth_callback}`
 
-  const validateAccessToken = defValidateAccessToken({ base_url, me })
+  const validateMeClaimInAccessToken = defValidateMeClaimInAccessToken({ me })
 
   fastify.get(
     auth_callback,
@@ -191,7 +192,8 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     '/media',
     {
       onRequest: [
-        validateAccessToken,
+        validateAuthorizationHeader,
+        validateMeClaimInAccessToken,
         validateAccessTokenNotExpired,
         validateAccessTokenNotBlacklisted
       ]
@@ -206,7 +208,8 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     '/micropub',
     {
       onRequest: [
-        validateAccessToken,
+        validateAuthorizationHeader,
+        validateMeClaimInAccessToken,
         validateAccessTokenNotExpired,
         validateAccessTokenNotBlacklisted
       ],
