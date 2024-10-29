@@ -10,3 +10,7 @@
 #authorization-code-received {
   line-break: anywhere;
 }
+
+pre > code {
+  line-break: anywhere;
+}

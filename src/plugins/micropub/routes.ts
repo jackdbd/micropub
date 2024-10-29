@@ -279,11 +279,21 @@ export interface MicropubGetConfig {
 export const defMicropubGet = (config: MicropubGetConfig) => {
   const { media_endpoint, syndicate_to } = config
 
-  const micropubGet: RouteHandler = (_request, reply) => {
-    return reply.send({
+  const micropubGet: RouteHandler = (request, reply) => {
+    const data = {
       'media-endpoint': media_endpoint,
       'syndicate-to': syndicate_to
-    })
+    }
+    const accept = request.headers.accept
+    if (accept && accept.includes('text/html')) {
+      return reply.view('micropub-config.njk', {
+        description: 'Configuration for this micropub endpoint.',
+        title: 'Micropub config',
+        data: stringify(data, undefined, 2)
+      })
+    } else {
+      return reply.send(data)
+    }
   }
 
   return micropubGet
