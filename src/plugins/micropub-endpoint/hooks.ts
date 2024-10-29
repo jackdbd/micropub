@@ -1,6 +1,7 @@
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
 import { decode, isBlacklisted, isExpired } from '../../lib/token.js'
+import { invalid_authorization, invalid_token } from '../errors.js'
 import { NAME } from './constants.js'
 import { micropub_get_request } from './schemas.js'
 
@@ -39,28 +40,14 @@ export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
       `${NAME} validating access token from Authorization header`
     )
 
-    // TODO: why is this the case? I can't remember if the micropub specs says
-    // anything against non-POST requests.
-    // if (request.method.toUpperCase() !== 'POST') {
-    //   request.log.warn(
-    //     `${NAME} request ID ${request.id} is a ${request.method} request, not a POST`
-    //   )
-    //   reply.code(415)
-    //   return reply.send({
-    //     ok: false,
-    //     message: `${request.method} requests not allowed to this endpoint`
-    //   })
-    // }
-
     const auth = request.headers.authorization
 
     if (!auth) {
       request.log.warn(
         `${NAME} request ID ${request.id} has no 'Authorization' header`
       )
-      reply.code(401)
-      // return reply.send({ ok: false, message: `missing Authorization header` })
-      return reply.view('error.njk', {
+
+      return reply.code(invalid_authorization.code).view('error.njk', {
         base_url,
         description: 'Auth error page',
         message: `missing Authorization header`,
@@ -72,8 +59,14 @@ export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
       request.log.warn(
         `${NAME} request ID ${request.id} has no 'Bearer' in Authorization header`
       )
-      reply.code(401)
-      return reply.send({ ok: false, message: `access token is required` })
+
+      return reply
+        .code(invalid_authorization.code)
+        .send(
+          invalid_authorization.payload(
+            `missing Bearer in Authorization header`
+          )
+        )
     }
 
     const splits = auth.split(' ')
@@ -81,8 +74,9 @@ export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
       request.log.warn(
         `${NAME} request ID ${request.id} has no value for 'Bearer' in Authorization header`
       )
-      reply.code(401)
-      return reply.send({ ok: false, message: `access token is required` })
+      return reply
+        .code(invalid_token.code)
+        .send(invalid_token.payload(`access token is required`))
     }
 
     const jwt = splits[1]
@@ -93,11 +87,13 @@ export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
     request.log.info(`${NAME} access token scopes: ${scopes.join(' ')}`)
 
     if (claims.me !== me) {
-      // https://indieauth.spec.indieweb.org/#error-responses
-      return reply.code(401).send({
-        error: 'invalid_token',
-        error_description: `access token has a 'me' claim which is not ${me}`
-      })
+      return reply
+        .code(invalid_token.code)
+        .send(
+          invalid_token.payload(
+            `access token has a 'me' claim which is not ${me}`
+          )
+        )
     }
 
     // Some token endpoint might issue a token that has `issued_at` in its
@@ -153,22 +149,20 @@ export const validateAccessTokenNotExpired: onRequestHookHandler = (
   const { error, value: jwt } = authorizationHeaderToToken(
     request.headers.authorization
   )
-  // https://indieauth.spec.indieweb.org/#error-responses
+
   if (error) {
-    return reply.code(401).send({
-      error: 'invalid_token',
-      error_description: error.message
-    })
+    return reply
+      .code(invalid_token.code)
+      .send(invalid_token.payload(error.message))
   }
 
   const payload = decode({ jwt })
 
   const expired = isExpired({ exp: payload.exp })
   if (expired) {
-    return reply.code(401).send({
-      error: 'invalid_token',
-      error_description: 'The access token has expired.'
-    })
+    return reply
+      .code(invalid_token.code)
+      .send(invalid_token.payload('The access token has expired.'))
   }
   done()
 }
@@ -180,19 +174,17 @@ export const validateAccessTokenNotBlacklisted: onRequestHookHandler = async (
   const { error, value: jwt } = authorizationHeaderToToken(
     request.headers.authorization
   )
-  // https://indieauth.spec.indieweb.org/#error-responses
+
   if (error) {
-    return reply.code(401).send({
-      error: 'invalid_token',
-      error_description: error.message
-    })
+    return reply
+      .code(invalid_token.code)
+      .send(invalid_token.payload(error.message))
   }
 
   const blacklisted = await isBlacklisted({ jwt })
   if (blacklisted) {
-    return reply.code(401).send({
-      error: 'invalid_token',
-      error_description: 'The access token has been blacklisted.'
-    })
+    return reply
+      .code(invalid_token.code)
+      .send(invalid_token.payload('The access token has been blacklisted.'))
   }
 }

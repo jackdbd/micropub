@@ -8,19 +8,19 @@ import view from '@fastify/view'
 import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import sensible from '@fastify/sensible'
-import { PinoLoggerOptions } from 'fastify/types/logger.js'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
 import indieauth from './plugins/indieauth/index.js'
-import micropub from './plugins/micropub/index.js'
+import micropub from './plugins/micropub-endpoint/index.js'
 import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
 import revocationEndpoint from './plugins/revocation-endpoint/index.js'
 import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
 import { foo } from './nunjucks/globals.js'
+import type { Config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -36,58 +36,45 @@ declare module '@fastify/secure-session' {
   }
 }
 
-export interface Config {
-  base_url: string
-  cloudflare_account_id: string
-  cloudflare_r2_access_key_id: string
-  cloudflare_r2_bucket_name: string
-  cloudflare_r2_secret_access_key: string
-  logger: PinoLoggerOptions
-  report_all_ajv_errors: boolean
-  use_development_error_handler: boolean
-  use_secure_flag_for_session_cookie: boolean
-}
-
 /**
  * Instantiates the Fastify app.
  */
 export function defFastify(config: Config) {
   const {
     base_url,
-    logger,
     report_all_ajv_errors,
+    secure_session_expiration,
+    secure_session_key_one_buf,
+    secure_session_key_two_buf,
     use_development_error_handler,
     use_secure_flag_for_session_cookie
   } = config
 
-  const fastify = Fastify({ logger })
+  const fastify = Fastify({ logger: { level: config.log_level } })
 
   fastify.register(sensible)
 
-  fastify.register(multipart)
+  // parse multipart requests
+  // https://github.com/fastify/fastify-multipart
+  fastify.register(multipart, {
+    limits: {
+      fileSize: 10_000_000 // in bytes
+    }
+  })
 
-  // plugin to parse x-www-form-urlencoded bodies
+  // parse x-www-form-urlencoded bodies
   // https://github.com/fastify/fastify-formbody
   fastify.register(formbody)
 
   const sessionName = 'session'
-  const expiry = 60 * 60 // in seconds
-
-  const key_one_buf = process.env.SECURE_SESSION_KEY_ONE
-  if (!key_one_buf) {
-    // This is a configuration error, so I wouldn't use something like fastify.httpErrors
-    throw new Error('SECURE_SESSION_KEY_ONE not set')
-  }
-
-  const key_two_buf = process.env.SECURE_SESSION_KEY_TWO
-  if (!key_two_buf) {
-    throw new Error('SECURE_SESSION_KEY_TWO not set')
-  }
 
   fastify.register(secureSession, {
-    key: [Buffer.from(key_one_buf, 'hex'), Buffer.from(key_two_buf, 'hex')],
+    key: [
+      Buffer.from(secure_session_key_one_buf, 'hex'),
+      Buffer.from(secure_session_key_two_buf, 'hex')
+    ],
     sessionName,
-    expiry,
+    expiry: secure_session_expiration,
     cookie: {
       path: '/',
       httpOnly: true,
@@ -97,7 +84,7 @@ export function defFastify(config: Config) {
   fastify.log.debug(
     {
       sessionName,
-      expiry
+      expiry: secure_session_expiration
     },
     `secure session created`
   )
@@ -143,18 +130,18 @@ export function defFastify(config: Config) {
   // const token_endpoint = 'https://tokens.indieauth.com/token'
   const token_endpoint = `${base_url}/token`
   const micropub_endpoint = `${base_url}/micropub`
-  // const cloudflare_account_id = '43f9884041661b778e95a26992850715'
-  // const media_endpoint = `https://${cloudflare_account_id}.r2.cloudflarestorage.com/media`
-  const media_endpoint = `https://content.giacomodebidda.com/media`
+  const media_endpoint = `${base_url}/media`
   const submit_endpoint = `${base_url}/submit`
+
   const syndicate_to = [
     {
       uid: 'https://fosstodon.org/@jackdbd',
       name: 'jackdbd on Mastodon',
       service: {
         name: 'Mastodon',
-        url: 'https://fosstodon.org/'
-        // photo: 'https://myfavoritesocialnetwork.example/img/icon.png'
+        url: 'https://fosstodon.org/',
+        photo:
+          'https://cdn.fosstodon.org/accounts/avatars/000/028/400/original/324cba4cb379bd4e.png'
       },
       user: {
         name: 'jackdbd',

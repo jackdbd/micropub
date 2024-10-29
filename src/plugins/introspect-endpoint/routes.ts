@@ -1,5 +1,6 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { decode, isExpired, isBlacklisted } from '../../lib/token.js'
+import { invalid_token } from '../errors.js'
 
 export interface IntrospectConfig {
   client_id: string
@@ -25,12 +26,11 @@ export const defIntrospect = (config: IntrospectConfig) => {
     }
 
     const { token } = request.body
-    // https://indieauth.spec.indieweb.org/#error-responses
+
     if (!token) {
-      return reply.code(401).send({
-        error: 'invalid_token',
-        error_description: 'The `token` parameter is missing.'
-      })
+      return reply
+        .code(invalid_token.code)
+        .send(invalid_token.payload('The `token` parameter is missing.'))
     }
 
     const payload = decode({ jwt: token })

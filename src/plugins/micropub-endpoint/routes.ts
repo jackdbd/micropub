@@ -8,6 +8,7 @@ import type {
   H_entry,
   H_event
 } from '../../lib/microformats2/index.js'
+import { invalid_authorization, invalid_request } from '../errors.js'
 import { defValidateMicroformats2 } from './mf2.js'
 
 export interface CallbackConfig {
@@ -135,8 +136,7 @@ export const defAuthCallback = (config: CallbackConfig) => {
     const auth = response.headers.get('Authorization')
 
     if (!auth) {
-      reply.code(401)
-      return reply.view('error.njk', {
+      return reply.code(invalid_authorization.code).view('error.njk', {
         message: `missing Authorization header`,
         description: 'Auth error page',
         title: 'Auth error'
@@ -310,13 +310,10 @@ interface PostRouteGeneric extends RouteGenericInterface {
 export interface MicropubPostConfig {
   ajv: Ajv
   base_url: string
-  bucket_name: string
-  media_endpoint: string
-  s3: S3Client
 }
 
 export const defMicropubPost = (config: MicropubPostConfig) => {
-  const { ajv, base_url, bucket_name, media_endpoint, s3 } = config
+  const { ajv, base_url } = config
 
   const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
     defValidateMicroformats2(ajv)
@@ -325,51 +322,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    // const content_disposition = request.headers['content-disposition']
-    // if (content_disposition && content_disposition.includes('form-data')) {
-    //   const message = `received request with content-disposition: form-data. Isn't a Micropub client supposed to send them only to the media endpoint? What should I do here?`
-    //   request.log.warn(message)
-    //   return reply.send({ message })
-    // }
-
     if (!request.body) {
-      if (request.isMultipart()) {
-        request.log.warn(`received multi-part request`)
-        const data = await request.file()
-        if (!data) {
-          return reply.badRequest('multi-part request has no file')
-        }
-        const Body = await data.toBuffer()
-        const ContentType = data.mimetype
-
-        const object_path = data.filename
-        const Key = `media/${object_path}`
-
-        const params = {
-          Bucket: bucket_name,
-          Key,
-          Body,
-          ContentType
-        }
-
-        try {
-          const output = await s3.send(new PutObjectCommand(params))
-          const version_id = output.VersionId
-          const etag = output.ETag
-          console.log('=== PutObjectCommand output ===', output)
-          reply.header('Location', `${media_endpoint}/${object_path}`)
-          return reply
-            .code(201)
-            .send({ etag, version_id, message: 'Upload successful!' })
-        } catch (error) {
-          request.log.error(`Error uploading to R2:`, error)
-          return reply
-            .status(500)
-            .send({ error: `Failed to upload to bucket ${bucket_name}` })
-        }
-      } else {
-        return reply.badRequest('request has no body and is not multi-part')
-      }
+      return reply.badRequest('request has no body')
     }
 
     // TODO: JSON schema to TypeScript type/interface?
@@ -393,9 +347,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         return reply.code(202).send({
           h_card,
-          message: 'Request accepted. Starting to process task.',
-          taskId: '123',
-          monitorUrl: 'http://example.com/tasks/123/status'
+          message: 'Request accepted.'
         })
       }
 
@@ -410,20 +362,16 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         return reply.code(202).send({
           h_cite,
-          message: 'Request accepted. Starting to process task.',
-          taskId: '123',
-          monitorUrl: 'http://example.com/tasks/123/status'
+          message: 'Request accepted.'
         })
       }
 
       case 'entry': {
         const valid = validateH_entry(request.body)
         if (!valid) {
-          return reply.code(400).send({
-            error: 'invalid_request',
-            error_description: 'Invalid h-entry (TODO add details)'
-          })
-          // return reply.badRequest('invalid_request')
+          return reply
+            .code(invalid_request.code)
+            .send(invalid_request.payload('Invalid h-entry (TODO add details)'))
         }
         const h_entry = request.body as H_entry
 
@@ -450,9 +398,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         return reply.code(202).send({
           h_entry,
-          message: 'Request accepted. Starting to process task.',
-          taskId: '123',
-          monitorUrl: 'http://example.com/tasks/123/status'
+          message: 'Request accepted.'
         })
       }
 
@@ -468,9 +414,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         return reply.code(202).send({
           h_event,
-          message: 'Request accepted. Starting to process task.',
-          taskId: '123',
-          monitorUrl: 'http://example.com/tasks/123/status'
+          message: 'Request accepted.'
         })
       }
 
@@ -487,4 +431,58 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
   }
 
   return micropubPost
+}
+
+export interface MediaPostConfig {
+  bucket_name: string
+  s3: S3Client
+}
+
+export const defMediaPost = (config: MediaPostConfig) => {
+  const { bucket_name, s3 } = config
+
+  const mediaPost: RouteHandler = async (request, reply) => {
+    if (!request.isMultipart()) {
+      request.log.warn(`request ${request.id} is not a multi-part request`)
+      // TODO: read the specs. I'm not sure I should handle non multi-part
+      // requests received at the media endpoint.
+      return reply.badRequest('request is not multi-part')
+    }
+
+    const data = await request.file()
+    if (!data) {
+      return reply.badRequest('multi-part request has no file')
+    }
+
+    const Body = await data.toBuffer()
+    const ContentType = data.mimetype
+
+    const object_path = data.filename
+    const Key = `media/${object_path}`
+
+    const params = {
+      Bucket: bucket_name,
+      Key,
+      Body,
+      ContentType
+    }
+
+    try {
+      const output = await s3.send(new PutObjectCommand(params))
+      const version_id = output.VersionId
+      const etag = output.ETag
+      // TODO: should I send a Location header?
+      // reply.header('Location', `${media_endpoint}/${object_path}`)
+      return reply
+        .code(201)
+        .send({ etag, version_id, message: 'Upload successful!' })
+    } catch (error) {
+      request.log.error(`Error uploading to R2:`, error)
+      return reply
+        .status(500)
+        .send({ error: `Failed to upload to bucket ${bucket_name}` })
+    }
+  }
+
+  return mediaPost
 }

@@ -14,6 +14,7 @@ import {
 import {
   defAuthCallback,
   defEditor,
+  defMediaPost,
   defMicropubGet,
   defMicropubPost,
   defSubmit,
@@ -185,13 +186,22 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     credentials: { accessKeyId, secretAccessKey }
   })
 
-  const micropubPost = defMicropubPost({
-    ajv,
-    base_url,
-    bucket_name,
-    media_endpoint,
-    s3
-  })
+  const mediaPost = defMediaPost({ bucket_name, s3 })
+  fastify.post(
+    '/media',
+    {
+      onRequest: [
+        validateAccessToken,
+        validateAccessTokenNotExpired,
+        validateAccessTokenNotBlacklisted
+      ]
+      // schema: media_post_request
+    },
+    mediaPost
+  )
+  fastify.log.debug(`${NAME} route registered: POST /media`)
+
+  const micropubPost = defMicropubPost({ ajv, base_url })
   fastify.post(
     '/micropub',
     {

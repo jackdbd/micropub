@@ -1,5 +1,6 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { revoke } from '../../lib/token.js'
+import { invalid_token } from '../errors.js'
 
 interface RequestBody {
   token: string
@@ -21,13 +22,11 @@ export const revocation: RouteHandler<RouteGeneric> = async (
   }
 
   const { token } = request.body
-  // https://indieauth.spec.indieweb.org/#error-responses
+
   if (!token) {
-    // return (reply as any).httpErrors.unauthorized(`token is missing`)
-    return reply.code(401).send({
-      error: 'invalid_token',
-      error_description: 'The `token` parameter is missing.'
-    })
+    return reply
+      .code(invalid_token.code)
+      .send(invalid_token.payload('The `token` parameter is missing.'))
   }
 
   await revoke({ jwt: token })
