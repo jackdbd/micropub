@@ -121,7 +121,7 @@ export function defFastify(config: Config) {
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
     baseUrl: base_url,
-    expiration: '1 hour',
+    expiration: '4 hours',
     issuer
   })
 

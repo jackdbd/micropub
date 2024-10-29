@@ -8,7 +8,7 @@ import { NAME } from './constants.js'
 import {
   defValidateAccessToken,
   defValidateGetRequest,
-  // validateAccessTokenNotExpired,
+  validateAccessTokenNotExpired,
   validateAccessTokenNotBlacklisted
 } from './hooks.js'
 import {
@@ -197,7 +197,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     {
       onRequest: [
         validateAccessToken,
-        // validateAccessTokenNotExpired,
+        validateAccessTokenNotExpired,
         validateAccessTokenNotBlacklisted
       ],
       schema: micropub_post_request
