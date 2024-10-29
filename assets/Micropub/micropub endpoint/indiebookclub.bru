@@ -1,0 +1,37 @@
+meta {
+  name: indiebookclub
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "type": ["h-entry"],
+    "properties": {
+      "summary": ["Want to read: Title by Author, ISBN: ISBN"],
+      "read-status": ["to-read"],
+      "read-of": [
+        {
+          "type": ["h-cite"],
+          "properties": {
+            "name": ["Title"],
+            "author": ["Author"],
+            "uid": ["isbn:ISBN"]
+          }
+        }
+      ],
+      "visibility": ["public"],
+      "post-status": ["published"]
+    }
+  }
+}
