@@ -1,3 +1,4 @@
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
@@ -299,10 +300,13 @@ interface PostRouteGeneric extends RouteGenericInterface {
 export interface MicropubPostConfig {
   ajv: Ajv
   base_url: string
+  bucket_name: string
+  media_endpoint: string
+  s3: S3Client
 }
 
 export const defMicropubPost = (config: MicropubPostConfig) => {
-  const { ajv, base_url } = config
+  const { ajv, base_url, bucket_name, media_endpoint, s3 } = config
 
   const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
     defValidateMicroformats2(ajv)
@@ -311,24 +315,51 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    const content_disposition = request.headers['content-disposition']
-    if (content_disposition && content_disposition.includes('form-data')) {
-      const message = `received request with content-disposition: form-data. Isn't a Micropub client supposed to send them only to the media endpoint? What should I do here?`
-      request.log.warn(message)
-      return reply.send({ message })
-    }
+    // const content_disposition = request.headers['content-disposition']
+    // if (content_disposition && content_disposition.includes('form-data')) {
+    //   const message = `received request with content-disposition: form-data. Isn't a Micropub client supposed to send them only to the media endpoint? What should I do here?`
+    //   request.log.warn(message)
+    //   return reply.send({ message })
+    // }
 
     if (!request.body) {
-      const message = `request ${request.id} has no body`
-      const isMultipart = request.isMultipart()
-      request.log.warn({ isMultipart }, message)
-      const file = await request.file()
-      // const form_data = await request.formData()
-      request.log.warn({ isMultipart, file }, message)
+      if (request.isMultipart()) {
+        request.log.warn(`received multi-part request`)
+        const data = await request.file()
+        if (!data) {
+          return reply.badRequest('multi-part request has no file')
+        }
+        const Body = await data.toBuffer()
+        const ContentType = data.mimetype
 
-      reply.header('Location', `${base_url}/fake/foo`)
-      return reply.send({ message })
-      // return reply.badRequest('missing request body')
+        const object_path = data.filename
+        const Key = `media/${object_path}`
+
+        const params = {
+          Bucket: bucket_name,
+          Key,
+          Body,
+          ContentType
+        }
+
+        try {
+          const output = await s3.send(new PutObjectCommand(params))
+          const version_id = output.VersionId
+          const etag = output.ETag
+          console.log('=== PutObjectCommand output ===', output)
+          reply.header('Location', `${media_endpoint}/${object_path}`)
+          return reply
+            .code(201)
+            .send({ etag, version_id, message: 'Upload successful!' })
+        } catch (error) {
+          request.log.error(`Error uploading to R2:`, error)
+          return reply
+            .status(500)
+            .send({ error: `Failed to upload to bucket ${bucket_name}` })
+        }
+      } else {
+        return reply.badRequest('request has no body and is not multi-part')
+      }
     }
 
     // TODO: JSON schema to TypeScript type/interface?

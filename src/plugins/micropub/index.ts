@@ -1,3 +1,4 @@
+import { S3Client } from '@aws-sdk/client-s3'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
@@ -32,6 +33,11 @@ export interface PluginOptions extends FastifyPluginOptions {
   baseUrl: string
 
   clientId: string
+
+  cloudflareAccountId: string
+  cloudflareR2BucketName: string
+  cloudflareR2AccessKeyId: string
+  cloudflareR2SecretAccessKey: string
 
   codeChallengeMethod?: string
 
@@ -132,6 +138,10 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     authorizationCallbackRoute: auth_callback,
     baseUrl: base_url,
     clientId: client_id,
+    cloudflareAccountId: account_id,
+    cloudflareR2AccessKeyId: accessKeyId,
+    cloudflareR2BucketName: bucket_name,
+    cloudflareR2SecretAccessKey: secretAccessKey,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
@@ -169,7 +179,19 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   // request as multipart/form-data and send the file(s) as a standard property.
   // https://micropub.spec.indieweb.org/#uploading-files
 
-  const micropubPost = defMicropubPost({ ajv, base_url })
+  const s3 = new S3Client({
+    region: 'auto',
+    endpoint: `https://${account_id}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey }
+  })
+
+  const micropubPost = defMicropubPost({
+    ajv,
+    base_url,
+    bucket_name,
+    media_endpoint,
+    s3
+  })
   fastify.post(
     '/micropub',
     {

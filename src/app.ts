@@ -38,6 +38,10 @@ declare module '@fastify/secure-session' {
 
 export interface Config {
   base_url: string
+  cloudflare_account_id: string
+  cloudflare_r2_access_key_id: string
+  cloudflare_r2_bucket_name: string
+  cloudflare_r2_secret_access_key: string
   logger: PinoLoggerOptions
   report_all_ajv_errors: boolean
   use_development_error_handler: boolean
@@ -164,6 +168,10 @@ export function defFastify(config: Config) {
   fastify.register(micropub, {
     baseUrl: base_url,
     clientId: client_id,
+    cloudflareAccountId: config.cloudflare_account_id,
+    cloudflareR2AccessKeyId: config.cloudflare_r2_access_key_id,
+    cloudflareR2BucketName: config.cloudflare_r2_bucket_name,
+    cloudflareR2SecretAccessKey: config.cloudflare_r2_secret_access_key,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,

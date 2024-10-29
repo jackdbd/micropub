@@ -9,6 +9,10 @@
       "program": "${workspaceFolder}/dist/server.js",
       "args": [],
       "env": {
+        "CLOUDFLARE_ACCOUNT_ID": "${env:CLOUDFLARE_ACCOUNT_ID}",
+        "CLOUDFLARE_R2_ACCESS_KEY_ID": "${env:CLOUDFLARE_R2_ACCESS_KEY_ID}",
+        "CLOUDFLARE_R2_BUCKET_NAME": "${env:CLOUDFLARE_R2_BUCKET_NAME}",
+        "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "${env:CLOUDFLARE_R2_SECRET_ACCESS_KEY}",
         "DEBUG": "*",
         "LOG_LEVEL": "debug",
         "NODE_ENV": "development",
