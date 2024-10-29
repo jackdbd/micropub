@@ -17,6 +17,8 @@ import {
  * ones.
  */
 export const defValidateMicroformats2 = (ajv: Ajv) => {
+  // const label = 'compile microformats2 schemas'
+  // console.time(label)
   const validateGeoURI = ajv.compile(geo_uri)
   const validateH_geo = ajv.compile(h_geo)
   const validateH_adr = ajv.compile(h_adr)
@@ -25,6 +27,8 @@ export const defValidateMicroformats2 = (ajv: Ajv) => {
   const validateH_entry = ajv.compile(h_entry)
   const validateH_event = ajv.compile(h_event)
   const validateH_item = ajv.compile(h_item)
+  // console.timeLog(label)
+  // console.timeEnd(label)
 
   return {
     validateGeoURI,

@@ -16,7 +16,9 @@
         "DEBUG": "*",
         "LOG_LEVEL": "debug",
         "NODE_ENV": "development",
-        "PORT": "${env:PORT}"
+        "PORT": "${env:PORT}",
+        "SECURE_SESSION_KEY_ONE": "${env:SECURE_SESSION_KEY_ONE}",
+        "SECURE_SESSION_KEY_TWO": "${env:SECURE_SESSION_KEY_TWO}"
       },
       "preLaunchTask": "Build All",
       "outFiles": ["${workspaceFolder}/dist/**/*"]

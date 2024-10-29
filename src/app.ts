@@ -19,7 +19,6 @@ import revocationEndpoint from './plugins/revocation-endpoint/index.js'
 import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
-import { foo } from './nunjucks/globals.js'
 import type { Config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -173,7 +172,6 @@ export function defFastify(config: Config) {
     templates: [path.join(__dirname, 'templates')],
     options: {
       onConfigure: (env: Environment) => {
-        env.addGlobal('foo', foo)
         env.addFilter('tap', tap)
         fastify.log.debug(`nunjucks environment configured`)
       }

@@ -82,12 +82,14 @@ export const defConfig = () => {
     return sensitive.has(key) ? false : true
   })
 
-  console.log(
-    `=== CONFIG ===`,
-    Object.fromEntries(entries),
-    `${sensitive.size} sensitive fields not shown`,
-    [...sensitive]
-  )
+  if (config.NODE_ENV !== 'test') {
+    console.log(
+      `=== CONFIG ===`,
+      Object.fromEntries(entries),
+      `${sensitive.size} sensitive fields not shown`,
+      [...sensitive]
+    )
+  }
 
   return { value: config }
 }

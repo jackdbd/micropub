@@ -12,6 +12,13 @@ const fastify = defFastify(config)
 const start = async () => {
   try {
     await fastify.listen({ host: config.host, port: config.port })
+
+    if (config.NODE_ENV === 'development') {
+      console.log('=== Fastify plugins ===')
+      console.log(fastify.printPlugins())
+      console.log('=== Fastify routes ===')
+      // console.log(fastify.printRoutes({ includeHooks: true }))
+    }
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)

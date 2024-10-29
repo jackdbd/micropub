@@ -18,5 +18,8 @@ devenv.local.nix
 
 .pre-commit-config.yaml
 
+# test coverage
+lcov.info
+
 secrets/*
 !secrets/README.md

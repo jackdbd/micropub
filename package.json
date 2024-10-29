@@ -37,7 +37,8 @@
     "script:mf2": "tsm ./scripts/mf2.ts",
     "secure-session-keys": "node scripts/secure-session-keys.js",
     "start": "NODE_ENV=production node ./dist/server.js",
-    "test": "c8 node --test --test-reporter=spec ./dist/test.js",
+    "test": "NODE_ENV=test node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info --test-reporter=spec --test-reporter-destination=stdout",
+    "test:watch": "NODE_ENV=test node --test --test-reporter=spec --watch",
     "watch": "find ./src -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run dev"
   },
   "dependencies": {
@@ -69,7 +70,6 @@
     "@types/node": "latest",
     "@types/nunjucks": "^3.2.6",
     "@types/seedrandom": "^3.0.8",
-    "c8": "latest",
     "tsm": "latest",
     "typescript": "^5.6.3"
   }

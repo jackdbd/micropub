@@ -76,8 +76,8 @@ export const h_event = Type.Object(
     examples: [
       {
         name: 'Microformats Meetup',
-        start: '2013-06-30 12:00:00',
-        end: '2013-06-30 18:00:00',
+        start: '2013-06-30 12:00:00-07:00',
+        end: '2013-06-30 18:00:00-07:00',
         location: 'Some bar in SF',
         summary: 'Get together and discuss all things microformats-related.'
       }
