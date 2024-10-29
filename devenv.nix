@@ -69,6 +69,10 @@ in {
     '';
     container-run.exec = ''
       docker run \
+        --env CLOUDFLARE_ACCOUNT_ID=${config.env.CLOUDFLARE_ACCOUNT_ID} \
+        --env CLOUDFLARE_R2_ACCESS_KEY_ID=${config.env.CLOUDFLARE_R2_ACCESS_KEY_ID} \
+        --env CLOUDFLARE_R2_BUCKET_NAME=${config.env.CLOUDFLARE_R2_BUCKET_NAME} \
+        --env CLOUDFLARE_R2_SECRET_ACCESS_KEY=${config.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY} \
         --env DEBUG="*" \
         --env LOG_LEVEL=debug \
         --env NODE_ENV=development \
