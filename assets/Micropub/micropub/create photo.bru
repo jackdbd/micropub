@@ -1,0 +1,35 @@
+meta {
+  name: create photo
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Content-Disposition: form-data; name="h"
+  Content-Disposition: form-data; name="content"
+  Content-Disposition: form-data; name="photo"; filename="aaronpk.png"
+  Content-Type: image/png
+  Content-Transfer-Encoding: binary
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "h": "card",
+    "name": "Giacomo Debidda",
+    "job-title": "developer"
+  }
+}
+
+body:multipart-form {
+  : @file(/home/jack/Pictures/shared-pictures/profile-pictures/henohenomoheji.jpeg)
+}

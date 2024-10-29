@@ -4,9 +4,10 @@ import Fastify from 'fastify'
 import fastifyCsrf from '@fastify/csrf-protection'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
-import fastifyView from '@fastify/view'
+import view from '@fastify/view'
 import formbody from '@fastify/formbody'
-import fastifySensible from '@fastify/sensible'
+import multipart from '@fastify/multipart'
+import sensible from '@fastify/sensible'
 import { PinoLoggerOptions } from 'fastify/types/logger.js'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
@@ -57,7 +58,9 @@ export function defFastify(config: Config) {
 
   const fastify = Fastify({ logger })
 
-  fastify.register(fastifySensible)
+  fastify.register(sensible)
+
+  fastify.register(multipart)
 
   // plugin to parse x-www-form-urlencoded bodies
   // https://github.com/fastify/fastify-formbody
@@ -170,7 +173,7 @@ export function defFastify(config: Config) {
     tokenEndpoint: token_endpoint
   })
 
-  fastify.register(fastifyView, {
+  fastify.register(view, {
     engine: { nunjucks },
     templates: [path.join(__dirname, 'templates')],
     options: {

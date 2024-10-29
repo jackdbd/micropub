@@ -1,14 +1,11 @@
 import * as jose from 'jose'
 
 interface AccessTokenPayload {
-  me: string
-  // issued_by: string
-  client_id: string
   exp: number // will expire at timestamp
   iat: number // issued at timestamp
-  // issued_at: number
-  scope: string
-  //   nonce: number
+  iss: string // issuer
+  me: string
+  scope: string // space-separated list of scopes
 }
 
 interface SecretConfig {

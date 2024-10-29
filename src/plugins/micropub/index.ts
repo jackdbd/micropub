@@ -162,6 +162,13 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   )
   fastify.log.debug(`${NAME} route registered: GET /micropub`)
 
+  // To upload files, the Micropub client MUST check for the presence of a Media
+  // Endpoint. If there is no Media Endpoint, the client can assume that the
+  // Micropub endpoint accepts files directly, and can send the request to it
+  // directly. To upload a file to the Micropub endpoint, format the whole
+  // request as multipart/form-data and send the file(s) as a standard property.
+  // https://micropub.spec.indieweb.org/#uploading-files
+
   const micropubPost = defMicropubPost({ ajv, base_url })
   fastify.post(
     '/micropub',

@@ -311,8 +311,24 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
+    const content_disposition = request.headers['content-disposition']
+    if (content_disposition && content_disposition.includes('form-data')) {
+      const message = `received request with content-disposition: form-data. Isn't a Micropub client supposed to send them only to the media endpoint? What should I do here?`
+      request.log.warn(message)
+      return reply.send({ message })
+    }
+
     if (!request.body) {
-      return reply.badRequest('missing request body')
+      const message = `request ${request.id} has no body`
+      const isMultipart = request.isMultipart()
+      request.log.warn({ isMultipart }, message)
+      const file = await request.file()
+      // const form_data = await request.formData()
+      request.log.warn({ isMultipart, file }, message)
+
+      reply.header('Location', `${base_url}/fake/foo`)
+      return reply.send({ message })
+      // return reply.badRequest('missing request body')
     }
 
     // TODO: JSON schema to TypeScript type/interface?

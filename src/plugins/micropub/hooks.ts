@@ -106,10 +106,8 @@ export const defValidateAccessToken = (config: ValidateAccessTokenConfig) => {
     const iat_utc = new Date(claims.iat * 1000).toUTCString()
     const exp_utc = new Date(claims.exp * 1000).toUTCString()
 
-    const client_id = claims.client_id
-
     request.log.info(
-      `${NAME} access token issued by ${client_id} at ${claims.iat} (${iat_utc}), will expire at ${claims.exp} (${exp_utc})`
+      `${NAME} access token issued by ${claims.iss} at ${claims.iat} (${iat_utc}), will expire at ${claims.exp} (${exp_utc})`
     )
 
     done()
