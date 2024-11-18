@@ -16,7 +16,7 @@ In one terminal, start the web server in watch mode:
 npm run watch
 ```
 
-In another terminal, make some requests to the `/micropub` endpoint. You could copy and paste these cURL command, or use API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).
+In another terminal, make some requests to the `/micropub` endpoint.
 
 ```sh
 curl "${BASE_URL}/micropub" \
@@ -33,6 +33,8 @@ curl "${BASE_URL}/micropub" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer invalid-token" | jq
 ```
+
+If you don't want to copy and paste curl commands in the terminal, you can make requests using API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).
 
 Obtain a valid access token using a micropub client, for example [Quill](https://quill.p3k.io/), [Micropublish](https://micropublish.net/) or [Indiekit](https://getindiekit.com/).
 

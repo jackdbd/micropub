@@ -28,6 +28,7 @@ import {
   micropub_post_request,
   plugin_options
 } from './schemas.js'
+import type { Store } from './store.js'
 
 export interface PluginOptions extends FastifyPluginOptions {
   authorizationCallbackRoute?: string
@@ -61,6 +62,8 @@ export interface PluginOptions extends FastifyPluginOptions {
    */
   reportAllAjvErrors?: boolean
 
+  store: Store
+
   submitEndpoint: string
 
   /**
@@ -79,7 +82,7 @@ export interface PluginOptions extends FastifyPluginOptions {
   tokenEndpoint: string
 }
 
-const defaultOptions: Partial<PluginOptions> = {
+const default_options: Partial<PluginOptions> = {
   authorizationCallbackRoute: '/auth/callback',
   codeChallengeMethod: 'S256',
   codeVerifierLength: 128,
@@ -93,12 +96,12 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   done
 ) => {
   const config = applyToDefaults(
-    defaultOptions,
+    default_options,
     options
   ) as Required<PluginOptions>
   fastify.log.debug(config, `${NAME} configuration`)
 
-  const { reportAllAjvErrors: allErrors } = config
+  const { reportAllAjvErrors: allErrors, store } = config
 
   // TODO: can I get an existing Ajv instance somehow? Should I?
   // Do NOT use allErrors in production
@@ -203,7 +206,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   )
   fastify.log.debug(`${NAME} route registered: POST /media`)
 
-  const micropubPost = defMicropubPost({ ajv, base_url })
+  const micropubPost = defMicropubPost({ ajv, base_url, store })
   fastify.post(
     '/micropub',
     {

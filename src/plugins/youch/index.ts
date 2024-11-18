@@ -133,7 +133,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
     }
 
     if (config.toggleShowAllFrames) {
-      // @ts-ignore
+      // @ts-ignore-next-line
       youch.toggleShowAllFrames()
     }
 

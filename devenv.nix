@@ -19,12 +19,17 @@ in {
   '';
 
   env = {
+    ACCESS_TOKEN = micropub.access_token;
+    BASE_URL = "http://localhost:${config.env.PORT}";
     CLOUDFLARE_ACCOUNT_ID = "43f9884041661b778e95a26992850715";
     CLOUDFLARE_R2_ACCESS_KEY_ID = cloudflare_r2.personal.access_key_id;
     CLOUDFLARE_R2_BUCKET_NAME = "giacomodebidda-content";
     CLOUDFLARE_R2_SECRET_ACCESS_KEY = cloudflare_r2.personal.secret_access_key;
     DEBUG = "micropub:*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
+    GITHUB_OWNER = "jackdbd";
+    GITHUB_REPO = "giacomodebidda-content";
+    GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
     LOG_LEVEL = "info";
     PORT = "3001";
     SECURE_SESSION_KEY_ONE = micropub.session_key_one;

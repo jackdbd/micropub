@@ -16,7 +16,7 @@ export interface PluginOptions extends FastifyPluginOptions {
 const defaultOptions: Partial<PluginOptions> = {
   algorithm: 'HS256',
   authorizationEndpoint: 'https://indieauth.com/auth',
-  expiration: '2 hours'
+  expiration: '3600 seconds'
 }
 
 const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (

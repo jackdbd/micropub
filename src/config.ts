@@ -4,6 +4,9 @@ export interface Config {
   cloudflare_r2_access_key_id: string
   cloudflare_r2_bucket_name: string
   cloudflare_r2_secret_access_key: string
+  github_owner: string
+  github_repo: string
+  github_token: string
   host: string
   log_level: string
   port: number
@@ -41,6 +44,21 @@ export const defConfig = () => {
     return { error: new Error('CLOUDFLARE_R2_SECRET_ACCESS_KEY not set') }
   }
 
+  const github_owner = process.env.GITHUB_OWNER
+  if (!github_owner) {
+    return { error: new Error('GITHUB_OWNER not set') }
+  }
+
+  const github_repo = process.env.GITHUB_REPO
+  if (!github_repo) {
+    return { error: new Error('GITHUB_REPO not set') }
+  }
+
+  const github_token = process.env.GITHUB_TOKEN
+  if (!github_token) {
+    return { error: new Error('GITHUB_TOKEN not set') }
+  }
+
   const secure_session_key_one_buf = process.env.SECURE_SESSION_KEY_ONE
   if (!secure_session_key_one_buf) {
     return { error: new Error('SECURE_SESSION_KEY_ONE not set') }
@@ -57,6 +75,9 @@ export const defConfig = () => {
     cloudflare_r2_access_key_id,
     cloudflare_r2_bucket_name,
     cloudflare_r2_secret_access_key,
+    github_owner,
+    github_repo,
+    github_token,
     host: process.env.HOST || '0.0.0.0',
     log_level: process.env.LOG_LEVEL || 'info',
     port,
@@ -74,6 +95,7 @@ export const defConfig = () => {
   const sensitive = new Set([
     'cloudflare_r2_access_key_id',
     'cloudflare_r2_secret_access_key',
+    'github_token',
     'secure_session_key_one_buf',
     'secure_session_key_two_buf'
   ])

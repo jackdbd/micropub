@@ -7,7 +7,20 @@ import { h_geo } from './h-geo.js'
 /**
  * microformats2 h-entry.
  *
- * All properties are optional and may be plural. See:
+ * All properties are optional and may be plural.
+ *
+ * Properties starting with 'mp-' are reserved as a mechanism for Micropub
+ * clients to give commands to Micropub servers.
+ *
+ * https://www.w3.org/TR/micropub/#reserved-properties
+ *
+ * Clients and servers wishing to experiment with creating new mp- commands are encouraged to brainstorm and document
+ * implementations at indieweb.org/Micropub-extensions.
+ *
+ * https://indieweb.org/Micropub-extensions
+ *
+ * See also:
+ *
  * - https://microformats.org/wiki/h-entry
  * - https://indieweb.org/h-entry
  * - https://randomgeekery.org/post/2020/04/h-entry-microformat-for-indieweb-posts/
@@ -69,6 +82,10 @@ export const h_entry = Type.Object(
       ])
     ),
 
+    'mp-slug': Type.Optional(Type.String()),
+
+    'mp-syndicate-to': Type.Optional(Type.String()),
+
     /**
      * entry name/title
      */
@@ -108,8 +125,6 @@ export const h_entry = Type.Object(
      */
     syndication: Type.Optional(Type.String()),
 
-    // TODO: mp-syndicate-to
-
     /**
      * when the entry was updated
      */
@@ -137,6 +152,7 @@ export const h_entry = Type.Object(
           value: 'this is a note',
           html: '<p>This <b>is</b> a note</p>'
         },
+        'mp-slug': 'test-note',
         published: '1985-04-12T23:20:50.52Z'
       },
       {

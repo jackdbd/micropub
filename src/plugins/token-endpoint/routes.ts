@@ -110,6 +110,10 @@ export const defTokenPost = (config: TokenPostConfig) => {
       })
     }
 
+    // console.log('=== ACCESS TOKEN ===')
+    // console.log(jwt)
+    // console.log('=== === ===')
+
     reply.header('Authorization', jwt)
     request.log.debug(`${prefix} set Bearer <JWT> in Authorization header`)
 

@@ -8,8 +8,18 @@ import type {
   H_entry,
   H_event
 } from '../../lib/microformats2/index.js'
-import { invalid_authorization, invalid_request } from '../errors.js'
+import { invalid_request, unauthorized } from './errors.js'
+import type { UpdatePatch } from './interfaces.js'
+import type { Store } from './store.js'
 import { defValidateMicroformats2 } from './mf2.js'
+import { syndicate } from './syndication.js'
+import {
+  base64ToUtf8,
+  hEntryToMarkdown,
+  markdownToHEntry,
+  slugify,
+  utf8ToBase64
+} from './utils.js'
 
 export interface CallbackConfig {
   client_id: string
@@ -136,7 +146,7 @@ export const defAuthCallback = (config: CallbackConfig) => {
     const auth = response.headers.get('Authorization')
 
     if (!auth) {
-      return reply.code(invalid_authorization.code).view('error.njk', {
+      return reply.code(unauthorized.code).view('error.njk', {
         message: `missing Authorization header`,
         description: 'Auth error page',
         title: 'Auth error'
@@ -300,7 +310,9 @@ export const defMicropubGet = (config: MicropubGetConfig) => {
 }
 
 interface PostRequestBody {
-  h: string
+  action?: 'delete' | 'undelete' | 'update'
+  h?: string
+  url?: string
 }
 
 interface PostRouteGeneric extends RouteGenericInterface {
@@ -310,10 +322,11 @@ interface PostRouteGeneric extends RouteGenericInterface {
 export interface MicropubPostConfig {
   ajv: Ajv
   base_url: string
+  store: Store
 }
 
 export const defMicropubPost = (config: MicropubPostConfig) => {
-  const { ajv, base_url } = config
+  const { ajv, base_url, store } = config
 
   const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
     defValidateMicroformats2(ajv)
@@ -326,14 +339,128 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       return reply.badRequest('request has no body')
     }
 
+    const { action, url } = request.body
+
+    if (url) {
+      switch (action) {
+        case 'delete': {
+          const path = store.publishedUrlToStoreLocation({ url })
+          const result = await store.delete({ path })
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          }
+
+          request.log.info(`deleted ${url}`)
+
+          return reply.code(result.value.status_code).send({
+            message: result.value.message
+          })
+        }
+
+        case 'undelete': {
+          const path = store.publishedUrlToStoreLocation({ url, deleted: true })
+          const result = await store.undelete({ path })
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          }
+
+          request.log.info(`undeleted ${url}`)
+
+          return reply.code(result.value.status_code).send({
+            message: result.value.message
+          })
+        }
+
+        case 'update': {
+          // Updating entries is done by sending an HTTP POST with a JSON payload describing the changes to make.
+          // https://micropub.spec.indieweb.org/#update-p-2
+          // https://micropub.spec.indieweb.org/#update-p-3
+          const path = store.publishedUrlToStoreLocation({ url })
+
+          const result_get = await store.get({ path })
+
+          if (result_get.error) {
+            return reply.code(result_get.error.status_code).send({
+              error: result_get.error.status_text,
+              error_description: result_get.error.message
+            })
+          }
+
+          const { content: original, sha } = result_get.value.body
+
+          const md_original = base64ToUtf8(original)
+          let h_entry = markdownToHEntry(md_original)
+
+          // console.log({
+          //   message: 'base64 content => markdown => h_entry',
+          //   content: original,
+          //   md: md_original,
+          //   h_entry
+          // })
+
+          const patch = request.body as UpdatePatch
+
+          if (patch.delete) {
+            const { [patch.delete]: _, ...keep } = h_entry as any
+            request.log.info(`deleted property ${patch.delete}`)
+            h_entry = keep as H_entry
+          }
+
+          if (patch.add) {
+            request.log.info(`added ${JSON.stringify(patch.add)}`)
+            h_entry = { ...h_entry, ...patch.add }
+          }
+
+          if (patch.replace) {
+            request.log.info(`replaced ${JSON.stringify(patch.replace)}`)
+            h_entry = { ...h_entry, ...patch.replace }
+          }
+
+          const md = hEntryToMarkdown(h_entry)
+
+          const content = utf8ToBase64(md)
+
+          const result = await store.update({
+            path,
+            content,
+            sha
+          })
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          }
+
+          request.log.info(`updated ${url}`)
+
+          return reply.code(result.value.status_code).send({
+            message: result.value.message,
+            body: result.value.body
+          })
+        }
+
+        default: {
+          request.log.warn(`action ${action} not supported`)
+        }
+      }
+    }
+
     // TODO: JSON schema to TypeScript type/interface?
     // https://github.com/bcherny/json-schema-to-typescript
 
     // If no type is specified, the default type h-entry SHOULD be used.
     // https://micropub.spec.indieweb.org/#create
     const h = request.body.h || 'entry'
-
-    let fake_permalink = `${base_url}/fake/foo`
 
     switch (h) {
       case 'card': {
@@ -343,6 +470,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
         const h_card = request.body as H_card
 
+        const fake_permalink = `${base_url}/fake/card`
         reply.header('Location', fake_permalink)
 
         return reply.code(202).send({
@@ -358,6 +486,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
         const h_cite = request.body as any as H_cite
 
+        const fake_permalink = `${base_url}/fake/cite`
         reply.header('Location', fake_permalink)
 
         return reply.code(202).send({
@@ -373,32 +502,119 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             .code(invalid_request.code)
             .send(invalid_request.payload('Invalid h-entry (TODO add details)'))
         }
-        const h_entry = request.body as H_entry
 
-        if (h_entry['content']) {
-          fake_permalink = `${base_url}/notes/foo`
-        }
+        const h_entry = request.body as H_entry
+        const slug = slugify(h_entry)
 
         if (h_entry['like-of']) {
-          fake_permalink = `${base_url}/likes/foo`
+          const md = hEntryToMarkdown(h_entry)
+          const content = utf8ToBase64(md)
+
+          const result = await store.create({
+            path: `likes/${slug}.md`,
+            content
+          })
+
+          // TODO: syndicate like
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          } else {
+            return reply.code(result.value.status_code).send({
+              h_entry,
+              body: result.value.body,
+              message: result.value.message
+            })
+          }
         }
 
         if (h_entry['in-reply-to']) {
-          fake_permalink = `${base_url}/replies/foo`
+          const md = hEntryToMarkdown(h_entry)
+          console.log('=== TODO: store reply ==')
+          console.log(md)
+          // const content = utf8ToBase64(md)
+
+          // const result = await store.create({
+          //   path: `replies/${slug}.md`,
+          //   content
+          // })
+
+          const messages = await syndicate(h_entry)
+          console.log('=== syndication ===')
+          console.log(messages)
+
+          return reply.code(200).send({
+            message: 'TODO implement reply'
+          })
         }
 
         if (h_entry['repost-of']) {
-          fake_permalink = `${base_url}/reposts/foo`
+          const md = hEntryToMarkdown(h_entry)
+          const content = utf8ToBase64(md)
+
+          const result = await store.create({
+            path: `reposts/${slug}.md`,
+            content
+          })
+
+          // TODO: syndicate repost
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          } else {
+            return reply.code(result.value.status_code).send({
+              h_entry,
+              body: result.value.body,
+              message: result.value.message
+            })
+          }
+        }
+
+        if (h_entry['content']) {
+          const md = hEntryToMarkdown(h_entry)
+          const content = utf8ToBase64(md)
+
+          // TODO: distinguish between articles and notes
+
+          const result = await store.create({
+            path: `notes/${slug}.md`,
+            content
+          })
+
+          // TODO: use a queue on Fly.io? Cloudflare Queues? Cloud Tasks?
+          // https://fly.io/docs/laravel/the-basics/cron-and-queues/#queue-worker
+          const messages = await syndicate(h_entry)
+          console.log('=== syndication ===')
+          console.log(messages)
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          } else {
+            return reply.code(result.value.status_code).send({
+              h_entry,
+              body: result.value.body,
+              message: result.value.message
+            })
+          }
         }
 
         // We should return a Location response header if we can't (or don't
         // want to) publish the post right away.
         // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
-        reply.header('Location', fake_permalink)
+        // reply.header('Location', fake_permalink)
 
-        return reply.code(202).send({
+        return reply.code(501).send({
           h_entry,
-          message: 'Request accepted.'
+          message: 'Entry not yet handled explicitly.'
         })
       }
 
@@ -410,6 +626,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const h_event = request.body as H_event
 
+        const fake_permalink = `${base_url}/fake/event`
         reply.header('Location', fake_permalink)
 
         return reply.code(202).send({

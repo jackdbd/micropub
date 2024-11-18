@@ -10,6 +10,7 @@ import multipart from '@fastify/multipart'
 import sensible from '@fastify/sensible'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
+import { defStore } from './lib/github-contents/store.js'
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
 import indieauth from './plugins/indieauth/index.js'
@@ -107,7 +108,7 @@ export function defFastify(config: Config) {
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
     baseUrl: base_url,
-    expiration: '4 hours',
+    expiration: '72 hours', // TODO: use a short-lived access token (e.g. 3600 seconds)
     issuer
   })
 
@@ -151,6 +152,16 @@ export function defFastify(config: Config) {
     }
   ]
 
+  const store = defStore({
+    owner: config.github_owner,
+    repo: config.github_repo,
+    token: config.github_token,
+    committer: {
+      name: 'Giacomo Debidda',
+      email: 'giacomo@giacomodebidda.com'
+    }
+  })
+
   fastify.register(micropub, {
     baseUrl: base_url,
     clientId: client_id,
@@ -162,6 +173,7 @@ export function defFastify(config: Config) {
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
     reportAllAjvErrors: report_all_ajv_errors,
+    store,
     submitEndpoint: submit_endpoint,
     syndicateTo: syndicate_to,
     tokenEndpoint: token_endpoint
