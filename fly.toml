@@ -18,7 +18,7 @@ kill_timeout = 180
   CLOUDFLARE_R2_BUCKET_NAME = "giacomodebidda-content"
   GITHUB_OWNER= "jackdbd"
   GITHUB_REPO = "giacomodebidda-content"
-  LOG_LEVEL = "info"
+  LOG_LEVEL = "debug"
   NODE_ENV = "production"
 
 [http_service]

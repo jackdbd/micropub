@@ -312,6 +312,7 @@ export const defMicropubGet = (config: MicropubGetConfig) => {
 }
 
 interface PostRequestBody {
+  access_token?: string
   action?: 'delete' | 'undelete' | 'update'
   h?: string
   url?: string
@@ -342,8 +343,12 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     }
 
     console.log('=== request.body ===', request.body)
-
-    const { action, url } = request.body
+    // Micropub requests from Quill include an access token in the body. I'm not
+    // sure it's my fault or it's a Quill issue. Obviously, we don't want the
+    // access token to appear in any published content, so we need to remove it.
+    const { access_token: _, ...request_body } = request.body
+    const { action, url } = request_body
+    console.log('=== request_body ===', request_body)
 
     if (url) {
       switch (action) {
@@ -410,7 +415,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           //   h_entry
           // })
 
-          const patch = request.body as UpdatePatch
+          const patch = request_body as UpdatePatch
 
           if (patch.delete) {
             const { [patch.delete]: _, ...keep } = h_entry as any
@@ -464,20 +469,20 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
     // If no type is specified, the default type h-entry SHOULD be used.
     // https://micropub.spec.indieweb.org/#create
-    const h = request.body.h || 'entry'
+    const h = request_body.h || 'entry'
 
     switch (h) {
       case 'card': {
-        const valid = validateH_card(request.body)
+        const valid = validateH_card(request_body)
         if (!valid) {
           request.log.warn(
-            { body: request.body, errors: validateH_card.errors || [] },
+            { body: request_body, errors: validateH_card.errors || [] },
             'received invalid h-card'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_card = request.body as H_card
+        const h_card = request_body as H_card
 
         const fake_permalink = `${base_url}/fake/card`
         reply.header('Location', fake_permalink)
@@ -489,16 +494,16 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'cite': {
-        const valid = validateH_cite(request.body)
+        const valid = validateH_cite(request_body)
         if (!valid) {
           request.log.warn(
-            { body: request.body, errors: validateH_cite.errors || [] },
+            { body: request_body, errors: validateH_cite.errors || [] },
             'received invalid h-cite'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_cite = request.body as any as H_cite
+        const h_cite = request_body as any as H_cite
 
         const fake_permalink = `${base_url}/fake/cite`
         reply.header('Location', fake_permalink)
@@ -510,10 +515,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'entry': {
-        const valid = validateH_entry(request.body)
+        const valid = validateH_entry(request_body)
         if (!valid) {
           request.log.warn(
-            { body: request.body, errors: validateH_entry.errors || [] },
+            { body: request_body, errors: validateH_entry.errors || [] },
             'received invalid h-entry'
           )
           return reply
@@ -521,7 +526,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             .send(invalid_request.payload('Invalid h-entry (TODO add details)'))
         }
 
-        const h_entry = request.body as H_entry
+        const h_entry = request_body as H_entry
         const slug = slugify(h_entry)
 
         if (h_entry['like-of']) {
@@ -637,16 +642,16 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'event': {
-        const valid = validateH_event(request.body)
+        const valid = validateH_event(request_body)
         if (!valid) {
           request.log.warn(
-            { body: request.body, errors: validateH_event.errors || [] },
+            { body: request_body, errors: validateH_event.errors || [] },
             'received invalid h-event'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_event = request.body as H_event
+        const h_event = request_body as H_event
 
         const fake_permalink = `${base_url}/fake/event`
         reply.header('Location', fake_permalink)
