@@ -51,6 +51,8 @@
     "@fastify/static": "^8.0.2",
     "@fastify/view": "^10.0.1",
     "@hapi/hoek": "^11.0.4",
+    "@jackdbd/notifications": "^1.0.3",
+    "@jackdbd/telegram-text-messages": "^1.2.0",
     "@sinclair/typebox": "^0.33.17",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",

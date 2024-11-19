@@ -14,6 +14,8 @@ export interface Config {
   secure_session_expiration: number
   secure_session_key_one_buf: string
   secure_session_key_two_buf: string
+  telegram_chat_id: string
+  telegram_token: string
   use_development_error_handler: boolean
   use_secure_flag_for_session_cookie: boolean
   NODE_ENV: string
@@ -69,6 +71,16 @@ export const defConfig = () => {
     return { error: new Error('SECURE_SESSION_KEY_TWO not set') }
   }
 
+  const telegram_chat_id = process.env.TELEGRAM_CHAT_ID
+  if (!telegram_chat_id) {
+    return { error: new Error('TELEGRAM_CHAT_ID not set') }
+  }
+
+  const telegram_token = process.env.TELEGRAM_TOKEN
+  if (!telegram_token) {
+    return { error: new Error('TELEGRAM_TOKEN not set') }
+  }
+
   const config: Config = {
     base_url: process.env.BASE_URL || `http://localhost:${port}`,
     cloudflare_account_id,
@@ -85,6 +97,8 @@ export const defConfig = () => {
     secure_session_expiration: 60 * 60, // in seconds
     secure_session_key_one_buf,
     secure_session_key_two_buf,
+    telegram_chat_id,
+    telegram_token,
     use_development_error_handler:
       process.env.NODE_ENV === 'production' ? true : false,
     use_secure_flag_for_session_cookie:
@@ -97,7 +111,8 @@ export const defConfig = () => {
     'cloudflare_r2_secret_access_key',
     'github_token',
     'secure_session_key_one_buf',
-    'secure_session_key_two_buf'
+    'secure_session_key_two_buf',
+    'telegram_token'
   ])
 
   const entries = Object.entries(config).filter(([key]) => {

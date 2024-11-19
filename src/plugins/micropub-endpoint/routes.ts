@@ -294,7 +294,9 @@ export const defMicropubGet = (config: MicropubGetConfig) => {
       'media-endpoint': media_endpoint,
       'syndicate-to': syndicate_to
     }
+
     const accept = request.headers.accept
+
     if (accept && accept.includes('text/html')) {
       return reply.view('micropub-config.njk', {
         description: 'Configuration for this micropub endpoint.',

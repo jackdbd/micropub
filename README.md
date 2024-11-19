@@ -97,4 +97,5 @@ Whenever you need to update secrets on Fly.io, use these commands (see `devenv.n
 fly-secrets-set-github
 fly-secrets-set-cloudflare
 fly-secrets-set-secure-session-keys
+fly-secrets-set-telegram
 ```

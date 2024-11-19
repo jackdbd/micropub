@@ -8,6 +8,7 @@
   cloudflare_r2 = builtins.fromJSON (builtins.readFile /run/secrets/cloudflare/r2);
   micropub = builtins.fromJSON (builtins.readFile /run/secrets/micropub);
   fly_micropub = builtins.fromJSON (builtins.readFile /run/secrets/fly/micropub);
+  telegram = builtins.fromJSON (builtins.readFile /run/secrets/telegram/jackdbd_github_bot);
 in {
   enterShell = ''
     versions
@@ -34,7 +35,8 @@ in {
     PORT = "3001";
     SECURE_SESSION_KEY_ONE = micropub.session_key_one;
     SECURE_SESSION_KEY_TWO = micropub.session_key_two;
-    TELEGRAM = builtins.readFile /run/secrets/telegram/jackdbd_github_bot;
+    TELEGRAM_CHAT_ID = telegram.chat_id;
+    TELEGRAM_TOKEN = telegram.token;
   };
 
   languages = {
@@ -106,6 +108,10 @@ in {
     fly-secrets-set-secure-session-keys.exec = ''
       fly secrets set SECURE_SESSION_KEY_ONE="${micropub.session_key_one}"
       fly secrets set SECURE_SESSION_KEY_TWO="${micropub.session_key_two}"
+    '';
+    fly-secrets-set-telegram.exec = ''
+      fly secrets set TELEGRAM_CHAT_ID="${telegram.chat_id}"
+      fly secrets set TELEGRAM_TOKEN="${telegram.token}"
     '';
     versions.exec = ''
       echo "=== Versions ==="

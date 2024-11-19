@@ -46,6 +46,8 @@ export function defFastify(config: Config) {
     secure_session_expiration,
     secure_session_key_one_buf,
     secure_session_key_two_buf,
+    telegram_chat_id,
+    telegram_token,
     use_development_error_handler,
     use_secure_flag_for_session_cookie
   } = config
@@ -100,7 +102,9 @@ export function defFastify(config: Config) {
   if (use_development_error_handler) {
     fastify.register(youch, { preLines: 5 })
   } else {
-    fastify.register(errorHandler)
+    fastify.register(errorHandler, {
+      telegram: { chat_id: telegram_chat_id, token: telegram_token }
+    })
   }
 
   const issuer = base_url
