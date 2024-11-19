@@ -470,8 +470,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       case 'card': {
         const valid = validateH_card(request.body)
         if (!valid) {
+          request.log.warn(
+            { body: request.body, errors: validateH_card.errors || [] },
+            'received invalid h-card'
+          )
           return reply.badRequest('invalid_request')
         }
+
         const h_card = request.body as H_card
 
         const fake_permalink = `${base_url}/fake/card`
@@ -486,8 +491,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       case 'cite': {
         const valid = validateH_cite(request.body)
         if (!valid) {
+          request.log.warn(
+            { body: request.body, errors: validateH_cite.errors || [] },
+            'received invalid h-cite'
+          )
           return reply.badRequest('invalid_request')
         }
+
         const h_cite = request.body as any as H_cite
 
         const fake_permalink = `${base_url}/fake/cite`
@@ -502,6 +512,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       case 'entry': {
         const valid = validateH_entry(request.body)
         if (!valid) {
+          request.log.warn(
+            { body: request.body, errors: validateH_entry.errors || [] },
+            'received invalid h-entry'
+          )
           return reply
             .code(invalid_request.code)
             .send(invalid_request.payload('Invalid h-entry (TODO add details)'))
@@ -625,6 +639,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       case 'event': {
         const valid = validateH_event(request.body)
         if (!valid) {
+          request.log.warn(
+            { body: request.body, errors: validateH_event.errors || [] },
+            'received invalid h-event'
+          )
           return reply.badRequest('invalid_request')
         }
 
