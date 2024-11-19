@@ -86,3 +86,15 @@ curl "${BASE_URL}/micropub" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" | jq
 ```
+
+## Deploy
+
+The CI takes care of deploying the app to Fly.io every time a new commit gets pushed in the `main` branch of the remote repository.
+
+Whenever you need to update secrets on Fly.io, use these commands (see `devenv.nix`):
+
+```sh
+fly-secrets-set-github
+fly-secrets-set-cloudflare
+fly-secrets-set-secure-session-keys
+```

@@ -100,6 +100,9 @@ in {
       fly secrets set CLOUDFLARE_R2_ACCESS_KEY_ID="${cloudflare_r2.personal.access_key_id}"
       fly secrets set CLOUDFLARE_R2_SECRET_ACCESS_KEY="${cloudflare_r2.personal.secret_access_key}"
     '';
+    fly-secrets-set-github.exec = ''
+      fly secrets set GITHUB_TOKEN="${config.env.GITHUB_TOKEN}"
+    '';
     fly-secrets-set-secure-session-keys.exec = ''
       fly secrets set SECURE_SESSION_KEY_ONE="${micropub.session_key_one}"
       fly secrets set SECURE_SESSION_KEY_TWO="${micropub.session_key_two}"

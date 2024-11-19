@@ -5,7 +5,7 @@ import { defConfig } from '../dist/config.js'
 
 const defTestApp = () => {
   const { error, value: config } = defConfig()
-  assert.ok(!error)
+  assert.ok(!error, error.message)
   return defFastify(config)
 }
 
