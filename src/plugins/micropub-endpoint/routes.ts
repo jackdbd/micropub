@@ -341,6 +341,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       return reply.badRequest('request has no body')
     }
 
+    console.log('=== request.body ===', request.body)
+
     const { action, url } = request.body
 
     if (url) {
