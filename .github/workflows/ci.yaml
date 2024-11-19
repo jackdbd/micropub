@@ -41,6 +41,8 @@ jobs:
 
       - name: 🔍 Test app
         env:
+          CLOUDFLARE_ACCOUNT_ID: 43f9884041661b778e95a26992850715
+          CLOUDFLARE_R2_BUCKET_NAME: giacomodebidda-content
           PORT: 3000
           SECURE_SESSION_KEY_ONE: ${{ secrets.SECURE_SESSION_KEY_ONE }}
           SECURE_SESSION_KEY_TWO: ${{ secrets.SECURE_SESSION_KEY_TWO }}
