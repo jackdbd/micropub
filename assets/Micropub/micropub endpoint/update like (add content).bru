@@ -1,7 +1,7 @@
 meta {
-  name: update note
+  name: update like (add content)
   type: http
-  seq: 12
+  seq: 9
 }
 
 post {
@@ -17,22 +17,9 @@ auth:bearer {
 body:json {
   {
     "action": "update",
-    "url": "{{test_note_url}}",
-    "delete": "location",
-    "replace": {
-      "content": {
-        "html": "<p>test note <b>updated</b> again</p>"
-      }
-    },
+    "url": "{{test_like_url}}",
     "add": {
-      "category": [
-        "micropub",
-        "indieweb",
-        "test"
-      ],
-      "syndication": [
-        "http://web.archive.org/web/20040104110725/https://aaronpk.example/2014/06/01/9/indieweb"
-      ]
+      "content": "I agree that keeping the content we publish online separated from any presentation layer is a good idea."
     }
   }
 }
