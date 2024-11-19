@@ -93,14 +93,15 @@ export const defConfig = () => {
     host: process.env.HOST || '0.0.0.0',
     log_level: process.env.LOG_LEVEL || 'info',
     port,
-    report_all_ajv_errors: process.env.NODE_ENV === 'production' ? false : true,
+    report_all_ajv_errors:
+      process.env.NODE_ENV === 'development' ? true : false,
     secure_session_expiration: 60 * 60, // in seconds
     secure_session_key_one_buf,
     secure_session_key_two_buf,
     telegram_chat_id,
     telegram_token,
     use_development_error_handler:
-      process.env.NODE_ENV === 'production' ? true : false,
+      process.env.NODE_ENV === 'development' ? true : false,
     use_secure_flag_for_session_cookie:
       process.env.NODE_ENV === 'production' ? true : false,
     NODE_ENV: process.env.NODE_ENV || 'production'
