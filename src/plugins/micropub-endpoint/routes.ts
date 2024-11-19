@@ -342,13 +342,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       return reply.badRequest('request has no body')
     }
 
-    console.log('=== request.body ===', request.body)
+    // console.log('=== request.body ===', request.body)
     // Micropub requests from Quill include an access token in the body. I'm not
     // sure it's my fault or it's a Quill issue. Obviously, we don't want the
     // access token to appear in any published content, so we need to remove it.
     const { access_token: _, ...request_body } = request.body
     const { action, url } = request_body
-    console.log('=== request_body ===', request_body)
+    // console.log('=== request_body ===', request_body)
 
     if (url) {
       switch (action) {
@@ -528,6 +528,31 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const h_entry = request_body as H_entry
         const slug = slugify(h_entry)
+
+        if (h_entry['bookmark-of']) {
+          const md = hEntryToMarkdown(h_entry)
+          const content = utf8ToBase64(md)
+
+          const result = await store.create({
+            path: `bookmarks/${slug}.md`,
+            content
+          })
+
+          // TODO: syndicate bookmark
+
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          } else {
+            return reply.code(result.value.status_code).send({
+              h_entry,
+              body: result.value.body,
+              message: result.value.message
+            })
+          }
+        }
 
         if (h_entry['like-of']) {
           const md = hEntryToMarkdown(h_entry)

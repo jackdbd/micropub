@@ -26,13 +26,11 @@ export const slugify = (h_entry: H_entry) => {
     return str.toLowerCase()
   }
 
-  // if (h_entry['bookmark-of']) {
-  //   str = `bookmark-${h_entry['bookmark-of']
-  //     .replace(/^https?:\/\//, '')
-  //     .replaceAll(/\./g, replacement_character)}`
-  // }
-
-  if (h_entry['like-of']) {
+  if (h_entry['bookmark-of']) {
+    str = `bookmark-${h_entry['bookmark-of']
+      .replace(/^https?:\/\//, '')
+      .replaceAll(/\./g, replacement_character)}`
+  } else if (h_entry['like-of']) {
     str = `like-${h_entry['like-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`

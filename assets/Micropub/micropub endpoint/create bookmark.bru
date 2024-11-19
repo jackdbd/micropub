@@ -1,7 +1,7 @@
 meta {
-  name: create like
+  name: create bookmark
   type: http
-  seq: 7
+  seq: 4
 }
 
 post {
@@ -22,7 +22,11 @@ body:json {
 }
 
 body:form-urlencoded {
-  like-of: https://github.com/paulrobertlloyd/paulrobertlloyd-content
+  bookmark-of: https://piccalil.li/blog/what-are-design-tokens/
   h: entry
-  mp-slug: content-divorced-from-presentation
+  content: Andy Bell's article on design tokens
+  category[]: design
+  category[]: css
+  name: what-are-design-tokens
+  mp-syndicate-to[]: {{syndication_uid_mastodon}}
 }
