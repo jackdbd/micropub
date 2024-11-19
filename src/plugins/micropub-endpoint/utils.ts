@@ -59,32 +59,39 @@ export const slugify = (h_entry: H_entry) => {
 export const hEntryToMarkdown = (h_entry: H_entry) => {
   const { content, ...frontmatter } = h_entry
 
-  let str: string
+  // Consider using this library for the frontmatter:
+  // https://github.com/importantimport/fff
+  const fm = `---\n${yaml.stringify(frontmatter)}---\n`
+
+  let str: string | undefined
   if (h_entry.content) {
     if (typeof h_entry.content === 'string') {
       str = h_entry.content
     } else {
       str = h_entry.content.html
     }
-  } else {
-    // If a Micropub client sent us a h-entry with no mp-slug and no content...
-    // ...what else can we do?
-    str = 'no-content'
   }
 
-  const html = markdownToHtml(str)
-  const md = htmlToMarkdown(html)
-  // console.log({ message: 'str => HTML => md', str, html, md })
-
-  // Consider using this library for the frontmatter:
-  // https://github.com/importantimport/fff
-  const fm = `---\n${yaml.stringify(frontmatter)}---\n`
-  return `${fm}\n${md}`
+  // Bookmarks, likes, reposts often have no text content. For them, we only
+  // include the frontmatter.
+  if (str) {
+    const html = markdownToHtml(str)
+    const md = htmlToMarkdown(html)
+    return `${fm}\n${md}`
+  } else {
+    return fm
+  }
 }
 
 export const markdownToHEntry = (md: string): H_entry => {
   const parsed = matter(md)
-  const html = markdownToHtml(parsed.content)
-  const value = htmlToMarkdown(html)
-  return { ...parsed.data, content: { html, value } }
+
+  // Bookmarks, likes, reposts often have no text content.
+  if (parsed.content) {
+    const html = markdownToHtml(parsed.content)
+    const value = htmlToMarkdown(html)
+    return { ...parsed.data, content: { html, value } }
+  } else {
+    return { ...parsed.data }
+  }
 }
