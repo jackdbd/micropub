@@ -1,11 +1,13 @@
-import { ValidateFunction } from 'ajv'
+import Ajv from 'ajv'
+import type { ValidateFunction } from 'ajv'
+import addFormats from 'ajv-formats'
 import { TSchema } from '@sinclair/typebox'
-import { geo_uri, h_geo } from '../src/plugins/micropub/microformats2/index.js'
+import { geo_uri, h_geo } from '../src/lib/microformats2/index.js'
 import {
   micropub_get_request,
   micropub_post_request
-} from '../src/plugins/micropub/schemas.js'
-import { compileSchemasAndGetValidateFunctions } from '../src/plugins/micropub/utils.js'
+} from '../src/plugins/micropub-endpoint/schemas.js'
+import { defValidateMicroformats2 } from '../src/plugins/micropub-endpoint/mf2.js'
 
 // TODO: convert most of this stuff to tests for the microformats2 library
 
@@ -37,6 +39,23 @@ const main = async () => {
   describe(micropub_post_request)
   describe(geo_uri)
 
+  const ajv = addFormats(new Ajv({ allErrors: true }), [
+    'date',
+    'date-time',
+    'email',
+    'hostname',
+    'ipv4',
+    'ipv6',
+    'json-pointer',
+    'regex',
+    'relative-json-pointer',
+    'time',
+    'uri',
+    'uri-reference',
+    'uri-template',
+    'uuid'
+  ])
+
   const {
     validateGeoURI,
     validateH_adr,
@@ -45,10 +64,8 @@ const main = async () => {
     validateH_entry,
     validateH_event,
     validateH_geo,
-    validateH_item,
-    validateMicropubGetRequest,
-    validateMicropubPostRequest
-  } = compileSchemasAndGetValidateFunctions()
+    validateH_item
+  } = defValidateMicroformats2(ajv)
 
   check('bare minimum note', { content: 'this is a note' }, validateH_entry)
 
@@ -149,18 +166,6 @@ const main = async () => {
       url: 'http://example.org/items/1'
     },
     validateH_item
-  )
-
-  check(
-    'micropub GET request',
-    { query: { q: 'syndicate-to' } },
-    validateMicropubGetRequest
-  )
-
-  check(
-    'micropub POST request',
-    { body: { 'like-of': 'http://othersite.example.com/permalink47' } },
-    validateMicropubPostRequest
   )
 }
 

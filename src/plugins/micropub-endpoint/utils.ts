@@ -3,7 +3,6 @@ import slugifyFn from 'slugify'
 import yaml from 'yaml'
 import type {
   H_entry,
-  H_event,
   Mf2,
   Mf2Type,
   PostType

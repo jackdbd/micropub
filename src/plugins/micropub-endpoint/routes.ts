@@ -306,7 +306,7 @@ export interface MicropubPostConfig {
 export const defMicropubPost = (config: MicropubPostConfig) => {
   const { ajv, me, store } = config
 
-  const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
+  const { validateH_card, validateH_cite, validateH_entry } =
     defValidateMicroformats2(ajv)
 
   const actions = defActions({ store })
