@@ -22,8 +22,17 @@ const syndicate_to: SyndicateToItem[] = [
         'https://cdn.fosstodon.org/accounts/avatars/109/632/759/548/530/989/original/7662659b2847db84.jpeg'
     }
   },
-  // https://news.indieweb.org/how-to-submit-a-post
-  { uid: 'https://news.indieweb.org/en', name: 'IndieNews' }
+  // TODO: https://news.indieweb.org/how-to-submit-a-post
+  {
+    uid: 'https://news.indieweb.org/en',
+    name: 'giacomodebidda.com on IndieNews',
+    service: {
+      name: 'IndieNews',
+      url: 'https://news.indieweb.org/en',
+      photo:
+        'https://indieweb.org/images/thumb/6/67/indiewebcamp-logo-lockup-color%403x.png/800px-indiewebcamp-logo-lockup-color%403x.png'
+    }
+  }
 ]
 
 export interface Config {
