@@ -21,3 +21,6 @@ export { h_geo } from './h-geo.js'
 export type { H_geo } from './h-geo.js'
 export { h_item } from './h-item.js'
 export type { H_item } from './h-item.js'
+
+// https://micropub.spec.indieweb.org/#examples-of-creating-objects
+export type Mf2ObjectType = 'card' | 'cite' | 'entry' | 'event'

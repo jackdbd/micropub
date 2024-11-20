@@ -6,21 +6,17 @@ import type {
   H_card,
   H_cite,
   H_entry,
-  H_event
+  H_event,
+  Mf2ObjectType
 } from '../../lib/microformats2/index.js'
 import { invalid_request, unauthorized } from './errors.js'
-import type { UpdatePatch } from './interfaces.js'
 import type { Store } from './store.js'
 import { defValidateMicroformats2 } from './mf2.js'
 import { syndicate } from './syndication.js'
 import type { SyndicateToItem } from './syndication.js'
-import {
-  base64ToUtf8,
-  hEntryToMarkdown,
-  markdownToHEntry,
-  slugify,
-  utf8ToBase64
-} from './utils.js'
+import { hEntryToMarkdown, slugify, utf8ToBase64 } from './utils.js'
+import type { ActionType, UpdatePatch } from './actions.js'
+import { defActions } from './actions.js'
 
 export interface CallbackConfig {
   client_id: string
@@ -295,8 +291,8 @@ export const defMicropubGet = (config: MicropubGetConfig) => {
 
 interface PostRequestBody {
   access_token?: string
-  action?: 'delete' | 'undelete' | 'update'
-  h?: string
+  action?: ActionType
+  h?: Mf2ObjectType
   url?: string
 }
 
@@ -321,6 +317,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
   const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
     defValidateMicroformats2(ajv)
 
+  const actions = defActions({ store })
+
   const micropubPost: RouteHandler<PostRouteGeneric> = async (
     request,
     reply
@@ -329,37 +327,37 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       return reply.badRequest('request has no body')
     }
 
-    // console.log('=== request.body ===', request.body)
+    console.log('=== request.body (for troubleshooting Micropub clients) ===')
+    console.log(request.body)
+
     // Micropub requests from Quill include an access token in the body. I'm not
     // sure it's my fault or it's a Quill issue. Obviously, we don't want the
     // access token to appear in any published content, so we need to remove it.
-    const { access_token: _, ...request_body } = request.body
-    const { action, url } = request_body
-    // console.log('=== request_body ===', request_body)
+    const { access_token: _, action, url, h, ...rest } = request.body
 
-    if (url) {
+    // TODO: should actions be syndicated?
+
+    if (url && action) {
       switch (action) {
         case 'delete': {
-          const path = store.publishedUrlToStoreLocation({ url })
-          const result = await store.delete({ path })
+          const result = await actions.delete(url)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
+            const { status_code, status_text, message } = result.error
+            return reply.code(status_code).send({
+              error: status_text,
+              error_description: message
             })
           }
 
           request.log.info(`deleted ${url}`)
 
-          return reply.code(result.value.status_code).send({
-            message: result.value.message
-          })
+          const { status_code, message } = result.value
+          return reply.code(status_code).send({ message })
         }
 
         case 'undelete': {
-          const path = store.publishedUrlToStoreLocation({ url, deleted: true })
-          const result = await store.undelete({ path })
+          const result = await actions.undelete(url)
 
           if (result.error) {
             return reply.code(result.error.status_code).send({
@@ -379,56 +377,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           // Updating entries is done by sending an HTTP POST with a JSON payload describing the changes to make.
           // https://micropub.spec.indieweb.org/#update-p-2
           // https://micropub.spec.indieweb.org/#update-p-3
-          const path = store.publishedUrlToStoreLocation({ url })
-
-          const result_get = await store.get({ path })
-
-          if (result_get.error) {
-            return reply.code(result_get.error.status_code).send({
-              error: result_get.error.status_text,
-              error_description: result_get.error.message
-            })
-          }
-
-          const { content: original, sha } = result_get.value.body
-
-          const md_original = base64ToUtf8(original)
-          let h_entry = markdownToHEntry(md_original)
-
-          // console.log({
-          //   message: 'base64 content => markdown => h_entry',
-          //   content: original,
-          //   md: md_original,
-          //   h_entry
-          // })
-
-          const patch = request_body as UpdatePatch
-
-          if (patch.delete) {
-            const { [patch.delete]: _, ...keep } = h_entry as any
-            request.log.info(`deleted property ${patch.delete}`)
-            h_entry = keep as H_entry
-          }
-
-          if (patch.add) {
-            request.log.info(`added ${JSON.stringify(patch.add)}`)
-            h_entry = { ...h_entry, ...patch.add }
-          }
-
-          if (patch.replace) {
-            request.log.info(`replaced ${JSON.stringify(patch.replace)}`)
-            h_entry = { ...h_entry, ...patch.replace }
-          }
-
-          const md = hEntryToMarkdown(h_entry)
-
-          const content = utf8ToBase64(md)
-
-          const result = await store.update({
-            path,
-            content,
-            sha
-          })
+          const patch = rest as UpdatePatch
+          const result = await actions.update(url, patch)
 
           if (result.error) {
             return reply.code(result.error.status_code).send({
@@ -446,7 +396,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
 
         default: {
-          request.log.warn(`action ${action} not supported`)
+          const message = `action ${action} is not supported by this Micropub server`
+          request.log.warn(message)
+          return reply.notImplemented(message)
         }
       }
     }
@@ -454,22 +406,22 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // TODO: JSON schema to TypeScript type/interface?
     // https://github.com/bcherny/json-schema-to-typescript
 
-    // If no type is specified, the default type h-entry SHOULD be used.
+    // If no type is specified, the default type (h-entry) SHOULD be used.
     // https://micropub.spec.indieweb.org/#create
-    const h = request_body.h || 'entry'
+    const mf2_entry = h || 'entry'
 
-    switch (h) {
+    switch (mf2_entry) {
       case 'card': {
-        const valid = validateH_card(request_body)
+        const valid = validateH_card(rest)
         if (!valid) {
           request.log.warn(
-            { body: request_body, errors: validateH_card.errors || [] },
+            { body: rest, errors: validateH_card.errors || [] },
             'received invalid h-card'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_card = request_body as H_card
+        const h_card = rest as H_card
 
         reply.header('Location', LOCATION)
 
@@ -480,16 +432,16 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'cite': {
-        const valid = validateH_cite(request_body)
+        const valid = validateH_cite(rest)
         if (!valid) {
           request.log.warn(
-            { body: request_body, errors: validateH_cite.errors || [] },
+            { body: rest, errors: validateH_cite.errors || [] },
             'received invalid h-cite'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_cite = request_body as any as H_cite
+        const h_cite = rest as H_cite
 
         reply.header('Location', LOCATION)
 
@@ -500,10 +452,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'entry': {
-        const valid = validateH_entry(request_body)
+        const valid = validateH_entry(rest)
         if (!valid) {
           request.log.warn(
-            { body: request_body, errors: validateH_entry.errors || [] },
+            { body: rest, errors: validateH_entry.errors || [] },
             'received invalid h-entry'
           )
           return reply
@@ -511,7 +463,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             .send(invalid_request.payload('Invalid h-entry (TODO add details)'))
         }
 
-        const h_entry = request_body as H_entry
+        const h_entry = rest as H_entry
         const slug = slugify(h_entry)
 
         if (h_entry['bookmark-of']) {
@@ -657,16 +609,16 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'event': {
-        const valid = validateH_event(request_body)
+        const valid = validateH_event(rest)
         if (!valid) {
           request.log.warn(
-            { body: request_body, errors: validateH_event.errors || [] },
+            { body: rest, errors: validateH_event.errors || [] },
             'received invalid h-event'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_event = request_body as H_event
+        const h_event = rest as H_event
 
         // TODO: process event and syndicate it
         const messages = await syndicate(h_event)
@@ -681,8 +633,11 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         })
       }
 
-      default:
-        return reply.notImplemented(`h=${h} not implemented`)
+      default: {
+        const message = `h=${h} not supported by this Micropub server`
+        request.log.warn(message)
+        return reply.notImplemented(message)
+      }
     }
   }
 
