@@ -2,14 +2,10 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import type {
-  H_card,
-  H_cite,
-  H_entry,
-  H_event
-} from '../../lib/microformats2/index.js'
+import type { H_card, H_cite, H_entry } from '../../lib/microformats2/index.js'
 import { defActions, type UpdatePatch } from './actions.js'
 import { invalid_request, unauthorized } from './errors.js'
+import { eventMf2JsonToObj } from './mf2json.js'
 import type { Store } from './store.js'
 import { defValidateMicroformats2 } from './mf2.js'
 import { syndicate, type SyndicateToItem } from './syndication.js'
@@ -637,18 +633,17 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'event': {
-        const valid = validateH_event(rest)
-        if (!valid) {
-          request.log.warn(
-            { body: rest, errors: validateH_event.errors || [] },
-            'received invalid h-event'
-          )
-          return reply.badRequest('invalid_request')
-        }
+        // const valid = validateH_event(rest)
+        // if (!valid) {
+        //   request.log.warn(
+        //     { body: rest, errors: validateH_event.errors || [] },
+        //     'received invalid h-event'
+        //   )
+        //   return reply.badRequest('invalid_request')
+        // }
 
-        const h_event = rest as H_event
+        const h_event = eventMf2JsonToObj((rest as any).properties)
         const slug = slugifyEvent(h_event)
-
         const md = mf2ToMarkdown(h_event)
         const content = utf8ToBase64(md)
 

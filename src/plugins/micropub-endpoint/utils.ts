@@ -69,24 +69,24 @@ export const slugify = (h_entry: H_entry) => {
   return slugifyFn(str, slugify_options)
 }
 
-export const slugifyEvent = (h_event: H_event) => {
-  let str = h_event['mp-slug']
+export const slugifyEvent = (obj: any) => {
+  let str: string = obj['mp-slug']
   if (str) {
     return str.toLowerCase()
   }
 
-  // slugify event name?
-
-  if (h_event.content) {
-    if (typeof h_event.content === 'string') {
-      str = h_event.content
+  if (obj.name) {
+    str = obj.name
+  } else if (obj.content) {
+    if (typeof obj.content === 'string') {
+      str = obj.content
     } else {
       // TODO: convert content.html to markdown and then slugify it?
-      str = h_event.content.value
+      str = obj.content.value
     }
   } else {
-    // If a Micropub client sent us a h-event with no mp-slug and no content...
-    // what else can we do?
+    // If a Micropub client sent us a h-event with no mp-slug, no name and no
+    // content... what else can we do?
     str = 'no-content'
   }
 
