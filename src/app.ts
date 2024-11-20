@@ -8,6 +8,7 @@ import view from '@fastify/view'
 import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import sensible from '@fastify/sensible'
+import stringify from 'fast-safe-stringify'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 import { defStore } from './lib/github-contents/store.js'
@@ -20,6 +21,7 @@ import revocationEndpoint from './plugins/revocation-endpoint/index.js'
 import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
+import { unsentiveEntries } from './config.js'
 import type { Config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -41,18 +43,28 @@ declare module '@fastify/secure-session' {
  */
 export function defFastify(config: Config) {
   const {
+    access_token_expiration,
     base_url,
+    cloudflare_account_id,
+    cloudflare_r2_access_key_id,
+    cloudflare_r2_bucket_name,
+    cloudflare_r2_secret_access_key,
+    github_owner,
+    github_repo,
+    github_token,
+    log_level,
     report_all_ajv_errors,
     secure_session_expiration,
     secure_session_key_one_buf,
     secure_session_key_two_buf,
+    syndicate_to,
     telegram_chat_id,
     telegram_token,
     use_development_error_handler,
     use_secure_flag_for_session_cookie
   } = config
 
-  const fastify = Fastify({ logger: { level: config.log_level } })
+  const fastify = Fastify({ logger: { level: log_level } })
 
   fastify.register(sensible)
 
@@ -112,7 +124,7 @@ export function defFastify(config: Config) {
   fastify.register(tokenEndpoint, {
     algorithm: 'HS256',
     baseUrl: base_url,
-    expiration: '72 hours', // TODO: use a short-lived access token (e.g. 3600 seconds)
+    expiration: access_token_expiration,
     issuer
   })
 
@@ -137,29 +149,10 @@ export function defFastify(config: Config) {
   const media_endpoint = `${base_url}/media`
   const submit_endpoint = `${base_url}/submit`
 
-  const syndicate_to = [
-    {
-      uid: 'https://fosstodon.org/@jackdbd',
-      name: 'jackdbd on Mastodon',
-      service: {
-        name: 'Mastodon',
-        url: 'https://fosstodon.org/',
-        photo:
-          'https://cdn.fosstodon.org/accounts/avatars/000/028/400/original/324cba4cb379bd4e.png'
-      },
-      user: {
-        name: 'jackdbd',
-        url: 'https://fosstodon.org/@jackdbd',
-        photo:
-          'https://cdn.fosstodon.org/accounts/avatars/109/632/759/548/530/989/original/7662659b2847db84.jpeg'
-      }
-    }
-  ]
-
   const store = defStore({
-    owner: config.github_owner,
-    repo: config.github_repo,
-    token: config.github_token,
+    owner: github_owner,
+    repo: github_repo,
+    token: github_token,
     committer: {
       name: 'Giacomo Debidda',
       email: 'giacomo@giacomodebidda.com'
@@ -169,10 +162,10 @@ export function defFastify(config: Config) {
   fastify.register(micropub, {
     baseUrl: base_url,
     clientId: client_id,
-    cloudflareAccountId: config.cloudflare_account_id,
-    cloudflareR2AccessKeyId: config.cloudflare_r2_access_key_id,
-    cloudflareR2BucketName: config.cloudflare_r2_bucket_name,
-    cloudflareR2SecretAccessKey: config.cloudflare_r2_secret_access_key,
+    cloudflareAccountId: cloudflare_account_id,
+    cloudflareR2AccessKeyId: cloudflare_r2_access_key_id,
+    cloudflareR2BucketName: cloudflare_r2_bucket_name,
+    cloudflareR2SecretAccessKey: cloudflare_r2_secret_access_key,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
@@ -199,6 +192,15 @@ export function defFastify(config: Config) {
       title: 'Home page',
       description: 'Home page',
       name: 'World'
+    })
+  })
+
+  fastify.get('/config', async (_request, reply) => {
+    const data = Object.fromEntries(unsentiveEntries(config))
+    return reply.view('config.njk', {
+      description: 'Non-sensitive configuration',
+      title: 'Config',
+      data: stringify(data, undefined, 2)
     })
   })
 

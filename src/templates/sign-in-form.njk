@@ -3,23 +3,33 @@
   <input id="url" type="text" name="me" placeholder="yourdomain.com" />
     
   {# https://indieweb.org/scope #}
+  {# IndieAuth scopes: email, profile #}
+  {# Micropub scopes: create, update, delete, undelete, draft, media #}
+
   <label>Scope</label>
-  {# IndieAuth scopes #}
   <input type="checkbox" id="scope-profile" name="scope" value="profile" checked />
   <label for="scope-profile">profile</label>
-  <input type="checkbox" id="scope-email" name="scope" value="email" />
+
+  <input type="checkbox" id="scope-email" name="scope" value="email" checked />
   <label for="scope-email">email</label>
-  {# Micropub scopes #}
+
   <input type="checkbox" id="scope-create" name="scope" value="create" checked />
   <label for="scope-create">create</label>
-  <input type="checkbox" id="scope-update" name="scope" value="update" />
-  <label for="scope-update">update</label>
+
+  <input type="checkbox" id="scope-update" name="scope" value="update" checked />
+  <label for="scope-update" checked>update</label>
+
   <input type="checkbox" id="scope-delete" name="scope" value="delete" />
   <label for="scope-delete">delete</label>
+
+  <input type="checkbox" id="scope-undelete" name="scope" value="undelete" />
+  <label for="scope-undelete">undelete</label>
+
   <input type="checkbox" id="scope-draft" name="scope" value="draft" />
   <label for="scope-draft">draft</label>
-  <input type="checkbox" id="scope-media" name="scope" value="media" />
-  <label for="scope-media">media</label>
+
+  <input type="checkbox" id="scope-media" name="scope" value="media" checked />
+  <label for="scope-media" checked>media</label>
 
   <input type="hidden" name="client_id" value="{{ client_id }}" />
   <input type="hidden" name="code_challenge" value="{{ code_challenge }}" />

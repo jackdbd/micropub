@@ -16,7 +16,8 @@ const start = async () => {
     if (config.NODE_ENV === 'development') {
       console.log('=== Fastify plugins ===')
       console.log(fastify.printPlugins())
-      console.log('=== Fastify routes ===')
+
+      // console.log('=== Fastify routes ===')
       // console.log(fastify.printRoutes({ includeHooks: true }))
     }
   } catch (err) {

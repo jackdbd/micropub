@@ -94,8 +94,7 @@ in {
       trivy image --severity MEDIUM,HIGH,CRITICAL -f table micropub:latest
     '';
     dev.exec = ''
-      clean
-      npx tsm ./src/server.ts
+      npm run watch
     '';
     fly-deploy.exec = "fly deploy --ha=false --debug --verbose";
     fly-secrets-set-cloudflare.exec = ''
