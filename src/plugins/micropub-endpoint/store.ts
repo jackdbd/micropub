@@ -53,6 +53,11 @@ export interface PublishedUrlToStoreLocationConfig {
   deleted?: boolean
 }
 
+// TODO: each store might store the microformats2 JSON sent by a Micropub client
+// in a different way. For example, the GitHub store requires the content to be
+// a base64 encoded string.
+// export const mf2ToContent = () => {}
+
 export interface Store {
   // create: PathStoreCreate | TableStoreCreate
   create: StoreCreate

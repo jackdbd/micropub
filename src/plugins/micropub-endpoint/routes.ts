@@ -315,15 +315,27 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    if (!request.body) {
-      return reply.badRequest('request has no body')
-    }
+    // if (!request.body) {
+    //   return reply.badRequest('request has no body')
+    // }
 
     console.log('=== Micropub client troubleshooting ===')
+    console.log('=== request.url ===')
+    console.log(request.url)
     console.log('=== request.body ===')
-    console.log(request.body)
+    console.log(request.url)
+    console.log('=== request.query ===')
+    console.log(request.query)
     console.log('=== request.headers ===')
     console.log(request.headers)
+
+    console.log(`=== isMultipart? ${request.isMultipart} ===`)
+    console.log(`=== request.parts ===`)
+    console.log(request.parts)
+
+    console.log('=== request.formData() ===')
+    const form_data = await request.formData()
+    console.log(form_data)
 
     // Micropub requests from Quill include an access token in the body. I'm not
     // sure it's my fault or it's a Quill issue. Obviously, we don't want the

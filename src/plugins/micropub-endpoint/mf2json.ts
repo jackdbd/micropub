@@ -23,8 +23,18 @@ export interface Mf2JsonEvent {
 }
 
 export const getValue = (input: any, key: string) => {
-  if (input[key] && input[key].length > 0) {
-    return input[key].at(0) as string
+  const val = input[key]
+
+  if (!val) {
+    return undefined
+  }
+
+  if (typeof val === 'string') {
+    return val
+  }
+
+  if (Array.isArray(val) && val.length > 0) {
+    return val.at(0) as string
   }
 }
 
