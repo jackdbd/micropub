@@ -3,6 +3,7 @@ import { date_time, string_or_html_and_value } from './base.js'
 import { h_adr } from './h-adr.js'
 import { h_card } from './h-card.js'
 import { h_geo } from './h-geo.js'
+import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
 
 /**
  * microformats2 h-entry.
@@ -82,9 +83,9 @@ export const h_entry = Type.Object(
       ])
     ),
 
-    'mp-slug': Type.Optional(Type.String()),
+    'mp-slug': Type.Optional(mp_slug),
 
-    'mp-syndicate-to': Type.Optional(Type.String()),
+    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
 
     /**
      * entry name/title

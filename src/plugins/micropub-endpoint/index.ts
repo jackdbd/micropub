@@ -206,7 +206,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   )
   fastify.log.debug(`${NAME} route registered: POST /media`)
 
-  const micropubPost = defMicropubPost({ ajv, store })
+  const micropubPost = defMicropubPost({ ajv, me, store })
   fastify.post(
     '/micropub',
     {

@@ -1,5 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
 import { date, date_time, string_or_html_and_value } from './base.js'
+import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
 
 /**
  * microformats2 h-cite.
@@ -33,6 +34,10 @@ export const h_cite = Type.Object(
      * text notes (e.g. tweets).
      */
     content: Type.Optional(string_or_html_and_value),
+
+    'mp-slug': Type.Optional(mp_slug),
+
+    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
 
     /**
      * name of the work

@@ -1,7 +1,12 @@
 import { Static, Type } from '@sinclair/typebox'
 import { h_adr } from './h-adr.js'
 import { h_geo } from './h-geo.js'
-import { altitude, latitude, longitude } from './base.js'
+import {
+  altitude,
+  latitude,
+  longitude,
+  string_or_html_and_value
+} from './base.js'
 
 /**
  * microformats2 h-card.
@@ -29,6 +34,8 @@ export const h_card = Type.Object(
     ),
 
     category: Type.Optional(Type.String({ description: 'category/tag' })),
+
+    content: Type.Optional(string_or_html_and_value),
 
     'country-name': Type.Optional(Type.String({ description: 'country name' })),
 

@@ -1,8 +1,23 @@
 import matter from 'gray-matter'
 import slugifyFn from 'slugify'
 import yaml from 'yaml'
-import type { H_entry } from '../../lib/microformats2/index.js'
+import type {
+  H_entry,
+  H_event,
+  Mf2,
+  Mf2Type,
+  PostType
+} from '../../lib/microformats2/index.js'
 import { htmlToMarkdown, markdownToHtml } from '../../lib/markdown.js'
+import type { ActionType } from './actions.js'
+
+export interface PostRequestBody {
+  access_token?: string
+  action?: ActionType
+  h?: PostType
+  type?: Mf2Type[]
+  url?: string
+}
 
 export const utf8ToBase64 = (str: string) => {
   return Buffer.from(str, 'utf-8').toString('base64')
@@ -54,19 +69,43 @@ export const slugify = (h_entry: H_entry) => {
   return slugifyFn(str, slugify_options)
 }
 
-export const hEntryToMarkdown = (h_entry: H_entry) => {
-  const { content, ...frontmatter } = h_entry
+export const slugifyEvent = (h_event: H_event) => {
+  let str = h_event['mp-slug']
+  if (str) {
+    return str.toLowerCase()
+  }
+
+  // slugify event name?
+
+  if (h_event.content) {
+    if (typeof h_event.content === 'string') {
+      str = h_event.content
+    } else {
+      // TODO: convert content.html to markdown and then slugify it?
+      str = h_event.content.value
+    }
+  } else {
+    // If a Micropub client sent us a h-event with no mp-slug and no content...
+    // what else can we do?
+    str = 'no-content'
+  }
+
+  return slugifyFn(str, slugify_options)
+}
+
+export const mf2ToMarkdown = (mf2: Mf2) => {
+  const { content, ...frontmatter } = mf2
 
   // Consider using this library for the frontmatter:
   // https://github.com/importantimport/fff
   const fm = `---\n${yaml.stringify(frontmatter)}---\n`
 
   let str: string | undefined
-  if (h_entry.content) {
-    if (typeof h_entry.content === 'string') {
-      str = h_entry.content
+  if (mf2.content) {
+    if (typeof mf2.content === 'string') {
+      str = mf2.content
     } else {
-      str = h_entry.content.html
+      str = mf2.content.html
     }
   }
 
@@ -81,7 +120,7 @@ export const hEntryToMarkdown = (h_entry: H_entry) => {
   }
 }
 
-export const markdownToHEntry = (md: string): H_entry => {
+export const markdownToMf2 = (md: string): Mf2 => {
   const parsed = matter(md)
 
   // Bookmarks, likes, reposts often have no text content.
@@ -92,4 +131,19 @@ export const markdownToHEntry = (md: string): H_entry => {
   } else {
     return { ...parsed.data }
   }
+}
+
+export const postType = (request_body: any) => {
+  if (request_body.h) {
+    return request_body.h as PostType
+  }
+
+  if (request_body.type && request_body.type.length > 0) {
+    const str = request_body.type.at(0) as Mf2Type
+    return str.replace('h-', '') as PostType
+  }
+
+  // If no post type is specified, the default type SHOULD be used.
+  // https://micropub.spec.indieweb.org/#create
+  return 'entry' as PostType
 }

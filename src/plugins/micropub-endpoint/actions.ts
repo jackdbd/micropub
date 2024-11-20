@@ -1,9 +1,8 @@
-import type { H_entry } from '../../lib/microformats2/index.js'
 import type { Store } from './store.js'
 import {
   base64ToUtf8,
-  hEntryToMarkdown,
-  markdownToHEntry,
+  markdownToMf2,
+  mf2ToMarkdown,
   utf8ToBase64
 } from './utils.js'
 
@@ -50,27 +49,27 @@ export const defUpdate = (config: Config) => {
     const { content: original, sha } = result_get.value.body
 
     const md_original = base64ToUtf8(original)
-    let h_entry = markdownToHEntry(md_original)
+    let mf2 = markdownToMf2(md_original)
 
     const messages: string[] = []
 
     if (patch.delete) {
-      const { [patch.delete]: _, ...keep } = h_entry as any
+      const { [patch.delete]: _, ...keep } = mf2 as any
       messages.push(`deleted property ${patch.delete}`)
-      h_entry = keep as H_entry
+      mf2 = keep
     }
 
     if (patch.add) {
       messages.push(`added ${JSON.stringify(patch.add)}`)
-      h_entry = { ...h_entry, ...patch.add }
+      mf2 = { ...mf2, ...patch.add }
     }
 
     if (patch.replace) {
       messages.push(`replaced ${JSON.stringify(patch.replace)}`)
-      h_entry = { ...h_entry, ...patch.replace }
+      mf2 = { ...mf2, ...patch.replace }
     }
 
-    const md = hEntryToMarkdown(h_entry)
+    const md = mf2ToMarkdown(mf2)
 
     const content = utf8ToBase64(md)
 

@@ -1,3 +1,8 @@
+import type { H_card } from './h-card.js'
+import type { H_cite } from './h-cite.js'
+import type { H_entry } from './h-entry.js'
+import type { H_event } from './h-event.js'
+
 /**
  * JSON schemas for microformats2 vocabularies.
  *
@@ -23,4 +28,13 @@ export { h_item } from './h-item.js'
 export type { H_item } from './h-item.js'
 
 // https://micropub.spec.indieweb.org/#examples-of-creating-objects
-export type Mf2ObjectType = 'card' | 'cite' | 'entry' | 'event'
+export type Mf2Type = 'h-card' | 'h-cite' | 'h-entry' | 'h-event'
+export type PostType = 'card' | 'cite' | 'entry' | 'event'
+
+// TODO: implement the following mf2 formats:
+// - h-resume https://microformats.org/wiki/h-resume
+
+// It's probably not worth implementing h-review.
+// https://microformats.org/wiki/h-review
+
+export type Mf2 = H_card | H_cite | H_entry | H_event

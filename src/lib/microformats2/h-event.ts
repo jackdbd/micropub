@@ -1,8 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
-import { date_time } from './base.js'
+import { date_time, string_or_html_and_value } from './base.js'
 import { h_adr } from './h-adr.js'
 import { h_card } from './h-card.js'
 import { h_geo } from './h-geo.js'
+import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
 
 /**
  * microformats2 h-event.
@@ -17,6 +18,11 @@ export const h_event = Type.Object(
      * event category(ies)/tag(s)
      */
     category: Type.Optional(Type.String()),
+
+    /**
+     * full content of the event
+     */
+    content: Type.Optional(string_or_html_and_value),
 
     description: Type.Optional(
       Type.String({
@@ -43,6 +49,10 @@ export const h_event = Type.Object(
         { title: 'location', description: 'where the event takes place' }
       )
     ),
+
+    'mp-slug': Type.Optional(mp_slug),
+
+    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
 
     name: Type.Optional(
       Type.String({ title: 'name', description: 'event name (or title)' })
