@@ -5,7 +5,6 @@ import fastifyCsrf from '@fastify/csrf-protection'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
-import multipart from '@fastify/multipart'
 import sensible from '@fastify/sensible'
 import stringify from 'fast-safe-stringify'
 import nunjucks from 'nunjucks'
@@ -67,14 +66,6 @@ export function defFastify(config: Config) {
   const fastify = Fastify({ logger: { level: log_level } })
 
   fastify.register(sensible)
-
-  // parse multipart requests
-  // https://github.com/fastify/fastify-multipart
-  fastify.register(multipart, {
-    limits: {
-      fileSize: 10_000_000 // in bytes
-    }
-  })
 
   const sessionName = 'session'
 

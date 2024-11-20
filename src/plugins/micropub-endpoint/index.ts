@@ -1,10 +1,11 @@
 import { S3Client } from '@aws-sdk/client-s3'
 import formbody from '@fastify/formbody'
+import multipart from '@fastify/multipart'
+import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
-import { applyToDefaults } from '@hapi/hoek'
 import { NAME } from './constants.js'
 import {
   defValidateGetRequest,
@@ -102,8 +103,18 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   ) as Required<PluginOptions>
   fastify.log.debug(config, `${NAME} configuration`)
 
-  // Parse application/x-www-form-urlencoded bodies
+  // Parse application/x-www-form-urlencoded requests
+  // https://github.com/fastify/fastify-formbody/
   fastify.register(formbody)
+
+  // Parse multipart/form-data requests
+  // https://github.com/fastify/fastify-multipart
+  fastify.register(multipart, {
+    limits: {
+      fileSize: 10_000_000 // in bytes
+    }
+  })
+  fastify.log.debug(`${NAME} registered Fastify plugins: formbody, multipart`)
 
   const { reportAllAjvErrors: allErrors, store } = config
 
@@ -194,7 +205,11 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     credentials: { accessKeyId, secretAccessKey }
   })
 
-  const mediaPost = defMediaPost({ bucket_name, s3 })
+  const mediaPost = defMediaPost({
+    base_url: 'https://content.giacomodebidda.com/',
+    bucket_name,
+    s3
+  })
   fastify.post(
     '/media',
     {

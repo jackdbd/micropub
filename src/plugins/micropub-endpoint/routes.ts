@@ -315,33 +315,73 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    // if (!request.body) {
-    //   return reply.badRequest('request has no body')
-    // }
+    console.log('=== POST /micropub troubleshooting ===')
 
-    console.log('=== Micropub client troubleshooting ===')
-    console.log('=== request.url ===')
-    console.log(request.url)
-    console.log('=== request.body ===')
-    console.log(request.url)
-    console.log('=== request.query ===')
-    console.log(request.query)
+    console.log('=== request.id ===')
+    console.log(request.id)
+
+    // console.log('=== request.url ===')
+    // console.log(request.url)
+
+    // console.log('=== request.body ===')
+    // console.log(request.body)
+
+    // console.log('=== request.query ===')
+    // console.log(request.query)
+
     console.log('=== request.headers ===')
     console.log(request.headers)
 
-    const is_multipart = request.isMultipart()
-    console.log(`=== isMultipart? ${is_multipart} ===`)
-    console.log(`=== request.parts ===`)
-    console.log(request.parts)
+    let request_body: PostRequestBody
+    if (request.isMultipart()) {
+      //  const multi_part_file = await request.file()
+      const parts = request.parts()
+      const data: Record<string, any> = {}
+      for await (const part of parts) {
+        if (part.type === 'field') {
+          console.log(`=== collect form field ${part.fieldname} ===`)
+          data[part.fieldname] = part.value
+        } else if (part.type === 'file') {
+          // Handle file uploads
+          console.log(`=== Received file: ${part.filename} ===`)
+          // console.log(`=== encoding ${part.encoding} ===`)
+          // console.log(`=== mimetype ${part.mimetype} ===`)
+          const buf = await part.toBuffer()
+          console.log(`=== Buffer length: ${buf.length} ===`)
+          // const response = await request.server.inject({
+          //   method: 'POST',
+          //   url: '/media',
+          //   payload: part.file,
+          //   headers: request.headers
+          // })
 
-    // console.log('=== request.formData() ===')
-    // const form_data = await request.formData()
-    // console.log(form_data)
+          // console.log('=== response body from media endpoint ===')
+          // const response_body = response.json()
+          // console.log(response_body)
+
+          // // Process the file stream or save it
+          // return reply.code(response.statusCode).send({
+          //   ...response_body,
+          //   recap_message: 'response from media endpoint'
+          // })
+        }
+      }
+      request_body = data
+    } else {
+      request_body = request.body
+    }
+
+    console.log('=== request_body ===')
+    console.log(request_body)
+
+    // if (!request_body) {
+    //   return reply.badRequest('request has no body')
+    // }
 
     // Micropub requests from Quill include an access token in the body. I'm not
     // sure it's my fault or it's a Quill issue. Obviously, we don't want the
     // access token to appear in any published content, so we need to remove it.
-    const { access_token: _, action, url, h, ...rest } = request.body
+    const { access_token: _, action, url, h, ...rest } = request_body
 
     // TODO: should actions be syndicated?
 
@@ -414,7 +454,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // TODO: JSON schema to TypeScript type/interface?
     // https://github.com/bcherny/json-schema-to-typescript
 
-    const post_type = postType(request.body)
+    const post_type = postType(request_body)
 
     switch (post_type) {
       case 'card': {
@@ -698,12 +738,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 }
 
 export interface MediaPostConfig {
+  base_url: string
   bucket_name: string
   s3: S3Client
 }
 
 export const defMediaPost = (config: MediaPostConfig) => {
-  const { bucket_name, s3 } = config
+  const { base_url, bucket_name, s3 } = config
 
   const mediaPost: RouteHandler = async (request, reply) => {
     if (!request.isMultipart()) {
@@ -713,6 +754,23 @@ export const defMediaPost = (config: MediaPostConfig) => {
       return reply.badRequest('request is not multi-part')
     }
 
+    console.log('=== POST /media troubleshooting ===')
+
+    console.log('=== request.id ===')
+    console.log(request.id)
+
+    console.log('=== request.url ===')
+    console.log(request.url)
+
+    console.log('=== request.params ===')
+    console.log(request.params)
+
+    console.log('=== request.query ===')
+    console.log(request.query)
+
+    console.log('=== request.headers ===')
+    console.log(request.headers)
+
     const data = await request.file()
     if (!data) {
       return reply.badRequest('multi-part request has no file')
@@ -721,25 +779,37 @@ export const defMediaPost = (config: MediaPostConfig) => {
     const Body = await data.toBuffer()
     const ContentType = data.mimetype
 
-    const object_path = data.filename
-    const Key = `media/${object_path}`
+    const bucket_path = `media/${data.filename}`
 
     const params = {
       Bucket: bucket_name,
-      Key,
+      Key: bucket_path,
       Body,
       ContentType
     }
 
+    // https://www.w3.org/TR/micropub/#response-3
+    // The Media Endpoint processes the file upload, storing it in whatever
+    // backend it wishes, and generates a URL to the file.
+    // The URL SHOULD be unguessable, such as using a UUID in the path.
+    // If the request is successful, the endpoint MUST return the URL to the file that was created in the HTTP Location
+    // header, and respond with HTTP 201 Created.
+    // The response body is left undefined.
+
+    const public_url = `${base_url}${bucket_path}`
+
     try {
       const output = await s3.send(new PutObjectCommand(params))
-      const version_id = output.VersionId
-      const etag = output.ETag
-      // TODO: should I send a Location header?
-      // reply.header('Location', `${media_endpoint}/${object_path}`)
-      return reply
-        .code(201)
-        .send({ etag, version_id, message: 'Upload successful!' })
+      // const etag = output.ETag
+      // const metadata = output.$metadata
+      // const version_id = output.VersionId
+
+      const message = `file uploaded to R2 bucket ${bucket_name} at path ${bucket_path} and publicly available at ${public_url}`
+      request.log.info({ output }, message)
+
+      reply.header('Location', public_url)
+
+      return reply.code(201).send({ message })
     } catch (error) {
       request.log.error(`Error uploading to R2:`, error)
       return reply
