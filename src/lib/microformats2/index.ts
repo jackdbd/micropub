@@ -28,8 +28,8 @@ export { h_item } from './h-item.js'
 export type { H_item } from './h-item.js'
 
 // https://micropub.spec.indieweb.org/#examples-of-creating-objects
-export type Mf2Type = 'h-card' | 'h-cite' | 'h-entry' | 'h-event'
-export type PostType = 'card' | 'cite' | 'entry' | 'event'
+export type Jf2PostType = 'card' | 'cite' | 'entry' | 'event'
+export type Mf2PostType = 'h-card' | 'h-cite' | 'h-entry' | 'h-event'
 
 // TODO: implement the following mf2 formats:
 // - h-resume https://microformats.org/wiki/h-resume

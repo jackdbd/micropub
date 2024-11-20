@@ -81,11 +81,16 @@ in {
         --env CLOUDFLARE_R2_BUCKET_NAME=${config.env.CLOUDFLARE_R2_BUCKET_NAME} \
         --env CLOUDFLARE_R2_SECRET_ACCESS_KEY=${config.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY} \
         --env DEBUG="*" \
+        --env GITHUB_OWNER=jackdbd \
+        --env GITHUB_REPO=giacomodebidda-content \
+        --env GITHUB_TOKEN=${config.env.GITHUB_TOKEN} \
         --env LOG_LEVEL=debug \
         --env NODE_ENV=development \
         --env PORT=${config.env.PORT} \
         --env SECURE_SESSION_KEY_ONE=${micropub.session_key_one} \
         --env SECURE_SESSION_KEY_TWO=${micropub.session_key_two} \
+        --env TELEGRAM_CHAT_ID=${telegram.chat_id} \
+        --env TELEGRAM_TOKEN=${telegram.token} \
         --network host \
         --rm -i -t \
         micropub:latest

@@ -1,11 +1,11 @@
+import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import matter from 'gray-matter'
 import slugifyFn from 'slugify'
 import yaml from 'yaml'
 import type {
-  H_entry,
+  Jf2PostType,
   Mf2,
-  Mf2Type,
-  PostType
+  Mf2PostType
 } from '../../lib/microformats2/index.js'
 import { htmlToMarkdown, markdownToHtml } from '../../lib/markdown.js'
 import type { ActionType } from './actions.js'
@@ -13,8 +13,8 @@ import type { ActionType } from './actions.js'
 export interface PostRequestBody {
   access_token?: string
   action?: ActionType
-  h?: PostType
-  type?: Mf2Type[]
+  h?: Jf2PostType
+  type?: Jf2PostType | Mf2PostType[]
   url?: string
 }
 
@@ -34,58 +34,38 @@ const slugify_options = {
   remove: /[*+~.·,()'"`´%!?¿:@\/]/g
 }
 
-export const slugify = (h_entry: H_entry) => {
-  let str = h_entry['mp-slug']
+export const slugify = (jf2: Jf2) => {
+  let str = jf2['mp-slug']
   if (str) {
     return str.toLowerCase()
   }
 
-  if (h_entry['bookmark-of']) {
-    str = `bookmark-${h_entry['bookmark-of']
+  const yyyy_mm_dd = new Date().toISOString().split('T')[0]
+
+  if (jf2.name) {
+    str = jf2.name
+  } else if (jf2['bookmark-of']) {
+    str = `${yyyy_mm_dd}-${jf2['bookmark-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`
-  } else if (h_entry['like-of']) {
-    str = `like-${h_entry['like-of']
+  } else if (jf2['like-of']) {
+    str = `${yyyy_mm_dd}-${jf2['like-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`
-  } else if (h_entry['repost-of']) {
-    str = `repost-${h_entry['repost-of']
+  } else if (jf2['repost-of']) {
+    str = `${yyyy_mm_dd}-${jf2['repost-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`
-  } else if (h_entry.content) {
-    if (typeof h_entry.content === 'string') {
-      str = h_entry.content
+  } else if (jf2.content) {
+    if (typeof jf2.content === 'string') {
+      str = jf2.content
     } else {
       // TODO: convert content.html to markdown and then slugify it?
-      str = h_entry.content.value
+      str = (jf2.content as any).value as string
     }
   } else {
-    // If a Micropub client sent us a h-entry with no mp-slug, no content, no
-    // like-of, no repost-of... what else can we do?
-    str = 'no-content'
-  }
-
-  return slugifyFn(str, slugify_options)
-}
-
-export const slugifyEvent = (obj: any) => {
-  let str: string = obj['mp-slug']
-  if (str) {
-    return str.toLowerCase()
-  }
-
-  if (obj.name) {
-    str = obj.name
-  } else if (obj.content) {
-    if (typeof obj.content === 'string') {
-      str = obj.content
-    } else {
-      // TODO: convert content.html to markdown and then slugify it?
-      str = obj.content.value
-    }
-  } else {
-    // If a Micropub client sent us a h-event with no mp-slug, no name and no
-    // content... what else can we do?
+    // If we received a JF2 object that has no mp-slug, no content, no like-of,
+    // no repost-of... what else can we do?
     str = 'no-content'
   }
 
@@ -130,19 +110,4 @@ export const markdownToMf2 = (md: string): Mf2 => {
   } else {
     return { ...parsed.data }
   }
-}
-
-export const postType = (request_body: any) => {
-  if (request_body.h) {
-    return request_body.h as PostType
-  }
-
-  if (request_body.type && request_body.type.length > 0) {
-    const str = request_body.type.at(0) as Mf2Type
-    return str.replace('h-', '') as PostType
-  }
-
-  // If no post type is specified, the default type SHOULD be used.
-  // https://micropub.spec.indieweb.org/#create
-  return 'entry' as PostType
 }

@@ -14,7 +14,6 @@ RUN if [ -z "${APP_NAME}" ] ; then echo "The APP_NAME argument is missing!" ; ex
 #   tree
 
 ENV APP_DIR=/usr/src/app
-ENV TYPE_ROOTS="${APP_DIR}/node_modules/@types"
 
 WORKDIR ${APP_DIR}
 
@@ -25,16 +24,20 @@ RUN npm install --location=global typescript@5.6.3 && \
     npm install --omit=dev && \
     npm install --save-dev @types/node@22.7.7
 
+COPY custom-types ./custom-types
 COPY src ./src
 COPY src/templates ./dist/templates
 COPY src/public ./dist/public
 
 # This is for troubleshooting TypeScript configuration
-# RUN echo "Compiling using TypeScript $(tsc --version): typeRoots is ${TYPE_ROOTS}"
-# RUN tsc --project tsconfig.json --typeRoots ${TYPE_ROOTS} --showConfig
+# RUN tsc --project tsconfig.json \
+#     --typeRoots ${APP_DIR}/node_modules/@types \
+#     --typeRoots ${APP_DIR}/custom-types \
+#     --showConfig
 
-# this is the actual TypeScript compilation
-RUN tsc --project tsconfig.json --typeRoots ${TYPE_ROOTS}
+RUN tsc --project tsconfig.json \
+    --typeRoots ${APP_DIR}/node_modules/@types \
+    --typeRoots ${APP_DIR}/custom-types
 
 # check source code (TS), compiled code (JS), don't show dependencies and types
 # https://zaiste.net/posts/tree-ignore-directories-patterns/

@@ -42,7 +42,7 @@
     "target": "es2022",
 
     // https://www.typescriptlang.org/tsconfig#typeRoots
-    "typeRoots": ["./node_modules/@types"]
+    "typeRoots": ["./node_modules/@types", "./custom-types"]
   },
 
   "include": ["./src/**/*.ts"],

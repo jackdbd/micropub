@@ -13,4 +13,4 @@ import { Type } from '@sinclair/typebox'
 
 export const mp_slug = Type.String()
 
-export const mp_syndicate_to = Type.String()
+export const mp_syndicate_to = Type.Array(Type.String())

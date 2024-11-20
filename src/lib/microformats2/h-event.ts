@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { date_time, string_or_html_and_value } from './base.js'
+import { category, date_time, string_or_html_and_value } from './base.js'
 import { h_adr } from './h-adr.js'
 import { h_card } from './h-card.js'
 import { h_geo } from './h-geo.js'
@@ -17,7 +17,7 @@ export const h_event = Type.Object(
     /**
      * event category(ies)/tag(s)
      */
-    category: Type.Optional(Type.String()),
+    category: Type.Optional(category),
 
     /**
      * full content of the event

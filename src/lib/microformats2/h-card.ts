@@ -5,6 +5,7 @@ import {
   altitude,
   latitude,
   longitude,
+  photo,
   string_or_html_and_value
 } from './base.js'
 
@@ -109,12 +110,7 @@ export const h_card = Type.Object(
     // https://github.com/sinclairzx81/typebox#types-recursive
     // org: Type.Optional(Type.Union([Type.String(), Type.Ref(h_card)])),
 
-    photo: Type.Optional(
-      Type.String({
-        format: 'uri',
-        description: 'a photo of the person or organization'
-      })
-    ),
+    photo: Type.Optional(Type.Union([photo, Type.Array(photo)])),
 
     'postal-code': Type.Optional(
       Type.String({ description: 'postal code, e.g. US ZIP' })

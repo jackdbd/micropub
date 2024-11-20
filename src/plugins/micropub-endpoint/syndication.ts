@@ -1,7 +1,7 @@
+import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import Queue from 'better-queue'
 // @ts-ignore-next-line
 import MemoryStore from 'better-queue-memory'
-import { H_entry } from '../../lib/microformats2'
 
 interface Service {
   name: string
@@ -41,19 +41,25 @@ const queue = new Queue(
   { store: MemoryStore() }
 )
 
-export const syndicate = async (h_entry: H_entry) => {
+export const syndicate = async (jf2: Jf2) => {
   const messages: string[] = []
-  if (h_entry['mp-syndicate-to']) {
-    const splits = h_entry['mp-syndicate-to']
-      .trim()
-      .split(',')
-      .map((s) => s.trim())
 
-    splits.forEach((syndication_target) => {
+  const mp_syndicate_to = jf2['mp-syndicate-to']
+
+  if (mp_syndicate_to) {
+    if (typeof mp_syndicate_to === 'string') {
+      const syndication_target = mp_syndicate_to
       const ticket = queue.push({ syndication_target })
       messages.push(`pushed to syndication queue: ${syndication_target}`)
       console.log('in-memory queue ticket', ticket)
-    })
+    } else if (Array.isArray(mp_syndicate_to)) {
+      mp_syndicate_to.forEach((syndication_target) => {
+        const ticket = queue.push({ syndication_target })
+        messages.push(`pushed to syndication queue: ${syndication_target}`)
+        console.log('in-memory queue ticket', ticket)
+      })
+    }
   }
+
   return messages
 }

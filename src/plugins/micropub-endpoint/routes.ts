@@ -1,19 +1,18 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import type { Jf2, Mf2Item } from '@paulrobertlloyd/mf2tojf2'
 import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import type { H_card, H_cite, H_entry } from '../../lib/microformats2/index.js'
+import { Jf2PostType } from '../../lib/microformats2/index.js'
 import { defActions, type UpdatePatch } from './actions.js'
 import { invalid_request, unauthorized } from './errors.js'
-import { eventMf2JsonToObj } from './mf2json.js'
-import type { Store } from './store.js'
+import { jf2FromMf2 } from './jf2.js'
 import { defValidateMicroformats2 } from './mf2.js'
+import type { Store } from './store.js'
 import { syndicate, type SyndicateToItem } from './syndication.js'
 import {
   mf2ToMarkdown,
-  postType,
   slugify,
-  slugifyEvent,
   utf8ToBase64,
   type PostRequestBody
 } from './utils.js'
@@ -306,8 +305,7 @@ export interface MicropubPostConfig {
 export const defMicropubPost = (config: MicropubPostConfig) => {
   const { ajv, me, store } = config
 
-  const { validateH_card, validateH_cite, validateH_entry } =
-    defValidateMicroformats2(ajv)
+  const { validateH_card, validateH_cite } = defValidateMicroformats2(ajv)
 
   const actions = defActions({ store })
 
@@ -315,22 +313,19 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    console.log('=== POST /micropub troubleshooting ===')
-
-    console.log('=== request.id ===')
-    console.log(request.id)
+    console.log(`=== POST /micropub request ID ${request.id} ===`)
 
     // console.log('=== request.url ===')
     // console.log(request.url)
 
-    // console.log('=== request.body ===')
-    // console.log(request.body)
+    console.log('=== request.body ===')
+    console.log(request.body)
 
     // console.log('=== request.query ===')
     // console.log(request.query)
 
-    console.log('=== request.headers ===')
-    console.log(request.headers)
+    // console.log('=== request.headers ===')
+    console.log(`content-type: ${request.headers['content-type']}`)
 
     let request_body: PostRequestBody
     if (request.isMultipart()) {
@@ -342,7 +337,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log(`=== collect form field ${part.fieldname} ===`)
           data[part.fieldname] = part.value
         } else if (part.type === 'file') {
-          // Handle file uploads
+          // TODO: do I really need to consume the buffer here? Why? Explain.
           console.log(`=== Received file: ${part.filename} ===`)
           // console.log(`=== encoding ${part.encoding} ===`)
           // console.log(`=== mimetype ${part.mimetype} ===`)
@@ -371,17 +366,37 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       request_body = request.body
     }
 
-    console.log('=== request_body ===')
-    console.log(request_body)
+    if (!request_body) {
+      return reply.badRequest('request has no body')
+    }
 
-    // if (!request_body) {
-    //   return reply.badRequest('request has no body')
-    // }
-
-    // Micropub requests from Quill include an access token in the body. I'm not
-    // sure it's my fault or it's a Quill issue. Obviously, we don't want the
-    // access token to appear in any published content, so we need to remove it.
+    // Micropub requests from Quill include an access token in the body.
+    // I think it's not a Quill issue. I think it's due to the Fastify formbody
+    // plugin.
+    // Obviously, we don't want the access token to appear in any published
+    // content, so we need to remove it.
     const { access_token: _, action, url, h, ...rest } = request_body
+
+    let jf2: Jf2
+    let post_type: Jf2PostType
+    if (h) {
+      post_type = h
+      jf2 = rest as Jf2
+    } else {
+      const items = [rest] as Mf2Item[]
+      const { error, value } = await jf2FromMf2({ items })
+      if (error) {
+        request.log.warn({ request_body }, error.message)
+        return reply
+          .code(invalid_request.code)
+          .send(invalid_request.payload(error.message))
+      }
+      jf2 = value
+      post_type = jf2.type
+    }
+
+    console.log('=== jf2 (JSON stringified) ===')
+    console.log(stringify(jf2, undefined, 2))
 
     // TODO: should actions be syndicated?
 
@@ -454,43 +469,43 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // TODO: JSON schema to TypeScript type/interface?
     // https://github.com/bcherny/json-schema-to-typescript
 
-    const post_type = postType(request_body)
-
     switch (post_type) {
       case 'card': {
-        const valid = validateH_card(rest)
+        const valid = validateH_card(jf2)
         if (!valid) {
           request.log.warn(
-            { body: rest, errors: validateH_card.errors || [] },
-            'received invalid h-card'
+            { jf2, errors: validateH_card.errors || [] },
+            'received invalid jf2 card'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_card = rest as H_card
+        // const slug = slugify(jf2)
+
+        const { type: _, ...card } = jf2
+
+        // TODO: store card?
 
         reply.header('Location', me)
 
-        return reply.code(202).send({
-          h_card,
-          message: 'Request accepted.'
-        })
+        return reply.code(202).send({ card, message: 'Request accepted.' })
       }
 
       case 'cite': {
-        const valid = validateH_cite(rest)
+        const valid = validateH_cite(jf2)
         if (!valid) {
           request.log.warn(
-            { body: rest, errors: validateH_cite.errors || [] },
-            'received invalid h-cite'
+            { jf2, errors: validateH_cite.errors || [] },
+            'received invalid jf2 cite'
           )
           return reply.badRequest('invalid_request')
         }
 
-        const h_cite = rest as H_cite
-        const slug = slugify(h_cite)
+        const slug = slugify(jf2)
 
-        const md = mf2ToMarkdown(h_cite)
+        const { type: _, ...cite } = jf2
+
+        const md = mf2ToMarkdown(cite)
         const content = utf8ToBase64(md)
 
         const result = await store.create({
@@ -505,14 +520,14 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           })
         } else {
           // TODO: syndicate cite
-          const messages = await syndicate(h_cite)
+          const messages = await syndicate(cite as any)
           console.log('=== syndication ===')
           console.log(messages)
 
           reply.header('Location', me)
 
           return reply.code(result.value.status_code).send({
-            h_cite,
+            cite,
             body: result.value.body,
             message: result.value.message
           })
@@ -520,22 +535,24 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'entry': {
-        const valid = validateH_entry(rest)
-        if (!valid) {
-          request.log.warn(
-            { body: rest, errors: validateH_entry.errors || [] },
-            'received invalid h-entry'
-          )
-          return reply
-            .code(invalid_request.code)
-            .send(invalid_request.payload('Invalid h-entry (TODO add details)'))
-        }
+        // const valid = validateH_entry(jf2)
+        // if (!valid) {
+        //   const message = 'invalid JF2 entry'
+        //   request.log.warn(
+        //     { jf2, errors: validateH_entry.errors || [] },
+        //     message
+        //   )
+        //   return reply
+        //     .code(invalid_request.code)
+        //     .send(invalid_request.payload(message))
+        // }
 
-        const h_entry = rest as H_entry
-        const slug = slugify(h_entry)
+        const slug = slugify(jf2)
 
-        if (h_entry['bookmark-of']) {
-          const md = mf2ToMarkdown(h_entry)
+        const { type: _, ...entry } = jf2
+
+        if (entry['bookmark-of']) {
+          const md = mf2ToMarkdown(entry)
           const content = utf8ToBase64(md)
 
           const result = await store.create({
@@ -544,7 +561,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           })
 
           // TODO: syndicate bookmark
-          const messages = await syndicate(h_entry)
+          const messages = await syndicate(entry as any)
           console.log('=== syndication ===')
           console.log(messages)
 
@@ -557,15 +574,15 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             reply.header('Location', me)
 
             return reply.code(result.value.status_code).send({
-              h_entry,
+              entry,
               body: result.value.body,
               message: result.value.message
             })
           }
         }
 
-        if (h_entry['like-of']) {
-          const md = mf2ToMarkdown(h_entry)
+        if (entry['like-of']) {
+          const md = mf2ToMarkdown(entry)
           const content = utf8ToBase64(md)
 
           const result = await store.create({
@@ -574,7 +591,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           })
 
           // TODO: syndicate like
-          const messages = await syndicate(h_entry)
+          const messages = await syndicate(entry as any)
           console.log('=== syndication ===')
           console.log(messages)
 
@@ -587,15 +604,15 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             reply.header('Location', me)
 
             return reply.code(result.value.status_code).send({
-              h_entry,
+              entry,
               body: result.value.body,
               message: result.value.message
             })
           }
         }
 
-        if (h_entry['in-reply-to']) {
-          const md = mf2ToMarkdown(h_entry)
+        if (entry['in-reply-to']) {
+          const md = mf2ToMarkdown(entry)
           console.log('=== TODO: store reply ==')
           console.log(md)
           // const content = utf8ToBase64(md)
@@ -605,7 +622,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           //   content
           // })
 
-          const messages = await syndicate(h_entry)
+          const messages = await syndicate(entry as any)
           console.log('=== syndication ===')
           console.log(messages)
 
@@ -616,8 +633,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           })
         }
 
-        if (h_entry['repost-of']) {
-          const md = mf2ToMarkdown(h_entry)
+        if (entry['repost-of']) {
+          const md = mf2ToMarkdown(entry)
           const content = utf8ToBase64(md)
 
           const result = await store.create({
@@ -626,7 +643,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           })
 
           // TODO: syndicate repost
-          const messages = await syndicate(h_entry)
+          const messages = await syndicate(entry as any)
           console.log('=== syndication ===')
           console.log(messages)
 
@@ -639,15 +656,15 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             reply.header('Location', me)
 
             return reply.code(result.value.status_code).send({
-              h_entry,
+              entry,
               body: result.value.body,
               message: result.value.message
             })
           }
         }
 
-        if (h_entry['content']) {
-          const md = mf2ToMarkdown(h_entry)
+        if (entry['content']) {
+          const md = mf2ToMarkdown(entry)
           const content = utf8ToBase64(md)
 
           // TODO: distinguish between articles and notes
@@ -660,7 +677,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           // TODO: syndicate article or note
           // Use a queue on Fly.io? Cloudflare Queues? Cloud Tasks?
           // https://fly.io/docs/laravel/the-basics/cron-and-queues/#queue-worker
-          const messages = await syndicate(h_entry)
+          const messages = await syndicate(entry as any)
           console.log('=== syndication ===')
           console.log(messages)
 
@@ -673,31 +690,33 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             reply.header('Location', me)
 
             return reply.code(result.value.status_code).send({
-              h_entry,
+              entry,
               body: result.value.body,
               message: result.value.message
             })
           }
         }
 
-        const message = 'Entry not yet handled explicitly.'
-        request.log.warn({ h_entry }, message)
+        const message = `Entry not supported by this Micropub server`
+        request.log.warn({ entry }, message)
         return reply.notImplemented(message)
       }
 
       case 'event': {
-        // const valid = validateH_event(rest)
+        // const valid = validateH_event(jf2)
         // if (!valid) {
         //   request.log.warn(
-        //     { body: rest, errors: validateH_event.errors || [] },
+        //     { jf2, errors: validateH_event.errors || [] },
         //     'received invalid h-event'
         //   )
         //   return reply.badRequest('invalid_request')
         // }
 
-        const h_event = eventMf2JsonToObj((rest as any).properties)
-        const slug = slugifyEvent(h_event)
-        const md = mf2ToMarkdown(h_event)
+        const slug = slugify(jf2)
+
+        const { type: _, ...event } = jf2
+
+        const md = mf2ToMarkdown(event)
         const content = utf8ToBase64(md)
 
         const result = await store.create({
@@ -706,7 +725,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         })
 
         // TODO: syndicate event
-        const messages = await syndicate(h_event)
+        const messages = await syndicate(event as any)
         console.log('=== syndication ===')
         console.log(messages)
 
@@ -719,7 +738,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           reply.header('Location', me)
 
           return reply.code(result.value.status_code).send({
-            h_event,
+            event,
             body: result.value.body,
             message: result.value.message
           })
@@ -728,7 +747,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
       default: {
         const message = `h=${post_type} not supported by this Micropub server`
-        request.log.warn({ post_type }, message)
+        request.log.warn({ jf2 }, message)
         return reply.notImplemented(message)
       }
     }
@@ -754,22 +773,19 @@ export const defMediaPost = (config: MediaPostConfig) => {
       return reply.badRequest('request is not multi-part')
     }
 
-    console.log('=== POST /media troubleshooting ===')
+    console.log(`=== POST /media request ID ${request.id} ===`)
 
-    console.log('=== request.id ===')
-    console.log(request.id)
+    // console.log('=== request.url ===')
+    // console.log(request.url)
 
-    console.log('=== request.url ===')
-    console.log(request.url)
+    // console.log('=== request.params ===')
+    // console.log(request.params)
 
-    console.log('=== request.params ===')
-    console.log(request.params)
+    // console.log('=== request.query ===')
+    // console.log(request.query)
 
-    console.log('=== request.query ===')
-    console.log(request.query)
-
-    console.log('=== request.headers ===')
-    console.log(request.headers)
+    // console.log('=== request.headers ===')
+    // console.log(request.headers)
 
     const data = await request.file()
     if (!data) {

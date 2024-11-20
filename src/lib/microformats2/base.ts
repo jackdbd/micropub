@@ -27,6 +27,8 @@ export const altitude = Type.Number({
   description: `Distance in metres from the nominal sea level along the tangent of the earth’s curve, i.e. the geoid height. For more information refer to the WGS84 specification and the geo URI scheme.`
 })
 
+export const category = Type.Array(Type.String({ description: 'category/tag' }))
+
 export const latitude = Type.Number({
   $id: 'latitude',
   minimum: -90,
@@ -72,3 +74,14 @@ export const geo_uri = Type.String({
 //     examples: ['geo:37.786971,-122.399677', 'geo:37.786971,-122.399677;u=35']
 //   }
 // )
+
+export const photo = Type.Object({
+  alt: Type.String({
+    description:
+      'Alternate text for the photo, if the photo cannot be displayed'
+  }),
+  url: Type.String({
+    format: 'uri',
+    description: 'URL of the photo'
+  })
+})
