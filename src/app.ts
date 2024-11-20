@@ -5,7 +5,6 @@ import fastifyCsrf from '@fastify/csrf-protection'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
-import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import sensible from '@fastify/sensible'
 import stringify from 'fast-safe-stringify'
@@ -53,6 +52,7 @@ export function defFastify(config: Config) {
     github_repo,
     github_token,
     log_level,
+    me,
     report_all_ajv_errors,
     secure_session_expiration,
     secure_session_key_one_buf,
@@ -75,10 +75,6 @@ export function defFastify(config: Config) {
       fileSize: 10_000_000 // in bytes
     }
   })
-
-  // parse x-www-form-urlencoded bodies
-  // https://github.com/fastify/fastify-formbody
-  fastify.register(formbody)
 
   const sessionName = 'session'
 
@@ -129,7 +125,6 @@ export function defFastify(config: Config) {
   })
 
   const client_id = base_url
-  const me = 'https://giacomodebidda.com/'
 
   fastify.register(introspectionEndpoint, { clientId: client_id, me })
   fastify.register(revocationEndpoint, {})

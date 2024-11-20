@@ -1,4 +1,5 @@
 import { S3Client } from '@aws-sdk/client-s3'
+import formbody from '@fastify/formbody'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
@@ -100,6 +101,9 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     options
   ) as Required<PluginOptions>
   fastify.log.debug(config, `${NAME} configuration`)
+
+  // Parse application/x-www-form-urlencoded bodies
+  fastify.register(formbody)
 
   const { reportAllAjvErrors: allErrors, store } = config
 

@@ -4,6 +4,8 @@ import type { SyndicateToItem } from './plugins/micropub-endpoint/syndication.js
 // refresh token.
 const access_token_expiration = '72 hours'
 
+const me = 'https://giacomodebidda.com/'
+
 // TODO: read syndication_to from a JSON file?
 const syndicate_to: SyndicateToItem[] = [
   {
@@ -47,6 +49,7 @@ export interface Config {
   github_token: string
   host: string
   log_level: string
+  me: string
   port: number
   report_all_ajv_errors: boolean
   secure_session_expiration: number
@@ -155,6 +158,7 @@ export const defConfig = () => {
     github_token,
     host: process.env.HOST || '0.0.0.0',
     log_level: process.env.LOG_LEVEL || 'info',
+    me,
     port,
     report_all_ajv_errors:
       process.env.NODE_ENV === 'development' ? true : false,
