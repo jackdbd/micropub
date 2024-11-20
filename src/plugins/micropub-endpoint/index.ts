@@ -22,13 +22,13 @@ import {
   postAccepted,
   postCreated
 } from './routes.js'
-import type { SyndicateToItem } from './routes.js'
 import {
   micropub_get_request,
   micropub_post_request,
   plugin_options
 } from './schemas.js'
 import type { Store } from './store.js'
+import type { SyndicateToItem } from './syndication.js'
 
 export interface PluginOptions extends FastifyPluginOptions {
   authorizationCallbackRoute?: string
@@ -206,7 +206,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   )
   fastify.log.debug(`${NAME} route registered: POST /media`)
 
-  const micropubPost = defMicropubPost({ ajv, base_url, store })
+  const micropubPost = defMicropubPost({ ajv, store })
   fastify.post(
     '/micropub',
     {

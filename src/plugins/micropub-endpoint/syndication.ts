@@ -3,6 +3,25 @@ import Queue from 'better-queue'
 import MemoryStore from 'better-queue-memory'
 import { H_entry } from '../../lib/microformats2'
 
+interface Service {
+  name: string
+  url: string
+  photo?: string
+}
+
+interface User {
+  name: string
+  url: string
+  photo?: string
+}
+
+export interface SyndicateToItem {
+  uid: string
+  name: string
+  service?: Service
+  user?: User
+}
+
 const syndicateOne = (input: any) => {
   console.log(`syndicating`, input)
   const ms = 1500

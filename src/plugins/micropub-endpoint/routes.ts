@@ -13,6 +13,7 @@ import type { UpdatePatch } from './interfaces.js'
 import type { Store } from './store.js'
 import { defValidateMicroformats2 } from './mf2.js'
 import { syndicate } from './syndication.js'
+import type { SyndicateToItem } from './syndication.js'
 import {
   base64ToUtf8,
   hEntryToMarkdown,
@@ -259,25 +260,6 @@ export const defEditor = (config: EditorConfig) => {
   return editor
 }
 
-interface Service {
-  name: string
-  url: string
-  photo?: string
-}
-
-interface User {
-  name: string
-  url: string
-  photo?: string
-}
-
-export interface SyndicateToItem {
-  uid: string
-  name: string
-  service: Service
-  user: User
-}
-
 export interface MicropubGetConfig {
   media_endpoint: string
   syndicate_to: SyndicateToItem[]
@@ -324,12 +306,17 @@ interface PostRouteGeneric extends RouteGenericInterface {
 
 export interface MicropubPostConfig {
   ajv: Ajv
-  base_url: string
   store: Store
+  // domain or me
 }
 
+// We should return a Location response header if we can't (or don't want to)
+// publish the post right away.
+// https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
+const LOCATION = 'https://www.giacomodebidda.com/'
+
 export const defMicropubPost = (config: MicropubPostConfig) => {
-  const { ajv, base_url, store } = config
+  const { ajv, store } = config
 
   const { validateH_card, validateH_cite, validateH_entry, validateH_event } =
     defValidateMicroformats2(ajv)
@@ -484,8 +471,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const h_card = request_body as H_card
 
-        const fake_permalink = `${base_url}/fake/card`
-        reply.header('Location', fake_permalink)
+        reply.header('Location', LOCATION)
 
         return reply.code(202).send({
           h_card,
@@ -505,8 +491,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const h_cite = request_body as any as H_cite
 
-        const fake_permalink = `${base_url}/fake/cite`
-        reply.header('Location', fake_permalink)
+        reply.header('Location', LOCATION)
 
         return reply.code(202).send({
           h_cite,
@@ -546,6 +531,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               error_description: result.error.message
             })
           } else {
+            reply.header('Location', LOCATION)
+
             return reply.code(result.value.status_code).send({
               h_entry,
               body: result.value.body,
@@ -571,6 +558,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               error_description: result.error.message
             })
           } else {
+            reply.header('Location', LOCATION)
+
             return reply.code(result.value.status_code).send({
               h_entry,
               body: result.value.body,
@@ -594,6 +583,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log('=== syndication ===')
           console.log(messages)
 
+          reply.header('Location', LOCATION)
+
           return reply.code(200).send({
             message: 'TODO implement reply'
           })
@@ -616,6 +607,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               error_description: result.error.message
             })
           } else {
+            reply.header('Location', LOCATION)
+
             return reply.code(result.value.status_code).send({
               h_entry,
               body: result.value.body,
@@ -647,6 +640,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               error_description: result.error.message
             })
           } else {
+            reply.header('Location', LOCATION)
+
             return reply.code(result.value.status_code).send({
               h_entry,
               body: result.value.body,
@@ -654,11 +649,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             })
           }
         }
-
-        // We should return a Location response header if we can't (or don't
-        // want to) publish the post right away.
-        // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
-        // reply.header('Location', fake_permalink)
 
         return reply.code(501).send({
           h_entry,
@@ -678,8 +668,12 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const h_event = request_body as H_event
 
-        const fake_permalink = `${base_url}/fake/event`
-        reply.header('Location', fake_permalink)
+        // TODO: process event and syndicate it
+        const messages = await syndicate(h_event)
+        console.log('=== syndication ===')
+        console.log(messages)
+
+        reply.header('Location', LOCATION)
 
         return reply.code(202).send({
           h_event,
@@ -690,13 +684,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       default:
         return reply.notImplemented(`h=${h} not implemented`)
     }
-
-    // TODO: create, update, delete, undelete
-    // https://github.com/barryf/vibrancy/tree/master/src/http/post-micropub/micropub
-
-    // const result = await db.query(sql`
-    //   UPDATE quotes SET likes = likes + 1 WHERE id=${request.params.id} RETURNING likes
-    // `);
   }
 
   return micropubPost
