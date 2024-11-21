@@ -157,7 +157,7 @@ export const defConfig = () => {
     github_repo,
     github_token,
     host: process.env.HOST || '0.0.0.0',
-    log_level: process.env.LOG_LEVEL || 'info',
+    log_level: process.env.PINO_LOG_LEVEL || 'info',
     me,
     port,
     report_all_ajv_errors:

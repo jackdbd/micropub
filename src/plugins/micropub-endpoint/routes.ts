@@ -10,11 +10,14 @@ import { mf2tTojf2 } from '../../lib/mf2-to-jf2.js'
 import { Jf2PostType } from '../../lib/microformats2/index.js'
 import { slugify } from '../../lib/slugify.js'
 import { defActions, type UpdatePatch } from './actions.js'
+import { NAME } from './constants.js'
 import { unauthorized, mpError } from './errors.js'
 import type { Store } from './store.js'
 import { syndicate, type SyndicateToItem } from './syndication.js'
 import type { PostRequestBody } from './request.js'
 import { defValidateJf2 } from './validate-jf2.js'
+
+const PREFIX = `${NAME}/routes`
 
 export interface CallbackConfig {
   client_id: string
@@ -243,7 +246,9 @@ export const defEditor = (config: EditorConfig) => {
     const jwt = request.session.get('jwt')
 
     if (!jwt) {
-      request.log.debug(`redirect to /login since jwt is not in secure session`)
+      request.log.debug(
+        `${PREFIX} redirect to /login since jwt is not in secure session`
+      )
       return reply.redirect('/login')
     }
 
@@ -316,8 +321,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    console.log(`=== POST /micropub request ID ${request.id} ===`)
-    // console.log(`content-type: ${request.headers['content-type']}`)
+    request.log.debug(
+      `${PREFIX} content-type: ${request.headers['content-type']}`
+    )
 
     let request_body: PostRequestBody
     if (request.isMultipart()) {
@@ -408,6 +414,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     console.log('=== jf2 (JSON stringified) ===')
     console.log(stringify(jf2, undefined, 2))
 
+    // We store the jf2 object in the request context, so if there is a server
+    // error we can access it in the error handler.
+    requestContext.set('jf2', jf2)
+
     // TODO: should actions be syndicated?
 
     if (url && action) {
@@ -421,7 +431,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             return reply.code(code).send({ error, error_description })
           }
 
-          request.log.info(`deleted ${url}`)
+          request.log.info(`${PREFIX} deleted ${url}`)
           const { status_code, message } = result.value
           return reply.code(status_code).send({ message })
         }
@@ -441,7 +451,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           // header.
           // https://micropub.spec.indieweb.org/#delete
 
-          request.log.info(`undeleted ${url}`)
+          request.log.info(`${PREFIX} undeleted ${url}`)
           const { status_code, message } = result.value
           return reply.code(status_code).send({ message })
         }
@@ -470,7 +480,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           // No body is required in the response, but the response MAY contain a
           // JSON object describing the changes that were made.
 
-          request.log.info(`updated ${url}`)
+          request.log.info(`${PREFIX} updated ${url}`)
           const { status_code, message } = result.value
           return reply.code(status_code).send({
             message,
@@ -479,10 +489,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
 
         default: {
-          const message = `action ${action} is not supported by this Micropub server`
+          const message = `action '${action}' is not supported by this Micropub server`
           request.log.warn({ action }, message)
-          requestContext.set('action', action)
-          return reply.notImplemented(message)
+          return reply.micropubInvalidRequest(message)
         }
       }
     }
@@ -696,8 +705,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const message = `Entry not supported by this Micropub server`
         request.log.warn({ entry }, message)
-        requestContext.set('jf2', jf2)
-        return reply.notImplemented(message)
+        return reply.micropubInvalidRequest(message)
       }
 
       case 'event': {
@@ -740,8 +748,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       default: {
         const message = `h=${post_type} not supported by this Micropub server`
         request.log.warn({ jf2 }, message)
-        requestContext.set('jf2', jf2)
-        return reply.notImplemented(message)
+        return reply.micropubInvalidRequest(message)
       }
     }
   }
@@ -774,7 +781,9 @@ export const defMediaPost = (config: MediaPostConfig) => {
       // https://micropub.spec.indieweb.org/#request
       const message =
         'request is not multi-part (TIP: use Content-Type: multipart/form-data to make requests to the media endpoint)'
-      request.log.warn(`request ${request.id} is not a multi-part request`)
+      request.log.warn(
+        `${PREFIX} request ${request.id} is not a multi-part request`
+      )
       return reply.micropubInvalidRequest(message)
     }
 
@@ -803,7 +812,9 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
     const data = await request.file()
     if (!data) {
-      request.log.warn(`request ${request.id} is multi-part but has no file`)
+      request.log.warn(
+        `${PREFIX} request ${request.id} is multi-part but has no file`
+      )
       return reply.micropubInvalidRequest('multi-part request has no file')
     }
 
@@ -852,7 +863,7 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
       return reply.code(201).send({ message })
     } catch (error) {
-      request.log.error(`Error uploading to R2:`, error)
+      request.log.error(`${PREFIX} error uploading to R2:`, error)
       return reply
         .status(500)
         .send({ error: `Failed to upload to bucket ${bucket_name}` })

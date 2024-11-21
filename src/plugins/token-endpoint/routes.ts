@@ -1,7 +1,8 @@
-import type { RouteHandler } from 'fastify'
+import type { FastifyRequest, RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
 import { unixTimestamp } from '../../lib/date.js'
 import * as token from '../../lib/token.js'
+import { invalid_request } from './errors.js'
 
 export interface TokenPostConfig {
   algorithm: string
@@ -18,6 +19,14 @@ interface ResponseBodyFromAuth {
   code_verifier: string
   grant_type: string
   redirect_uri: string
+}
+
+const shouldRespondWithHtml = (request: FastifyRequest) => {
+  if (request.headers.accept && request.headers.accept.includes('text/html')) {
+    return true
+  } else {
+    return false
+  }
 }
 
 export const defTokenPost = (config: TokenPostConfig) => {
@@ -57,12 +66,19 @@ export const defTokenPost = (config: TokenPostConfig) => {
     })
 
     if (!authResponse.ok) {
-      return reply.view('error.njk', {
-        base_url,
-        message: `could not verify authorization code`,
-        description: 'Auth error page',
-        title: 'Auth error'
-      })
+      const message = `could not verify authorization code`
+      if (shouldRespondWithHtml(request)) {
+        return reply.code(invalid_request.code).view('error.njk', {
+          base_url,
+          message,
+          description: 'Auth error page',
+          title: 'Auth error'
+        })
+      } else {
+        return reply
+          .code(invalid_request.code)
+          .send(invalid_request.payload(message))
+      }
     }
 
     const auth_response = await authResponse.json()

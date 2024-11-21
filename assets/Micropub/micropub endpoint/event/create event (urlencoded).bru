@@ -1,7 +1,7 @@
 meta {
-  name: delete repost (Form URL Encoded)
+  name: create event (urlencoded)
   type: http
-  seq: 2
+  seq: 1
 }
 
 post {
@@ -15,8 +15,9 @@ auth:bearer {
 }
 
 body:form-urlencoded {
-  action: delete
-  url: {{test_repost_url}}
+  h: event
+  content: Test event
+  mp-slug: test-event
 }
 
 body:multipart-form {

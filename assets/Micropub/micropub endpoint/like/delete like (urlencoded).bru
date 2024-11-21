@@ -1,0 +1,28 @@
+meta {
+  name: delete like (urlencoded)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: formUrlEncoded
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:form-urlencoded {
+  action: delete
+  url: {{test_like_url}}
+}
+
+body:multipart-form {
+  content: This is a test note
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  mp-slug: test-note-from-quill
+  category[]: quill
+  category[]: test
+}

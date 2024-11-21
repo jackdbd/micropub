@@ -1,5 +1,5 @@
 meta {
-  name: delete bookmark (urlenceded)
+  name: undelete photo (urlencoded)
   type: http
   seq: 2
 }
@@ -15,8 +15,8 @@ auth:bearer {
 }
 
 body:form-urlencoded {
-  action: delete
-  url: {{test_bookmark_url}}
+  action: undelete
+  url: https://github.com/jackdbd/giacomodebidda-content/blob/main/photos/calisthenics-on-the-beach.md
 }
 
 body:multipart-form {

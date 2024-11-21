@@ -1,7 +1,7 @@
 meta {
-  name: delete photo (urlenceded)
+  name: undelete card (urlencoded)
   type: http
-  seq: 1
+  seq: 3
 }
 
 post {
@@ -15,8 +15,8 @@ auth:bearer {
 }
 
 body:form-urlencoded {
-  action: delete
-  url: https://github.com/jackdbd/giacomodebidda-content/blob/main/photos/calisthenics-on-the-beach.md
+  action: undelete
+  url: {{test_card_url}}
 }
 
 body:multipart-form {

@@ -31,7 +31,10 @@ in {
     GITHUB_OWNER = "jackdbd";
     GITHUB_REPO = "giacomodebidda-content";
     GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
-    LOG_LEVEL = "info";
+    # Since the fly CLI uses the LOG_LEVEL environment variable, I use a
+    # different environment variable for pino.
+    # https://betterstack.com/community/guides/logging/how-to-install-setup-and-use-pino-to-log-node-js-applications/
+    PINO_LOG_LEVEL = "debug";
     PORT = "3001";
     SECURE_SESSION_KEY_ONE = micropub.session_key_one;
     SECURE_SESSION_KEY_TWO = micropub.session_key_two;

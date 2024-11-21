@@ -104,10 +104,9 @@ export interface BlacklistedConfig {
   jwt: string
 }
 
-export const isBlacklisted = async ({ jwt }: BlacklistedConfig) => {
+export const isBlacklisted = async (_config: BlacklistedConfig) => {
   console.log(
-    `TODO: query the token database (maybe D1?) to see if JWT is blacklisted`,
-    jwt
+    `TODO: query the token database (maybe D1?) to see if JWT is blacklisted`
   )
   // TODO: implement this
   // const blacklisted = await Promise.resolve(true)

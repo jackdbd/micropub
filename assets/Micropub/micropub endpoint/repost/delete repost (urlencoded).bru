@@ -1,7 +1,7 @@
 meta {
-  name: delete note (urlenceded)
+  name: delete repost (urlencoded)
   type: http
-  seq: 4
+  seq: 2
 }
 
 post {
@@ -16,7 +16,7 @@ auth:bearer {
 
 body:form-urlencoded {
   action: delete
-  url: {{test_note_url}}
+  url: {{test_repost_url}}
 }
 
 body:multipart-form {

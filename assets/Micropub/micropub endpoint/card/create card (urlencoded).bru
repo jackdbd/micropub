@@ -1,0 +1,22 @@
+meta {
+  name: create card (urlencoded)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: formUrlEncoded
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:form-urlencoded {
+  h: card
+  name: Giacomo Debidda
+  job-title: developer
+  mp-slug: test-card
+}

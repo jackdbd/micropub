@@ -1,12 +1,12 @@
 meta {
-  name: undelete photo (urlenceded)
+  name: update event (JSON)
   type: http
-  seq: 2
+  seq: 4
 }
 
 post {
   url: {{base_url}}/micropub
-  body: formUrlEncoded
+  body: json
   auth: bearer
 }
 
@@ -14,9 +14,17 @@ auth:bearer {
   token: {{access_token}}
 }
 
-body:form-urlencoded {
-  action: undelete
-  url: https://github.com/jackdbd/giacomodebidda-content/blob/main/photos/calisthenics-on-the-beach.md
+body:json {
+  {
+    "action": "update",
+    "url": "{{test_event_url}}",
+    "add": {
+      "category": ["bruno", "test"]
+    },
+    "replace": {
+      "content": {"html": "<p>Hello <b>world</b></p>"}
+    }
+  }
 }
 
 body:multipart-form {

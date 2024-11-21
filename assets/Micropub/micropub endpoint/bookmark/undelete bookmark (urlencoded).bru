@@ -1,5 +1,5 @@
 meta {
-  name: undelete like (urlenceded)
+  name: undelete bookmark (urlencoded)
   type: http
   seq: 3
 }
@@ -16,7 +16,7 @@ auth:bearer {
 
 body:form-urlencoded {
   action: undelete
-  url: {{test_like_url}}
+  url: {{test_bookmark_url}}
 }
 
 body:multipart-form {
