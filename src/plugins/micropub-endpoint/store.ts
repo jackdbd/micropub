@@ -1,7 +1,13 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 
+export interface StoreError {
+  message: string
+  status_code: number
+  status_text: string
+}
+
 export interface StoreFailure {
-  error: { message: string; status_code: number; status_text: string }
+  error: StoreError
   value: undefined
 }
 

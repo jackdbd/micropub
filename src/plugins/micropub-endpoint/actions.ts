@@ -72,6 +72,10 @@ export const defUpdate = (config: Config) => {
 
     const content = store.jf2ToContent(jf2)
 
+    // TODO: return update patch (a JSON object describing the changes that were
+    // made.
+    // https://micropub.spec.indieweb.org/#response-0-p-1
+
     return await store.update({
       path,
       content,

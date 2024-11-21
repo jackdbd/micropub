@@ -33,6 +33,16 @@ import {
 import type { Store } from './store.js'
 import type { SyndicateToItem } from './syndication.js'
 
+declare module 'fastify' {
+  interface FastifyReply {
+    // https://micropub.spec.indieweb.org/#error-response
+    micropubForbidden(error_description?: any): void
+    micropubInsufficientScope(error_description?: any): void
+    micropubInvalidRequest(error_description?: string): void
+    micropubUnauthorized(error_description?: string): void
+  }
+}
+
 export interface PluginOptions extends FastifyPluginOptions {
   authorizationCallbackRoute?: string
 
@@ -116,6 +126,35 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     }
   })
   fastify.log.debug(`${NAME} registered Fastify plugins: formbody, multipart`)
+
+  fastify.decorateReply(
+    'micropubInvalidRequest',
+    function (error_description?: string) {
+      // `this` refers to the current reply instance
+      this.code(400).send({ error: 'invalid_request', error_description })
+    }
+  )
+
+  fastify.decorateReply(
+    'micropubUnauthorized',
+    function (error_description?: string) {
+      this.code(401).send({ error: 'unauthorized', error_description })
+    }
+  )
+
+  fastify.decorateReply(
+    'micropubForbidden',
+    function (error_description?: string) {
+      this.code(403).send({ error: 'forbidden', error_description })
+    }
+  )
+
+  fastify.decorateReply(
+    'micropubInsufficientScope',
+    function (error_description?: string) {
+      this.code(403).send({ error: 'insufficient_scope', error_description })
+    }
+  )
 
   const { reportAllAjvErrors: allErrors, store } = config
 

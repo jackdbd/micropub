@@ -1,3 +1,5 @@
+import type { StoreError } from './store.js'
+
 // https://micropub.spec.indieweb.org/#error-response
 
 export const invalid_request = {
@@ -38,4 +40,20 @@ export const insufficient_scope = {
       error_description
     }
   }
+}
+
+export const mpError = (err: StoreError) => {
+  let code: number
+  let error: string
+  if (err.status_code === 401 || err.status_code === 403) {
+    code = err.status_code
+    error = err.status_text
+  } else {
+    code = 400
+    error = 'invalid_request'
+  }
+
+  const error_description = err.message
+
+  return { code, error, error_description }
 }

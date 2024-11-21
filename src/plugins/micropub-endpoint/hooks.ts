@@ -3,11 +3,7 @@ import type { onRequestHookHandler } from 'fastify'
 import { msToUTCString } from '../../lib/date.js'
 import { decode, isBlacklisted, isExpired } from '../../lib/token.js'
 import { NAME } from './constants.js'
-import {
-  invalid_authorization,
-  insufficient_scope,
-  invalid_token
-} from '../errors.js'
+import { invalid_token } from '../errors.js'
 import { micropub_get_request } from './schemas.js'
 
 // TODO: decode the token only once. Maybe move most code to a library.
@@ -37,17 +33,15 @@ export const validateAuthorizationHeader: onRequestHookHandler = (
   const auth = request.headers.authorization
 
   if (!auth) {
-    return reply
-      .code(invalid_authorization.code)
-      .send(invalid_authorization.payload(`missing Authorization header`))
+    const message = 'missing Authorization header'
+    request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+    return reply.micropubUnauthorized(message)
   }
 
   if (auth.indexOf('Bearer') === -1) {
-    return reply
-      .code(invalid_authorization.code)
-      .send(
-        invalid_authorization.payload(`missing Bearer in Authorization header`)
-      )
+    const message = 'missing Bearer in Authorization header'
+    request.log.warn(`${NAME} ${message}`)
+    return reply.micropubUnauthorized(message)
   }
 
   done()
@@ -75,20 +69,17 @@ export const defValidateMeClaimInAccessToken = (
     const auth = request.headers.authorization
 
     if (!auth) {
-      return reply
-        .code(invalid_authorization.code)
-        .send(invalid_authorization.payload(`missing Authorization header`))
+      const message = 'missing Authorization header'
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.micropubUnauthorized(message)
     }
 
     const splits = auth.split(' ')
 
     if (splits.length !== 2) {
-      request.log.warn(
-        `${NAME} request ID ${request.id} has no value for 'Bearer' in Authorization header`
-      )
-      return reply
-        .code(invalid_token.code)
-        .send(invalid_token.payload(`access token is required`))
+      const message = `no value for 'Bearer' in Authorization header`
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.code(invalid_token.code).send(invalid_token.payload(message))
     }
 
     const jwt = splits[1]
@@ -99,13 +90,9 @@ export const defValidateMeClaimInAccessToken = (
     request.log.info(`${NAME} access token scopes: ${scopes.join(' ')}`)
 
     if (claims.me !== me) {
-      return reply
-        .code(invalid_token.code)
-        .send(
-          invalid_token.payload(
-            `access token has a 'me' claim which is not ${me}`
-          )
-        )
+      const message = `access token has a 'me' claim which is not ${me}`
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.code(invalid_token.code).send(invalid_token.payload(message))
     }
 
     // Some token endpoint might issue a token that has `issued_at` in its
@@ -139,15 +126,14 @@ export const defValidateGetRequest = (config: ValidateGetConfig) => {
     const valid = validate(request)
 
     if (!valid) {
-      request.log.warn(`${NAME} received invalid micropub GET request`)
       const errors = validate.errors || []
-      errors.forEach((error) => {
-        request.log.error(`${NAME} ${error.message || 'no error message'}`)
-      })
-      return reply.unauthorized(`invalid micropub request`)
+      const message = errors
+        .map((error) => error.message || 'no error message')
+        .join('; ')
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.micropubInvalidRequest(message)
     }
 
-    request.log.debug(`${NAME} done validating micropub GET request`)
     done()
   }
 
@@ -164,19 +150,21 @@ export const validateAccessTokenNotExpired: onRequestHookHandler = (
   )
 
   if (error) {
-    return reply
-      .code(invalid_token.code)
-      .send(invalid_token.payload(error.message))
+    const message = error.message
+    request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+    return reply.code(invalid_token.code).send(invalid_token.payload(message))
   }
 
   const payload = decode({ jwt })
 
   const expired = isExpired({ exp: payload.exp })
+
   if (expired) {
-    return reply
-      .code(invalid_token.code)
-      .send(invalid_token.payload('The access token has expired.'))
+    const message = `access token has expired`
+    request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+    return reply.code(invalid_token.code).send(invalid_token.payload(message))
   }
+
   done()
 }
 
@@ -189,16 +177,16 @@ export const validateAccessTokenNotBlacklisted: onRequestHookHandler = async (
   )
 
   if (error) {
-    return reply
-      .code(invalid_token.code)
-      .send(invalid_token.payload(error.message))
+    const message = error.message
+    request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+    return reply.code(invalid_token.code).send(invalid_token.payload(message))
   }
 
   const blacklisted = await isBlacklisted({ jwt })
   if (blacklisted) {
-    return reply
-      .code(invalid_token.code)
-      .send(invalid_token.payload('The access token has been blacklisted.'))
+    const message = 'access token is blacklisted'
+    request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+    return reply.code(invalid_token.code).send(invalid_token.payload(message))
   }
 }
 
@@ -223,20 +211,17 @@ export const defValidateScopeInAccessToken = (
     const auth = request.headers.authorization
 
     if (!auth) {
-      return reply
-        .code(invalid_authorization.code)
-        .send(invalid_authorization.payload(`missing Authorization header`))
+      const message = 'missing Authorization header'
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.micropubInvalidRequest(message)
     }
 
     const splits = auth.split(' ')
 
     if (splits.length !== 2) {
-      request.log.warn(
-        `${NAME} request ID ${request.id} has no value for 'Bearer' in Authorization header`
-      )
-      return reply
-        .code(invalid_token.code)
-        .send(invalid_token.payload(`access token is required`))
+      const message = `no value for 'Bearer' in Authorization header`
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.code(invalid_token.code).send(invalid_token.payload(message))
     }
 
     const jwt = splits[1]
@@ -247,13 +232,9 @@ export const defValidateScopeInAccessToken = (
     request.log.info(`${NAME} access token scopes: ${scopes.join(' ')}`)
 
     if (!scopes.includes(scope)) {
-      return reply
-        .code(insufficient_scope.code)
-        .send(
-          insufficient_scope.payload(
-            `access token does not include scope '${scope}'`
-          )
-        )
+      const message = `access token does not include scope '${scope}'`
+      request.log.warn(`${NAME} request ID ${request.id}: ${message}`)
+      return reply.micropubInsufficientScope(message)
     }
 
     done()

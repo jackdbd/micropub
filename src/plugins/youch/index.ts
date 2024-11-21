@@ -1,11 +1,10 @@
+import { requestContext } from '@fastify/request-context'
+import { applyToDefaults } from '@hapi/hoek'
 import type { FastifyPluginOptions, FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import Youch from 'youch'
-import { applyToDefaults } from '@hapi/hoek'
 
-// const EMOJI = '🔍'
 const NAME = '@jackdbd/fastify-youch'
-// const PREFIX = `[${EMOJI} ${NAME}]`
 
 export interface YouchOptions {
   /**
@@ -101,6 +100,18 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
       postLines: config.postLines
     })
 
+    console.log('=== error.validation and error.validationContext ===')
+    console.log({
+      validation: error.validation,
+      validationContext: error.validationContext
+    })
+
+    console.log('=== request context ===')
+    const action = requestContext.get('action')
+    const error_details = requestContext.get('error_details')
+    const jf2 = requestContext.get('jf2')
+    console.log({ action, error_details, jf2 })
+
     // Maybe allow to customise these as plugin options
     const sharedStyle = `vertical-align: middle; margin-right: 0.25rem; color: var(--primary-color);`
     const redditStyle = `--primary-color: #FF5700;`
@@ -146,26 +157,25 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
       youch
         .toHTML()
         .then((html) => {
-          reply.code(status)
-          reply.type('text/html')
-          reply.send(html)
+          reply.code(status).type('text/html; charset=utf-8').send(html)
         })
         .catch((err) => {
-          reply.code(status)
-          reply.send(err)
+          reply.code(status).send(err)
         })
     } else {
-      youch
-        .toJSON()
-        .then((json) => {
-          reply.code(status)
-          reply.type('application/json')
-          reply.send(json)
-        })
-        .catch((err) => {
-          reply.code(status)
-          reply.send(err)
-        })
+      reply
+        .code(status)
+        .send({ error: error.name, error_description: error.message })
+      // Uncomment this if you want to see the stack trace. It might be useful
+      // to see the stack trace in graphical API clients like Postman or Bruno.
+      // youch
+      //   .toJSON()
+      //   .then((json) => {
+      //     reply.code(status).type('application/json; charset=utf-8').send(json)
+      //   })
+      //   .catch((err) => {
+      //     reply.code(status).send(err)
+      //   })
     }
   })
 

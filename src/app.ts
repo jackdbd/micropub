@@ -2,10 +2,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
 import fastifyCsrf from '@fastify/csrf-protection'
+import { fastifyRequestContext } from '@fastify/request-context'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
 import sensible from '@fastify/sensible'
+import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import stringify from 'fast-safe-stringify'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
@@ -23,6 +25,15 @@ import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+declare module '@fastify/request-context' {
+  interface RequestContextData {
+    action?: string
+    error_details?: string[]
+    jf2?: Jf2
+    user: { id: string }
+  }
+}
 
 // https://github.com/fastify/fastify-secure-session?tab=readme-ov-file#add-typescript-types
 declare module '@fastify/secure-session' {
@@ -65,6 +76,12 @@ export function defFastify(config: Config) {
   const fastify = Fastify({ logger: { level: log_level } })
 
   fastify.register(sensible)
+
+  fastify.register(fastifyRequestContext, {
+    defaultStoreValues: {
+      user: { id: 'system' }
+    }
+  })
 
   const sessionName = 'session'
 

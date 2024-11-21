@@ -1,10 +1,10 @@
+// import { requestContext } from '@fastify/request-context'
 import { send } from '@jackdbd/notifications/telegram'
 import { errorText } from '@jackdbd/telegram-text-messages/error'
 import Fastify from 'fastify'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
-
-const NAME = '@jackdbd/fastify-error-handler'
+import { NAME } from './constants.js'
 
 export interface PluginOptions extends FastifyPluginOptions {
   telegram?: { chat_id: string; token: string }
@@ -22,6 +22,9 @@ const errorHandler: FastifyPluginCallback<PluginOptions> = (
 
   fastify.setErrorHandler(async function (error, request, reply) {
     const status = error.statusCode || request.raw.statusCode || 500
+
+    // const error_details = requestContext.get('error_details')
+    // console.log('=== error_details ===', error_details)
 
     request.log.error(error.message)
 

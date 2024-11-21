@@ -1,19 +1,20 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { requestContext } from '@fastify/request-context'
 import type { Jf2, Mf2Item } from '@paulrobertlloyd/mf2tojf2'
 import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import formAutoContent from 'form-auto-content'
+import { nowUTC } from '../../lib/date.js'
 import { mf2tTojf2 } from '../../lib/mf2-to-jf2.js'
 import { Jf2PostType } from '../../lib/microformats2/index.js'
 import { slugify } from '../../lib/slugify.js'
 import { defActions, type UpdatePatch } from './actions.js'
-import { invalid_request, unauthorized } from './errors.js'
-import { defValidateMicroformats2 } from './mf2.js'
+import { unauthorized, mpError } from './errors.js'
 import type { Store } from './store.js'
 import { syndicate, type SyndicateToItem } from './syndication.js'
 import type { PostRequestBody } from './request.js'
-import { nowUTC } from '../../lib/date.js'
+import { defValidateJf2 } from './validate-jf2.js'
 
 export interface CallbackConfig {
   client_id: string
@@ -29,6 +30,9 @@ interface AuthQuery {
   me: string
   state: string
 }
+
+// TODO: replace fetch with request.server.inject for local requests (maybe do
+// this when the app gets instantiated)
 
 export const defAuthCallback = (config: CallbackConfig) => {
   const { client_id, prefix, redirect_uri, token_endpoint } = config
@@ -303,7 +307,8 @@ export interface MicropubPostConfig {
 export const defMicropubPost = (config: MicropubPostConfig) => {
   const { ajv, me, store } = config
 
-  const { validateH_card, validateH_cite } = defValidateMicroformats2(ajv)
+  const { validateCard, validateCite, validateEntry, validateEvent } =
+    defValidateJf2(ajv)
 
   const actions = defActions({ store })
 
@@ -312,18 +317,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     reply
   ) => {
     console.log(`=== POST /micropub request ID ${request.id} ===`)
-
-    // console.log('=== request.url ===')
-    // console.log(request.url)
-
-    // console.log('=== request.body ===')
-    // console.log(request.body)
-
-    // console.log('=== request.query ===')
-    // console.log(request.query)
-
-    // console.log('=== request.headers ===')
-    console.log(`content-type: ${request.headers['content-type']}`)
+    // console.log(`content-type: ${request.headers['content-type']}`)
 
     let request_body: PostRequestBody
     if (request.isMultipart()) {
@@ -362,12 +356,12 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             payload: form.payload
           })
 
-          console.log('=== response headers from media endpoint ===')
-          console.log(response.headers)
+          // console.log('=== response headers from media endpoint ===')
+          // console.log(response.headers)
 
-          console.log('=== response body from media endpoint ===')
-          const response_body = response.json()
-          console.log(response_body)
+          // console.log('=== response body from media endpoint ===')
+          // const response_body = response.json()
+          // console.log(response_body)
 
           // data.photo = response.headers.location
 
@@ -375,11 +369,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             alt: 'todo: where to get the alternate text?',
             url: response.headers.location
           }
-
-          // return reply.code(response.statusCode).send({
-          //   ...response_body,
-          //   recap_message: 'response from media endpoint'
-          // })
         }
       }
       request_body = data
@@ -388,7 +377,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     }
 
     if (!request_body) {
-      return reply.badRequest('request has no body')
+      return reply.micropubInvalidRequest('request has no body')
     }
 
     // Micropub requests from Quill include an access token in the body.
@@ -406,14 +395,14 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     } else {
       const items = [rest] as Mf2Item[]
       const { error, value } = await mf2tTojf2({ items })
+
       if (error) {
         request.log.warn({ request_body }, error.message)
-        return reply
-          .code(invalid_request.code)
-          .send(invalid_request.payload(error.message))
+        return reply.micropubInvalidRequest(error.message)
+      } else {
+        jf2 = { ...value, date: nowUTC() }
+        post_type = jf2.type
       }
-      jf2 = { ...value, date: nowUTC() }
-      post_type = jf2.type
     }
 
     console.log('=== jf2 (JSON stringified) ===')
@@ -427,15 +416,12 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           const result = await actions.delete(url)
 
           if (result.error) {
-            const { status_code, status_text, message } = result.error
-            return reply.code(status_code).send({
-              error: status_text,
-              error_description: message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           }
 
           request.log.info(`deleted ${url}`)
-
           const { status_code, message } = result.value
           return reply.code(status_code).send({ message })
         }
@@ -444,17 +430,20 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           const result = await actions.undelete(url)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           }
 
-          request.log.info(`undeleted ${url}`)
+          // The server MUST respond to successful delete and undelete requests
+          // with HTTP 200, 201 or 204. If the undelete operation caused the URL of the post to change, the server MUST
+          // respond with HTTP 201 and include the new URL in the HTTP Location
+          // header.
+          // https://micropub.spec.indieweb.org/#delete
 
-          return reply.code(result.value.status_code).send({
-            message: result.value.message
-          })
+          request.log.info(`undeleted ${url}`)
+          const { status_code, message } = result.value
+          return reply.code(status_code).send({ message })
         }
 
         case 'update': {
@@ -465,16 +454,26 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           const result = await actions.update(url, patch)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           }
 
-          request.log.info(`updated ${url}`)
+          // TODO: return correct response upon successful update operation
+          // https://micropub.spec.indieweb.org/#response-0-p-1
+          // The server MUST respond to successful update requests with HTTP 200,
+          // 201 or 204.
+          // If the update operation caused the URL of the post to change, the
+          // server MUST respond with HTTP 201 and include the new URL in the
+          // HTTP Location header. Otherwise, the server MUST respond with 200
+          // or 204, depending on whether the response body has content.
+          // No body is required in the response, but the response MAY contain a
+          // JSON object describing the changes that were made.
 
-          return reply.code(result.value.status_code).send({
-            message: result.value.message,
+          request.log.info(`updated ${url}`)
+          const { status_code, message } = result.value
+          return reply.code(status_code).send({
+            message,
             body: result.value.body
           })
         }
@@ -482,6 +481,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         default: {
           const message = `action ${action} is not supported by this Micropub server`
           request.log.warn({ action }, message)
+          requestContext.set('action', action)
           return reply.notImplemented(message)
         }
       }
@@ -492,13 +492,11 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
     switch (post_type) {
       case 'card': {
-        const valid = validateH_card(jf2)
+        const valid = validateCard(jf2)
         if (!valid) {
-          request.log.warn(
-            { jf2, errors: validateH_card.errors || [] },
-            'received invalid jf2 card'
-          )
-          return reply.badRequest('invalid_request')
+          const message = 'invalid JF2 card'
+          request.log.warn({ jf2, errors: validateCard.errors || [] }, message)
+          return reply.micropubInvalidRequest(message)
         }
 
         // const slug = slugify(jf2)
@@ -513,13 +511,11 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'cite': {
-        const valid = validateH_cite(jf2)
+        const valid = validateCite(jf2)
         if (!valid) {
-          request.log.warn(
-            { jf2, errors: validateH_cite.errors || [] },
-            'received invalid jf2 cite'
-          )
-          return reply.badRequest('invalid_request')
+          const message = 'invalid JF2 cite'
+          request.log.warn({ jf2, errors: validateCite.errors || [] }, message)
+          return reply.micropubInvalidRequest(message)
         }
 
         const slug = slugify(jf2)
@@ -532,10 +528,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         })
 
         if (result.error) {
-          return reply.code(result.error.status_code).send({
-            error: result.error.status_text,
-            error_description: result.error.message
-          })
+          const { code, error, error_description } = mpError(result.error)
+          request.log.error(error_description)
+          return reply.code(code).send({ error, error_description })
         } else {
           // TODO: syndicate cite
           const messages = await syndicate(cite as any)
@@ -553,17 +548,12 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
 
       case 'entry': {
-        // const valid = validateH_entry(jf2)
-        // if (!valid) {
-        //   const message = 'invalid JF2 entry'
-        //   request.log.warn(
-        //     { jf2, errors: validateH_entry.errors || [] },
-        //     message
-        //   )
-        //   return reply
-        //     .code(invalid_request.code)
-        //     .send(invalid_request.payload(message))
-        // }
+        const valid = validateEntry(jf2)
+        if (!valid) {
+          const message = 'invalid JF2 entry'
+          request.log.warn({ jf2, errors: validateEntry.errors || [] }, message)
+          return reply.micropubInvalidRequest(message)
+        }
 
         const slug = slugify(jf2)
         const content = store.jf2ToContent(jf2)
@@ -581,10 +571,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log(messages)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           } else {
             reply.header('Location', me)
 
@@ -608,10 +597,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log(messages)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           } else {
             reply.header('Location', me)
 
@@ -636,10 +624,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log(messages)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           } else {
             reply.header('Location', me)
 
@@ -663,10 +650,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log(messages)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           } else {
             reply.header('Location', me)
 
@@ -694,10 +680,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           console.log(messages)
 
           if (result.error) {
-            return reply.code(result.error.status_code).send({
-              error: result.error.status_text,
-              error_description: result.error.message
-            })
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
           } else {
             reply.header('Location', me)
 
@@ -711,18 +696,17 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         const message = `Entry not supported by this Micropub server`
         request.log.warn({ entry }, message)
+        requestContext.set('jf2', jf2)
         return reply.notImplemented(message)
       }
 
       case 'event': {
-        // const valid = validateH_event(jf2)
-        // if (!valid) {
-        //   request.log.warn(
-        //     { jf2, errors: validateH_event.errors || [] },
-        //     'received invalid h-event'
-        //   )
-        //   return reply.badRequest('invalid_request')
-        // }
+        const valid = validateEvent(jf2)
+        if (!valid) {
+          const message = 'invalid JF2 event'
+          request.log.warn({ jf2, errors: validateEvent.errors || [] }, message)
+          return reply.micropubInvalidRequest(message)
+        }
 
         const slug = slugify(jf2)
         const content = store.jf2ToContent(jf2)
@@ -734,15 +718,14 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         })
 
         // TODO: syndicate event
-        const messages = await syndicate(event as any)
+        const messages = await syndicate({ ...jf2, 'mp-slug': slug })
         console.log('=== syndication ===')
         console.log(messages)
 
         if (result.error) {
-          return reply.code(result.error.status_code).send({
-            error: result.error.status_text,
-            error_description: result.error.message
-          })
+          const { code, error, error_description } = mpError(result.error)
+          request.log.error(error_description)
+          return reply.code(code).send({ error, error_description })
         } else {
           reply.header('Location', me)
 
@@ -757,6 +740,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       default: {
         const message = `h=${post_type} not supported by this Micropub server`
         request.log.warn({ jf2 }, message)
+        requestContext.set('jf2', jf2)
         return reply.notImplemented(message)
       }
     }
@@ -785,10 +769,13 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
   const mediaPost: RouteHandler = async (request, reply) => {
     if (!request.isMultipart()) {
+      // To upload a file to the Media Endpoint, the client sends a
+      // multipart/form-data request with one part named file.
+      // https://micropub.spec.indieweb.org/#request
+      const message =
+        'request is not multi-part (TIP: use Content-Type: multipart/form-data to make requests to the media endpoint)'
       request.log.warn(`request ${request.id} is not a multi-part request`)
-      // TODO: read the specs. I'm not sure I should handle non multi-part
-      // requests received at the media endpoint.
-      return reply.badRequest('request is not multi-part')
+      return reply.micropubInvalidRequest(message)
     }
 
     console.log(`=== POST /media request ID ${request.id} ===`)
@@ -816,11 +803,12 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
     const data = await request.file()
     if (!data) {
-      return reply.badRequest('multi-part request has no file')
+      request.log.warn(`request ${request.id} is multi-part but has no file`)
+      return reply.micropubInvalidRequest('multi-part request has no file')
     }
 
-    console.log('=== data.filename ===', data.filename)
-    console.log('=== data.fields ===', data.fields)
+    // console.log('=== data.filename ===', data.filename)
+    // console.log('=== data.fields ===', data.fields)
 
     let filename = 'unknown.xyz'
     if (data.filename) {

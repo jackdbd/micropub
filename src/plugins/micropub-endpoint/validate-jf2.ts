@@ -16,28 +16,28 @@ import {
  * The order of the schemas is important because some schemas reference other
  * ones.
  */
-export const defValidateMicroformats2 = (ajv: Ajv) => {
+export const defValidateJf2 = (ajv: Ajv) => {
   // const label = 'compile microformats2 schemas'
   // console.time(label)
   const validateGeoURI = ajv.compile(geo_uri)
-  const validateH_geo = ajv.compile(h_geo)
-  const validateH_adr = ajv.compile(h_adr)
-  const validateH_card = ajv.compile(h_card)
-  const validateH_cite = ajv.compile(h_cite)
-  const validateH_entry = ajv.compile(h_entry)
-  const validateH_event = ajv.compile(h_event)
-  const validateH_item = ajv.compile(h_item)
+  const validateGeo = ajv.compile(h_geo)
+  const validateAdr = ajv.compile(h_adr)
+  const validateCard = ajv.compile(h_card)
+  const validateCite = ajv.compile(h_cite)
+  const validateEntry = ajv.compile(h_entry)
+  const validateEvent = ajv.compile(h_event)
+  const validateItem = ajv.compile(h_item)
   // console.timeLog(label)
   // console.timeEnd(label)
 
   return {
+    validateAdr,
+    validateCard,
+    validateCite,
+    validateEntry,
+    validateEvent,
+    validateGeo,
     validateGeoURI,
-    validateH_adr,
-    validateH_card,
-    validateH_cite,
-    validateH_entry,
-    validateH_event,
-    validateH_geo,
-    validateH_item
+    validateItem
   }
 }
