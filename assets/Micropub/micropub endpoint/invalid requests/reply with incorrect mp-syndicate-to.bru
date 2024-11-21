@@ -1,7 +1,7 @@
 meta {
-  name: create bookmark
+  name: reply with incorrect mp-syndicate-to
   type: http
-  seq: 1
+  seq: 3
 }
 
 post {
@@ -22,11 +22,8 @@ body:json {
 }
 
 body:form-urlencoded {
-  bookmark-of: https://piccalil.li/blog/what-are-design-tokens/
+  in-reply-to: https://ohhelloana.blog/guestbook/
   h: entry
-  content: Andy Bell's article on design tokens
-  category[]: design
-  category[]: css
-  name: what-are-design-tokens
-  mp-syndicate-to[]: {{syndication_uid_mastodon}}
+  content: Hi Ana! Your guestbook is so cool. Love it!
+  mp-syndicate-to: https://fosstodon.org/@jackdbd, https://archive.org/, https://www.linkedin.com/in/giacomodebidda/
 }

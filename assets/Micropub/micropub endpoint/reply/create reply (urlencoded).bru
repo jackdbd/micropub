@@ -1,5 +1,5 @@
 meta {
-  name: create reply
+  name: create reply (urlencoded)
   type: http
   seq: 1
 }
@@ -24,6 +24,9 @@ body:json {
 body:form-urlencoded {
   in-reply-to: https://ohhelloana.blog/guestbook/
   h: entry
-  content: Hi Ana! Your guestbook is such so cool. Love it!
-  mp-syndicate-to: https://fosstodon.org/@jackdbd, https://archive.org/, https://www.linkedin.com/in/giacomodebidda/
+  content: Hi Ana! Your guestbook is so cool. Love it!
+  mp-syndicate-to[]: https://fosstodon.org/@jackdbd
+  mp-syndicate-to[]: https://archive.org/
+  mp-syndicate-to[]: https://www.linkedin.com/in/giacomodebidda/
+  mp-slug: test-reply
 }

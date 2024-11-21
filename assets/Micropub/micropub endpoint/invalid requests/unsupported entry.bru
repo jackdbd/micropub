@@ -1,7 +1,7 @@
 meta {
-  name: perform unsupported action
+  name: unsupported entry
   type: http
-  seq: 2
+  seq: 1
 }
 
 post {
@@ -24,6 +24,6 @@ body:json {
 }
 
 body:form-urlencoded {
-  action: archive
-  url: {{test_bookmark_url}}
+  h: unsupported
+  content: This will not be stored
 }
