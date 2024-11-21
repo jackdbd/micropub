@@ -4,7 +4,7 @@ import { htmlToMarkdown } from './html-to-markdown.js'
 import { markdownToHtml } from './markdown-to-html.js'
 
 export const jf2ToMarkdown = (jf2: Jf2) => {
-  const { content, ...frontmatter } = jf2
+  const { type: _, content, ...frontmatter } = jf2
 
   // Consider using this library for the frontmatter:
   // https://github.com/importantimport/fff
