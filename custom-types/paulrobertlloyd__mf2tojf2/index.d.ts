@@ -56,6 +56,7 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     name?: string
     photo: Photo[]
     published?: string
+    'read-of'?: string
     'repost-of'?: string
     summary?: string
     syndication?: string | string[]

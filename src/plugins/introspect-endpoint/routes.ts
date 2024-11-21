@@ -1,6 +1,6 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { decode, isExpired, isBlacklisted } from '../../lib/token.js'
-import { invalid_token } from '../errors.js'
+import { invalid_token } from './errors.js'
 
 export interface IntrospectConfig {
   client_id: string

@@ -6,6 +6,7 @@ import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import formAutoContent from 'form-auto-content'
 import { nowUTC } from '../../lib/date.js'
+import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../lib/mf2-to-jf2.js'
 import { Jf2PostType } from '../../lib/microformats2/index.js'
 import { slugify } from '../../lib/slugify.js'
@@ -279,9 +280,7 @@ export const defMicropubGet = (config: MicropubGetConfig) => {
       'syndicate-to': syndicate_to
     }
 
-    const accept = request.headers.accept
-
-    if (accept && accept.includes('text/html')) {
+    if (clientAcceptsHtml(request)) {
       return reply.view('micropub-config.njk', {
         description: 'Configuration for this micropub endpoint.',
         title: 'Micropub config',
@@ -411,8 +410,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       }
     }
 
-    console.log('=== jf2 (JSON stringified) ===')
-    console.log(stringify(jf2, undefined, 2))
+    // console.log('=== jf2 (JSON stringified) ===')
+    // console.log(stringify(jf2, undefined, 2))
 
     // We store the jf2 object in the request context, so if there is a server
     // error we can access it in the error handler.
@@ -665,6 +664,34 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           }
         }
 
+        // An app that sends read-of entries is indiebookclub.biz
+        // https://indieweb.org/indiebookclub
+        if (entry['read-of']) {
+          const result = await store.create({
+            path: `reads/${slug}.md`,
+            content
+          })
+
+          // TODO: syndicate read
+          const messages = await syndicate(entry as any)
+          console.log('=== syndication ===')
+          console.log(messages)
+
+          if (result.error) {
+            const { code, error, error_description } = mpError(result.error)
+            request.log.error(error_description)
+            return reply.code(code).send({ error, error_description })
+          } else {
+            reply.header('Location', me)
+
+            return reply.code(result.value.status_code).send({
+              entry,
+              body: result.value.body,
+              message: result.value.message
+            })
+          }
+        }
+
         if (entry['repost-of']) {
           const result = await store.create({
             path: `reposts/${slug}.md`,
@@ -805,29 +832,6 @@ export const defMediaPost = (config: MediaPostConfig) => {
       return reply.micropubInvalidRequest(message)
     }
 
-    console.log(`=== POST /media request ID ${request.id} ===`)
-
-    // console.log('=== request.url ===')
-    // console.log(request.url)
-
-    // console.log('=== request.params ===')
-    // console.log(request.params)
-
-    // console.log('=== request.url ===')
-    // console.log(request.url)
-
-    // console.log('=== request.host ===')
-    // console.log(request.host)
-
-    // console.log('=== request.hostname ===')
-    // console.log(request.hostname)
-
-    // console.log('=== request.body ===')
-    // console.log(request.body)
-
-    // console.log('=== request.headers ===')
-    // console.log(request.headers)
-
     const data = await request.file()
     if (!data) {
       request.log.warn(
@@ -835,9 +839,6 @@ export const defMediaPost = (config: MediaPostConfig) => {
       )
       return reply.micropubInvalidRequest('multi-part request has no file')
     }
-
-    // console.log('=== data.filename ===', data.filename)
-    // console.log('=== data.fields ===', data.fields)
 
     let filename = 'unknown.xyz'
     if (data.filename) {

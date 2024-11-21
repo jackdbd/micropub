@@ -3,7 +3,7 @@ import type { onRequestHookHandler } from 'fastify'
 import { msToUTCString } from '../../lib/date.js'
 import { decode, isBlacklisted, isExpired } from '../../lib/token.js'
 import { NAME } from './constants.js'
-import { invalid_token } from '../errors.js'
+import { invalid_token } from './errors.js'
 import { micropub_get_request } from './schemas.js'
 
 // TODO: decode the token only once. Maybe move most code to a library.

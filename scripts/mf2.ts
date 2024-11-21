@@ -7,7 +7,7 @@ import {
   micropub_get_request,
   micropub_post_request
 } from '../src/plugins/micropub-endpoint/schemas.js'
-import { defValidateMicroformats2 } from '../src/plugins/micropub-endpoint/mf2.js'
+import { defValidateJf2 } from '../src/plugins/micropub-endpoint/validate-jf2.js'
 
 // TODO: convert most of this stuff to tests for the microformats2 library
 
@@ -58,16 +58,16 @@ const main = async () => {
 
   const {
     validateGeoURI,
-    validateH_adr,
-    validateH_card,
-    validateH_cite,
-    validateH_entry,
-    validateH_event,
-    validateH_geo,
-    validateH_item
-  } = defValidateMicroformats2(ajv)
+    validateAdr,
+    validateCard,
+    validateCite,
+    validateEntry,
+    validateEvent,
+    validateGeo,
+    validateItem
+  } = defValidateJf2(ajv)
 
-  check('bare minimum note', { content: 'this is a note' }, validateH_entry)
+  check('bare minimum note', { content: 'this is a note' }, validateEntry)
 
   check(
     'html note with published datetime',
@@ -81,10 +81,10 @@ const main = async () => {
       // April 12th, 1985 in UTC.
       published: '1985-04-12T23:20:50.52Z'
     },
-    validateH_entry
+    validateEntry
   )
 
-  check('bare minimum card', { name: 'My card' }, validateH_card)
+  check('bare minimum card', { name: 'My card' }, validateCard)
 
   check(
     'bare minimum cite',
@@ -92,7 +92,7 @@ const main = async () => {
       name: 'Parallel Lives',
       author: 'Plutarch'
     },
-    validateH_cite
+    validateCite
   )
 
   check(
@@ -103,7 +103,7 @@ const main = async () => {
       author: 'Plutarch',
       published: '0100-01-31'
     },
-    validateH_cite
+    validateCite
   )
 
   // https://indieweb.org/like
@@ -112,7 +112,7 @@ const main = async () => {
     {
       'like-of': 'http://othersite.example.com/permalink47'
     },
-    validateH_entry
+    validateEntry
   )
 
   // https://indieweb.org/repost
@@ -121,10 +121,10 @@ const main = async () => {
     {
       'repost-of': 'https://example.com/post'
     },
-    validateH_entry
+    validateEntry
   )
 
-  check('bare minimum event', { name: 'Some event' }, validateH_event)
+  check('bare minimum event', { name: 'Some event' }, validateEvent)
 
   check(
     'event',
@@ -135,10 +135,10 @@ const main = async () => {
       location: 'Some bar in SF',
       summary: 'Get together and discuss all things microformats-related.'
     },
-    validateH_event
+    validateEvent
   )
 
-  check('geo', { latitude: -89.99, longitude: 179.99 }, validateH_geo)
+  check('geo', { latitude: -89.99, longitude: 179.99 }, validateGeo)
 
   check('Geo URI with lat/long', 'geo:46.772673,-71.282945', validateGeoURI)
   check(
@@ -155,7 +155,7 @@ const main = async () => {
       'country-name': 'Iceland',
       'postal-code': '107'
     },
-    validateH_adr
+    validateAdr
   )
 
   check(
@@ -165,7 +165,7 @@ const main = async () => {
       photo: 'http://example.org/items/1/photo.png',
       url: 'http://example.org/items/1'
     },
-    validateH_item
+    validateItem
   )
 }
 

@@ -1,6 +1,7 @@
-import type { FastifyRequest, RouteHandler } from 'fastify'
+import type { RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
 import { unixTimestamp } from '../../lib/date.js'
+import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 import * as token from '../../lib/token.js'
 import { invalid_request } from './errors.js'
 
@@ -19,14 +20,6 @@ interface ResponseBodyFromAuth {
   code_verifier: string
   grant_type: string
   redirect_uri: string
-}
-
-const shouldRespondWithHtml = (request: FastifyRequest) => {
-  if (request.headers.accept && request.headers.accept.includes('text/html')) {
-    return true
-  } else {
-    return false
-  }
 }
 
 export const defTokenPost = (config: TokenPostConfig) => {
@@ -67,7 +60,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (!authResponse.ok) {
       const message = `could not verify authorization code`
-      if (shouldRespondWithHtml(request)) {
+      if (clientAcceptsHtml(request)) {
         return reply.code(invalid_request.code).view('error.njk', {
           base_url,
           message,
@@ -126,10 +119,6 @@ export const defTokenPost = (config: TokenPostConfig) => {
         error: `Could not verify token: ${verify_error.message}`
       })
     }
-
-    // console.log('=== ACCESS TOKEN ===')
-    // console.log(jwt)
-    // console.log('=== === ===')
 
     reply.header('Authorization', jwt)
     request.log.debug(`${prefix} set Bearer <JWT> in Authorization header`)

@@ -3,6 +3,7 @@ import { applyToDefaults } from '@hapi/hoek'
 import type { FastifyPluginOptions, FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import Youch from 'youch'
+import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 
 const NAME = '@jackdbd/fastify-youch'
 
@@ -150,10 +151,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
 
     const status = error.statusCode || request.raw.statusCode || 500
 
-    const client_accepts_html =
-      request.headers.accept && request.headers.accept.includes('text/html')
-
-    if (client_accepts_html) {
+    if (clientAcceptsHtml(request)) {
       youch
         .toHTML()
         .then((html) => {

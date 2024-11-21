@@ -20,6 +20,8 @@ export const slugify = (jf2: Jf2) => {
 
   if (jf2.name) {
     str = jf2.name
+  } else if (jf2.summary) {
+    str = jf2.summary
   } else if (jf2['bookmark-of']) {
     str = `${yyyy_mm_dd}-${jf2['bookmark-of']
       .replace(/^https?:\/\//, '')

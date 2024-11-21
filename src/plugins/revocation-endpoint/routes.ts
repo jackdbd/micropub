@@ -1,6 +1,6 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { revoke } from '../../lib/token.js'
-import { invalid_token } from '../errors.js'
+import { invalid_token } from './errors.js'
 
 interface RequestBody {
   token: string
@@ -35,5 +35,7 @@ export const revocation: RouteHandler<RouteGeneric> = async (
   //   return reply.code(500).send({ error: error.message })
   // }
 
-  return reply.code(200).send({ message: 'token revoked' })
+  return reply
+    .code(501)
+    .send({ message: 'token revocation not yet implemented by this server' })
 }
