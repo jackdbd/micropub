@@ -1,0 +1,36 @@
+meta {
+  name: create note (urlencoded)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: formUrlEncoded
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:form-urlencoded {
+  content: Sample note from Bruno
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  category[]: bruno
+  category[]: test
+  h: entry
+  author: Giacomo Debidda
+  mp-syndicate-to[]: https://fosstodon.org/@jackdbd
+  visibility: public
+  mp-slug: test-note-from-bruno
+  mp-syndicate-to[]: https://www.linkedin.com/in/giacomodebidda/
+}
+
+body:multipart-form {
+  content: This is a test note
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  mp-slug: test-note-from-quill
+  category[]: quill
+  category[]: test
+}

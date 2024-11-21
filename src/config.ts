@@ -175,16 +175,15 @@ export const defConfig = () => {
     NODE_ENV: process.env.NODE_ENV || 'production'
   }
 
-  const unsensitive = unsentiveEntries(config)
-
-  if (config.NODE_ENV !== 'test') {
-    console.log(`=== CONFIG: ${unsensitive.length} non-sensitive entries ===`)
-    console.log(Object.fromEntries(unsensitive))
-    console.log(
-      `=== CONFIG: ${SENSITIVE.size} sensitive fields (values not shown) ===`
-    )
-    console.log(sensitive_fields)
-  }
+  // if (config.NODE_ENV !== 'test') {
+  //   const unsensitive = unsentiveEntries(config)
+  //   console.log(`=== CONFIG: ${unsensitive.length} non-sensitive entries ===`)
+  //   console.log(Object.fromEntries(unsensitive))
+  //   console.log(
+  //     `=== CONFIG: ${SENSITIVE.size} sensitive fields (values not shown) ===`
+  //   )
+  //   console.log(sensitive_fields)
+  // }
 
   return { value: config }
 }

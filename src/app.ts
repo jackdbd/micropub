@@ -19,8 +19,7 @@ import revocationEndpoint from './plugins/revocation-endpoint/index.js'
 import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 import { tap } from './nunjucks/filters.js'
-import { unsentiveEntries } from './config.js'
-import type { Config } from './config.js'
+import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -182,11 +181,12 @@ export function defFastify(config: Config) {
   })
 
   fastify.get('/config', async (_request, reply) => {
-    const data = Object.fromEntries(unsentiveEntries(config))
+    const non_sensitive = Object.fromEntries(unsentiveEntries(config))
     return reply.view('config.njk', {
-      description: 'Non-sensitive configuration',
+      description: 'Configuration of the app',
       title: 'Config',
-      data: stringify(data, undefined, 2)
+      non_sensitive: stringify(non_sensitive, undefined, 2),
+      sensitive_fields
     })
   })
 

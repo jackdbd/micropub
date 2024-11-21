@@ -1,0 +1,39 @@
+meta {
+  name: create note with one image (multipart)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:form-urlencoded {
+  content: Sample note from Bruno
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  category[]: bruno
+  category[]: test
+  h: entry
+  author: Giacomo Debidda
+  mp-syndicate-to[]: https://fosstodon.org/@jackdbd
+  visibility: public
+  mp-slug: test-note-from-bruno
+  mp-syndicate-to[]: https://www.linkedin.com/in/giacomodebidda/
+}
+
+body:multipart-form {
+  content: This is a test note with an image
+  mp-slug: test-note-from-bruno-with-one-image
+  category[]: bruno
+  category[]: test
+  author: Giacomo Debidda
+  h: entry
+  mp-syndicate-to: https://fosstodon.org/@jackdbd
+  : @file(/home/jack/repos/micropub/assets/images/866-200x300.jpg)
+}

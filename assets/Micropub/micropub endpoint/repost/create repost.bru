@@ -1,0 +1,28 @@
+meta {
+  name: create repost
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: formUrlEncoded
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "h": "entry",
+    "repost-of": "https://example.com/post"
+  }
+}
+
+body:form-urlencoded {
+  h: entry
+  repost-of: https://mxb.dev/blog/the-indieweb-for-everyone/
+  content: Great read!
+}

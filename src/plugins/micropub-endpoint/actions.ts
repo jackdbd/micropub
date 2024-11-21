@@ -1,10 +1,7 @@
 import type { Store } from './store.js'
-import {
-  base64ToUtf8,
-  markdownToMf2,
-  mf2ToMarkdown,
-  utf8ToBase64
-} from './utils.js'
+import { nowUTC } from '../../lib/date.js'
+import { base64ToUtf8 } from '../../lib/encoding.js'
+import { markdownToJf2 } from '../../lib/markdown-to-jf2.js'
 
 export type ActionType = 'delete' | 'undelete' | 'update'
 
@@ -49,29 +46,31 @@ export const defUpdate = (config: Config) => {
     const { content: original, sha } = result_get.value.body
 
     const md_original = base64ToUtf8(original)
-    let mf2 = markdownToMf2(md_original)
+    let jf2 = markdownToJf2(md_original)
 
     const messages: string[] = []
 
     if (patch.delete) {
-      const { [patch.delete]: _, ...keep } = mf2 as any
+      const { [patch.delete]: _, ...keep } = jf2 as any
       messages.push(`deleted property ${patch.delete}`)
-      mf2 = keep
+      jf2 = keep
     }
 
     if (patch.add) {
       messages.push(`added ${JSON.stringify(patch.add)}`)
-      mf2 = { ...mf2, ...patch.add }
+      jf2 = { ...jf2, ...patch.add }
     }
 
     if (patch.replace) {
       messages.push(`replaced ${JSON.stringify(patch.replace)}`)
-      mf2 = { ...mf2, ...patch.replace }
+      jf2 = { ...jf2, ...patch.replace }
     }
 
-    const md = mf2ToMarkdown(mf2)
+    if (patch.add || patch.delete || patch.replace) {
+      jf2 = { ...jf2, updated: nowUTC() }
+    }
 
-    const content = utf8ToBase64(md)
+    const content = store.jf2ToContent(jf2)
 
     return await store.update({
       path,

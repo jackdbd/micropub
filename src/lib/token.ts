@@ -1,4 +1,5 @@
 import * as jose from 'jose'
+import { unixTimestamp } from './date.js'
 
 interface AccessTokenPayload {
   exp: number // will expire at timestamp
@@ -96,8 +97,7 @@ interface ExpiredConfig {
 }
 
 export const isExpired = ({ exp }: ExpiredConfig) => {
-  const now = Math.floor(new Date().getTime() / 1000)
-  return exp - now < 0 ? true : false
+  return exp - unixTimestamp() < 0 ? true : false
 }
 
 export interface BlacklistedConfig {

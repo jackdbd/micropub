@@ -1,5 +1,6 @@
 import type { RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
+import { unixTimestamp } from '../../lib/date.js'
 import * as token from '../../lib/token.js'
 
 export interface TokenPostConfig {
@@ -122,7 +123,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
     const { exp } = verified.payload
     let expires_in: number | undefined
     if (exp) {
-      expires_in = exp - Math.floor(new Date().getTime() / 1000)
+      expires_in = exp - unixTimestamp()
     }
 
     return reply.send({

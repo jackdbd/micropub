@@ -1,0 +1,32 @@
+meta {
+  name: create bookmark
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: formUrlEncoded
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "h": "entry",
+    "like-of": "http://othersite.example.com/permalink47"
+  }
+}
+
+body:form-urlencoded {
+  bookmark-of: https://piccalil.li/blog/what-are-design-tokens/
+  h: entry
+  content: Andy Bell's article on design tokens
+  category[]: design
+  category[]: css
+  name: what-are-design-tokens
+  mp-syndicate-to[]: {{syndication_uid_mastodon}}
+}

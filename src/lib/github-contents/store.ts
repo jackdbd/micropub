@@ -1,4 +1,8 @@
 import { applyToDefaults } from '@hapi/hoek'
+import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
+// import type { Store } from '../../plugins/micropub-endpoint/store.js'
+import { utf8ToBase64 } from '../encoding.js'
+import { jf2ToMarkdown } from '../jf2-to-markdown.js'
 import * as api from './api.js'
 import type { AuthorOrCommitter } from './api.js'
 import { BASE_URL, DELETED_PREFIX, REF } from './defaults.js'
@@ -147,6 +151,11 @@ export const defStore = (options: Options) => {
     })
   }
 
+  const jf2ToContent = (jf2: Jf2) => {
+    const md = jf2ToMarkdown(jf2)
+    return utf8ToBase64(md)
+  }
+
   const publishedUrlToStoreLocation = (
     config: PublishedUrlToStoreLocationConfig
   ) => {
@@ -167,11 +176,12 @@ export const defStore = (options: Options) => {
 
   return {
     create,
-    update,
     delete: softDelete,
     get,
     hardDelete,
+    jf2ToContent,
+    publishedUrlToStoreLocation,
     undelete,
-    publishedUrlToStoreLocation
+    update
   }
 }

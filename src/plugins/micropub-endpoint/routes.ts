@@ -3,19 +3,17 @@ import type { Jf2, Mf2Item } from '@paulrobertlloyd/mf2tojf2'
 import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
+import formAutoContent from 'form-auto-content'
+import { mf2tTojf2 } from '../../lib/mf2-to-jf2.js'
 import { Jf2PostType } from '../../lib/microformats2/index.js'
+import { slugify } from '../../lib/slugify.js'
 import { defActions, type UpdatePatch } from './actions.js'
 import { invalid_request, unauthorized } from './errors.js'
-import { jf2FromMf2 } from './jf2.js'
 import { defValidateMicroformats2 } from './mf2.js'
 import type { Store } from './store.js'
 import { syndicate, type SyndicateToItem } from './syndication.js'
-import {
-  mf2ToMarkdown,
-  slugify,
-  utf8ToBase64,
-  type PostRequestBody
-} from './utils.js'
+import type { PostRequestBody } from './request.js'
+import { nowUTC } from '../../lib/date.js'
 
 export interface CallbackConfig {
   client_id: string
@@ -318,8 +316,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // console.log('=== request.url ===')
     // console.log(request.url)
 
-    console.log('=== request.body ===')
-    console.log(request.body)
+    // console.log('=== request.body ===')
+    // console.log(request.body)
 
     // console.log('=== request.query ===')
     // console.log(request.query)
@@ -329,7 +327,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
     let request_body: PostRequestBody
     if (request.isMultipart()) {
-      //  const multi_part_file = await request.file()
       const parts = request.parts()
       const data: Record<string, any> = {}
       for await (const part of parts) {
@@ -339,22 +336,46 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         } else if (part.type === 'file') {
           // TODO: do I really need to consume the buffer here? Why? Explain.
           console.log(`=== Received file: ${part.filename} ===`)
-          // console.log(`=== encoding ${part.encoding} ===`)
-          // console.log(`=== mimetype ${part.mimetype} ===`)
-          const buf = await part.toBuffer()
-          console.log(`=== Buffer length: ${buf.length} ===`)
-          // const response = await request.server.inject({
-          //   method: 'POST',
-          //   url: '/media',
-          //   payload: part.file,
-          //   headers: request.headers
-          // })
+          console.log(`=== Passing the request to the /media endpoint ===`)
 
-          // console.log('=== response body from media endpoint ===')
-          // const response_body = response.json()
-          // console.log(response_body)
+          // const buf = await part.toBuffer()
+          // console.log(`=== Buffer length: ${buf.length} ===`)
 
-          // // Process the file stream or save it
+          // https://micropub.spec.indieweb.org/#posting-files
+          const form = formAutoContent(
+            {
+              // I tried this, but it doesn't work
+              // fields: { file: part.file, filename: part.filename }
+              file: part.file,
+              name: part.filename
+            },
+            { forceMultiPart: true }
+          )
+
+          const response = await request.server.inject({
+            method: 'POST',
+            url: '/media',
+            headers: {
+              ...form.headers,
+              authorization: request.headers.authorization
+            },
+            payload: form.payload
+          })
+
+          console.log('=== response headers from media endpoint ===')
+          console.log(response.headers)
+
+          console.log('=== response body from media endpoint ===')
+          const response_body = response.json()
+          console.log(response_body)
+
+          // data.photo = response.headers.location
+
+          data.photo = {
+            alt: 'todo: where to get the alternate text?',
+            url: response.headers.location
+          }
+
           // return reply.code(response.statusCode).send({
           //   ...response_body,
           //   recap_message: 'response from media endpoint'
@@ -381,17 +402,17 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     let post_type: Jf2PostType
     if (h) {
       post_type = h
-      jf2 = rest as Jf2
+      jf2 = { ...rest, date: nowUTC() } as Jf2
     } else {
       const items = [rest] as Mf2Item[]
-      const { error, value } = await jf2FromMf2({ items })
+      const { error, value } = await mf2tTojf2({ items })
       if (error) {
         request.log.warn({ request_body }, error.message)
         return reply
           .code(invalid_request.code)
           .send(invalid_request.payload(error.message))
       }
-      jf2 = value
+      jf2 = { ...value, date: nowUTC() }
       post_type = jf2.type
     }
 
@@ -502,11 +523,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
 
         const slug = slugify(jf2)
-
+        const content = store.jf2ToContent(jf2)
         const { type: _, ...cite } = jf2
-
-        const md = mf2ToMarkdown(cite)
-        const content = utf8ToBase64(md)
 
         const result = await store.create({
           path: `quotes/${slug}.md`,
@@ -548,13 +566,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         // }
 
         const slug = slugify(jf2)
-
+        const content = store.jf2ToContent(jf2)
         const { type: _, ...entry } = jf2
 
         if (entry['bookmark-of']) {
-          const md = mf2ToMarkdown(entry)
-          const content = utf8ToBase64(md)
-
           const result = await store.create({
             path: `bookmarks/${slug}.md`,
             content
@@ -582,9 +597,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
 
         if (entry['like-of']) {
-          const md = mf2ToMarkdown(entry)
-          const content = utf8ToBase64(md)
-
           const result = await store.create({
             path: `likes/${slug}.md`,
             content
@@ -611,32 +623,35 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           }
         }
 
+        // TODO: test that this works
         if (entry['in-reply-to']) {
-          const md = mf2ToMarkdown(entry)
-          console.log('=== TODO: store reply ==')
-          console.log(md)
-          // const content = utf8ToBase64(md)
+          const result = await store.create({
+            path: `replies/${slug}.md`,
+            content
+          })
 
-          // const result = await store.create({
-          //   path: `replies/${slug}.md`,
-          //   content
-          // })
-
+          // TODO: syndicate in-reply-to
           const messages = await syndicate(entry as any)
           console.log('=== syndication ===')
           console.log(messages)
 
-          reply.header('Location', me)
+          if (result.error) {
+            return reply.code(result.error.status_code).send({
+              error: result.error.status_text,
+              error_description: result.error.message
+            })
+          } else {
+            reply.header('Location', me)
 
-          return reply.code(200).send({
-            message: 'TODO implement reply'
-          })
+            return reply.code(result.value.status_code).send({
+              entry,
+              body: result.value.body,
+              message: result.value.message
+            })
+          }
         }
 
         if (entry['repost-of']) {
-          const md = mf2ToMarkdown(entry)
-          const content = utf8ToBase64(md)
-
           const result = await store.create({
             path: `reposts/${slug}.md`,
             content
@@ -664,9 +679,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
 
         if (entry['content']) {
-          const md = mf2ToMarkdown(entry)
-          const content = utf8ToBase64(md)
-
           // TODO: distinguish between articles and notes
 
           const result = await store.create({
@@ -713,11 +725,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         // }
 
         const slug = slugify(jf2)
-
+        const content = store.jf2ToContent(jf2)
         const { type: _, ...event } = jf2
-
-        const md = mf2ToMarkdown(event)
-        const content = utf8ToBase64(md)
 
         const result = await store.create({
           path: `events/${slug}.md`,
@@ -762,6 +771,15 @@ export interface MediaPostConfig {
   s3: S3Client
 }
 
+/**
+ * The role of the Media Endpoint is exclusively to handle file uploads and
+ * return a URL that can be used in a subsequent Micropub request.
+ *
+ * To upload a file to the Media Endpoint, the client sends a multipart/form-data
+ * request with one part named file.
+ *
+ * @see https://micropub.spec.indieweb.org/#media-endpoint
+ */
 export const defMediaPost = (config: MediaPostConfig) => {
   const { base_url, bucket_name, s3 } = config
 
@@ -781,8 +799,17 @@ export const defMediaPost = (config: MediaPostConfig) => {
     // console.log('=== request.params ===')
     // console.log(request.params)
 
-    // console.log('=== request.query ===')
-    // console.log(request.query)
+    // console.log('=== request.url ===')
+    // console.log(request.url)
+
+    // console.log('=== request.host ===')
+    // console.log(request.host)
+
+    // console.log('=== request.hostname ===')
+    // console.log(request.hostname)
+
+    // console.log('=== request.body ===')
+    // console.log(request.body)
 
     // console.log('=== request.headers ===')
     // console.log(request.headers)
@@ -792,10 +819,20 @@ export const defMediaPost = (config: MediaPostConfig) => {
       return reply.badRequest('multi-part request has no file')
     }
 
+    console.log('=== data.filename ===', data.filename)
+    console.log('=== data.fields ===', data.fields)
+
+    let filename = 'unknown.xyz'
+    if (data.filename) {
+      filename = data.filename
+    } else if (data.fields.name) {
+      filename = (data.fields.name as any).value
+    }
+
     const Body = await data.toBuffer()
     const ContentType = data.mimetype
 
-    const bucket_path = `media/${data.filename}`
+    const bucket_path = `media/${filename}`
 
     const params = {
       Bucket: bucket_name,

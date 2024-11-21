@@ -10,6 +10,7 @@ import { NAME } from './constants.js'
 import {
   defValidateGetRequest,
   defValidateMeClaimInAccessToken,
+  defValidateScopeInAccessToken,
   validateAccessTokenNotExpired,
   validateAccessTokenNotBlacklisted,
   validateAuthorizationHeader
@@ -172,6 +173,9 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   const redirect_uri = `${base_url}${auth_callback}`
 
   const validateMeClaimInAccessToken = defValidateMeClaimInAccessToken({ me })
+  const validateMediaScopeInAccessToken = defValidateScopeInAccessToken({
+    scope: 'media'
+  })
 
   fastify.get(
     auth_callback,
@@ -216,6 +220,7 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
       onRequest: [
         validateAuthorizationHeader,
         validateMeClaimInAccessToken,
+        validateMediaScopeInAccessToken,
         validateAccessTokenNotExpired,
         validateAccessTokenNotBlacklisted
       ]

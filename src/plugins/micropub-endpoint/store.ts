@@ -1,3 +1,5 @@
+import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
+
 export interface StoreFailure {
   error: { message: string; status_code: number; status_text: string }
   value: undefined
@@ -35,11 +37,12 @@ export interface StoreUndeleteConfig {
   path: string
 }
 
-export type StoreCreate = (cfg: StoreCreateConfig) => Promise<StoreResult>
-export type StoreGet = (cfg: StoreGetConfig) => Promise<StoreResult>
-export type StoreUpdate = (cfg: StoreUpdateConfig) => Promise<StoreResult>
-export type StoreDelete = (cfg: StoreDeleteConfig) => Promise<StoreResult>
-export type StoreUndelete = (cfg: StoreUndeleteConfig) => Promise<StoreResult>
+export type Create = (cfg: StoreCreateConfig) => Promise<StoreResult>
+export type Get = (cfg: StoreGetConfig) => Promise<StoreResult>
+export type Update = (cfg: StoreUpdateConfig) => Promise<StoreResult>
+export type Delete = (cfg: StoreDeleteConfig) => Promise<StoreResult>
+export type Undelete = (cfg: StoreUndeleteConfig) => Promise<StoreResult>
+export type Jf2ToContent = (jf2: Jf2) => string
 
 // TODO: table-based store (e.g. database)
 
@@ -60,12 +63,13 @@ export interface PublishedUrlToStoreLocationConfig {
 
 export interface Store {
   // create: PathStoreCreate | TableStoreCreate
-  create: StoreCreate
-  get: StoreGet
-  update: StoreUpdate
-  delete: StoreDelete
-  undelete: StoreUndelete
+  create: Create
+  delete: Delete
+  get: Get
+  jf2ToContent: Jf2ToContent
   publishedUrlToStoreLocation: (
     cfg: PublishedUrlToStoreLocationConfig
   ) => string
+  undelete: Undelete
+  update: Update
 }

@@ -1,0 +1,37 @@
+meta {
+  name: update like (delete content)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "action": "update",
+    "url": "{{test_like_url}}",
+    "delete": "content"
+  }
+}
+
+body:form-urlencoded {
+  action: update
+  url: https://www.giacomodebidda.com/notes/test-note/
+  delete: location
+}
+
+body:multipart-form {
+  content: This is a test note
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  mp-slug: test-note-from-quill
+  category[]: quill
+  category[]: test
+}

@@ -1,9 +1,16 @@
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
+import { msToUTCString } from '../../lib/date.js'
 import { decode, isBlacklisted, isExpired } from '../../lib/token.js'
-import { invalid_authorization, invalid_token } from '../errors.js'
 import { NAME } from './constants.js'
+import {
+  invalid_authorization,
+  insufficient_scope,
+  invalid_token
+} from '../errors.js'
 import { micropub_get_request } from './schemas.js'
+
+// TODO: decode the token only once. Maybe move most code to a library.
 
 const authorizationHeaderToToken = (auth?: string) => {
   if (!auth) {
@@ -103,9 +110,10 @@ export const defValidateMeClaimInAccessToken = (
 
     // Some token endpoint might issue a token that has `issued_at` in its
     // claims. Some other times we find `iat` in claims.
-    // const date = new Date(claims.issued_at * 1000)
-    const iat_utc = new Date(claims.iat * 1000).toUTCString()
-    const exp_utc = new Date(claims.exp * 1000).toUTCString()
+    // const date = msToUTCString(claims.issued_at * 1000)
+    // const date = msToUTCString(claims.iss * 1000)
+    const iat_utc = msToUTCString(claims.iat * 1000)
+    const exp_utc = msToUTCString(claims.exp * 1000)
 
     request.log.info(
       `${NAME} access token issued by ${claims.iss} at ${claims.iat} (${iat_utc}), will expire at ${claims.exp} (${exp_utc})`
@@ -192,4 +200,64 @@ export const validateAccessTokenNotBlacklisted: onRequestHookHandler = async (
       .code(invalid_token.code)
       .send(invalid_token.payload('The access token has been blacklisted.'))
   }
+}
+
+export interface ValidateAccessTokenScopeConfig {
+  scope: string
+}
+
+// https://micropub.spec.indieweb.org/#scope
+export const defValidateScopeInAccessToken = (
+  config: ValidateAccessTokenScopeConfig
+) => {
+  const { scope } = config
+
+  const validateScopeInAccessToken: onRequestHookHandler = (
+    request,
+    reply,
+    done
+  ) => {
+    request.log.info(
+      `${NAME} validating that access token includes scope '${scope}'`
+    )
+    const auth = request.headers.authorization
+
+    if (!auth) {
+      return reply
+        .code(invalid_authorization.code)
+        .send(invalid_authorization.payload(`missing Authorization header`))
+    }
+
+    const splits = auth.split(' ')
+
+    if (splits.length !== 2) {
+      request.log.warn(
+        `${NAME} request ID ${request.id} has no value for 'Bearer' in Authorization header`
+      )
+      return reply
+        .code(invalid_token.code)
+        .send(invalid_token.payload(`access token is required`))
+    }
+
+    const jwt = splits[1]
+
+    const claims = decode({ jwt })
+
+    const scopes = claims.scope.split(' ')
+    request.log.info(`${NAME} access token scopes: ${scopes.join(' ')}`)
+
+    if (!scopes.includes(scope)) {
+      return reply
+        .code(insufficient_scope.code)
+        .send(
+          insufficient_scope.payload(
+            `access token does not include scope '${scope}'`
+          )
+        )
+    }
+
+    done()
+  }
+
+  return validateScopeInAccessToken
 }

@@ -1,0 +1,56 @@
+meta {
+  name: update note (JSON)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "action": "update",
+    "url": "{{test_note_url}}",
+    "delete": "location",
+    "replace": {
+      "content": {
+        "html": "<p>This is a <b>test note</b>.</p>"
+      }
+    },
+    "add": {
+      "category": [
+        "bruno",
+        "micropub",
+        "test"
+      ],
+      "mp-syndicate-to": [
+        "https://fosstodon.org/@jackdbd",
+        "https://news.indieweb.org/en"
+      ],
+      "syndication": [
+        "http://web.archive.org/web/20040104110725/https://aaronpk.example/2014/06/01/9/indieweb"
+      ]
+    }
+  }
+}
+
+body:form-urlencoded {
+  action: update
+  url: https://www.giacomodebidda.com/notes/test-note/
+  delete: location
+}
+
+body:multipart-form {
+  content: This is a test note
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  mp-slug: test-note-from-quill
+  category[]: quill
+  category[]: test
+}
