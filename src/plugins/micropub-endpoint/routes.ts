@@ -508,15 +508,33 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           return reply.micropubInvalidRequest(message)
         }
 
-        // const slug = slugify(jf2)
-
+        const slug = slugify(jf2)
+        const content = store.jf2ToContent(jf2)
         const { type: _, ...card } = jf2
 
-        // TODO: store card?
+        const result = await store.create({
+          path: `cards/${slug}.md`,
+          content
+        })
 
-        reply.header('Location', me)
+        if (result.error) {
+          const { code, error, error_description } = mpError(result.error)
+          request.log.error(error_description)
+          return reply.code(code).send({ error, error_description })
+        } else {
+          // TODO: syndicate card
+          const messages = await syndicate(card as any)
+          console.log('=== syndication ===')
+          console.log(messages)
 
-        return reply.code(202).send({ card, message: 'Request accepted.' })
+          reply.header('Location', me)
+
+          return reply.code(result.value.status_code).send({
+            card,
+            body: result.value.body,
+            message: result.value.message
+          })
+        }
       }
 
       case 'cite': {
