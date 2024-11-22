@@ -1,7 +1,7 @@
 meta {
-  name: update read (JSON)
+  name: update card (JSON)
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
@@ -17,12 +17,9 @@ auth:bearer {
 body:json {
   {
     "action": "update",
-    "url": "{{test_read_url}}",
+    "url": "{{test_card_url}}",
     "add": {
-      "category": ["bruno", "test"]
-    },
-    "replace": {
-      "summary": "This is the summary of the book"
+      "category": ["developer", "person"]
     }
   }
 }

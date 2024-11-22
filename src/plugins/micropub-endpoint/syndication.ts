@@ -49,14 +49,12 @@ export const syndicate = async (jf2: Jf2) => {
   if (mp_syndicate_to) {
     if (typeof mp_syndicate_to === 'string') {
       const syndication_target = mp_syndicate_to
-      const ticket = queue.push({ syndication_target })
+      queue.push({ syndication_target }) // ticket
       messages.push(`pushed to syndication queue: ${syndication_target}`)
-      console.log('in-memory queue ticket', ticket)
     } else if (Array.isArray(mp_syndicate_to)) {
       mp_syndicate_to.forEach((syndication_target) => {
-        const ticket = queue.push({ syndication_target })
+        queue.push({ syndication_target }) // ticket
         messages.push(`pushed to syndication queue: ${syndication_target}`)
-        console.log('in-memory queue ticket', ticket)
       })
     }
   }

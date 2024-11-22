@@ -13,4 +13,9 @@ import { Type } from '@sinclair/typebox'
 
 export const mp_slug = Type.String()
 
-export const mp_syndicate_to = Type.Array(Type.String())
+const mp_syndicate_to_item = Type.String({ description: 'syndication target' })
+
+export const mp_syndicate_to = Type.Union([
+  mp_syndicate_to_item,
+  Type.Array(mp_syndicate_to_item)
+])

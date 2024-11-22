@@ -2,6 +2,7 @@ import { Static, Type } from '@sinclair/typebox'
 import { category, date_time, string_or_html_and_value } from './base.js'
 import { h_adr } from './h-adr.js'
 import { h_card } from './h-card.js'
+import { h_cite } from './h-cite.js'
 import { h_geo } from './h-geo.js'
 import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
 
@@ -96,6 +97,15 @@ export const h_entry = Type.Object(
      * when the entry was published
      */
     published: Type.Optional(date_time),
+
+    /**
+     * it's recommended to use an h-cite for this so you can include author and
+     * uid information (ISBN or DOI), but you can use just the title as a
+     * minimum viable read post.
+     *
+     * @see https://indieweb.org/read
+     */
+    'read-of': Type.Optional(Type.Union([Type.String(), Type.Ref(h_cite)])),
 
     /**
      * the URL which the h-entry is considered a “repost” of. Optionally an

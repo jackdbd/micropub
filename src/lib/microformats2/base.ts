@@ -27,7 +27,9 @@ export const altitude = Type.Number({
   description: `Distance in metres from the nominal sea level along the tangent of the earth’s curve, i.e. the geoid height. For more information refer to the WGS84 specification and the geo URI scheme.`
 })
 
-export const category = Type.Array(Type.String({ description: 'category/tag' }))
+const category_item = Type.String({ description: 'category/tag' })
+
+export const category = Type.Union([category_item, Type.Array(category_item)])
 
 export const latitude = Type.Number({
   $id: 'latitude',

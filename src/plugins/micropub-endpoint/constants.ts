@@ -1,1 +1,1 @@
-export const NAME = '@jackdbd/fastify-micropub'
+export const NAME = '@jackdbd/fastify-micropub-endpoint'

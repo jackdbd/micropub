@@ -1,4 +1,3 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { requestContext } from '@fastify/request-context'
 import type { Jf2, Mf2Item } from '@paulrobertlloyd/mf2tojf2'
 import Ajv from 'ajv'
@@ -13,9 +12,10 @@ import { slugify } from '../../lib/slugify.js'
 import { defActions, type UpdatePatch } from './actions.js'
 import { NAME } from './constants.js'
 import { unauthorized, mpError } from './errors.js'
+import { isLocalRequest } from './predicates.js'
+import type { PostRequestBody } from './request.js'
 import type { Store } from './store.js'
 import { syndicate, type SyndicateToItem } from './syndication.js'
-import type { PostRequestBody } from './request.js'
 import { defValidateJf2 } from './validate-jf2.js'
 
 const PREFIX = `${NAME}/routes`
@@ -34,9 +34,6 @@ interface AuthQuery {
   me: string
   state: string
 }
-
-// TODO: replace fetch with request.server.inject for local requests (maybe do
-// this when the app gets instantiated)
 
 export const defAuthCallback = (config: CallbackConfig) => {
   const { client_id, prefix, redirect_uri, token_endpoint } = config
@@ -301,6 +298,8 @@ interface PostRouteGeneric extends RouteGenericInterface {
 export interface MicropubPostConfig {
   ajv: Ajv
   me: string
+  media_endpoint: string
+  micropub_endpoint: string
   store: Store
 }
 
@@ -308,8 +307,36 @@ export interface MicropubPostConfig {
 // publish the post right away.
 // https://github.com/aaronpk/Quill/blob/dfb8c03a85318c9e670b8dacddb210025163501e/views/new-post.php#L406
 
+/**
+ * When a user creates an entry (e.g. a note) that contains one or more files
+ * (e.g. one photo), different Micropub clients might behave differently.
+ * Some Micropub clients might upload the files to the Media endpoint and the
+ * other microformats2 fields to the Micropub endpoint.
+ * Some other Micropub clients might make a single, multi-part request to just
+ * the Micropub endpoint.
+ *
+ * From the [Quill documentation](https://quill.p3k.io/docs/note).
+ * If your Micropub server supports a Media Endpoint, then at the time you
+ * select a photo, Quill uploads the file to your Media Endpoint and shows a
+ * preview in the interface. The image URL will be sent as a string in the
+ * request.
+ *
+ * If your Micropub server does not support a Media Endpoint, then when you
+ * add an image, it is not uploaded until you click "post", and then is sent
+ * to your Micropub endpoint as a file.
+ *
+ * A request containing files and fields coming from an API client like Postman
+ * or Bruno will be a single, multi-part request to the Micropub endpoint.
+ *
+ * From the [Micropub spec](https://micropub.spec.indieweb.org/#posting-files).
+ * When a Micropub request includes a file, the entire request is sent in
+ * `multipart/form-data encoding`, and the file is named according to the
+ * property it corresponds with in the vocabulary, either audio, video or photo.
+ *
+ * @see https://indieweb.org/Micropub#Handling_a_micropub_request
+ */
 export const defMicropubPost = (config: MicropubPostConfig) => {
-  const { ajv, me, store } = config
+  const { ajv, me, media_endpoint, micropub_endpoint, store } = config
 
   const { validateCard, validateCite, validateEntry, validateEvent } =
     defValidateJf2(ajv)
@@ -320,40 +347,42 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    request.log.debug(
-      `${PREFIX} content-type: ${request.headers['content-type']}`
-    )
-
     let request_body: PostRequestBody
     if (request.isMultipart()) {
       const parts = request.parts()
       const data: Record<string, any> = {}
       for await (const part of parts) {
         if (part.type === 'field') {
-          console.log(`=== collect form field ${part.fieldname} ===`)
+          // collect form field ${part.fieldname}
           data[part.fieldname] = part.value
         } else if (part.type === 'file') {
-          // TODO: do I really need to consume the buffer here? Why? Explain.
-          console.log(`=== Received file: ${part.filename} ===`)
-          console.log(`=== Passing the request to the /media endpoint ===`)
+          request.log.debug(
+            `received file ${part.filename}. Passing the request to the /media endpoint`
+          )
 
           // const buf = await part.toBuffer()
-          // console.log(`=== Buffer length: ${buf.length} ===`)
 
-          // https://micropub.spec.indieweb.org/#posting-files
+          // I'm not sure I'm passing all the required form fields.
           const form = formAutoContent(
             {
-              // I tried this, but it doesn't work
+              // This doesn't work
               // fields: { file: part.file, filename: part.filename }
+
               file: part.file,
-              name: part.filename
+              // file: buf,
+              filename: part.filename
             },
             { forceMultiPart: true }
           )
 
+          // TODO: only if the media endpoint is on this same server we can
+          // inject the request.
+
+          // let response: LightMyRequestResponse | Response
+
           const response = await request.server.inject({
+            url: media_endpoint,
             method: 'POST',
-            url: '/media',
             headers: {
               ...form.headers,
               authorization: request.headers.authorization
@@ -361,17 +390,51 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             payload: form.payload
           })
 
-          // console.log('=== response headers from media endpoint ===')
-          // console.log(response.headers)
+          if (isLocalRequest(micropub_endpoint, media_endpoint)) {
+            request.log.debug(
+              `make request to local media endpoint ${media_endpoint} (inject)`
+            )
+          } else {
+            request.log.debug(
+              `make request to remote media endpoint ${media_endpoint} (fetch)`
+            )
+          }
+
+          // This doesn't work. The media endpoint receives a request that has
+          // no data. TODO: How should I pass the body?
+          // const response = await fetch(media_endpoint, {
+          //   method: 'POST',
+          //   headers: new Headers({
+          //     ...form.headers,
+          //     authorization: request.headers.authorization!
+          //   }),
+          //   body: form.payload as any
+          // })
+
+          request.log.debug(
+            response.headers,
+            'response headers from media endpoint'
+          )
 
           // console.log('=== response body from media endpoint ===')
           // const response_body = response.json()
           // console.log(response_body)
 
+          // I could create a photos array:
+          // 1. collect the photo alt text when part.type === 'field'. Maybe use
+          // a field like mp-photo-alt-text? It should match the number of photo
+          // files. E.g. set two mp-photo-alt-text[] for two photo files.
+          // 2. make a request to the /media endpoint and use
+          // response.header.location as the photo url
+          // 3. push photo {alt, url} to the photos array
+          // 4. set `photos` as `photo` in the `request body`
+          // It seems that Quill takes a similar approach.
+          // https://github.com/aaronpk/Quill/blob/8ecaed3d2f5a19bf1a5c4cb077658e1bd3bc8438/views/new-post.php#L448
+
           // data.photo = response.headers.location
 
           data.photo = {
-            alt: 'todo: where to get the alternate text?',
+            alt: 'TODO: where to get the alternate text?',
             url: response.headers.location
           }
         }
@@ -799,95 +862,4 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
   }
 
   return micropubPost
-}
-
-export interface MediaPostConfig {
-  base_url: string
-  bucket_name: string
-  s3: S3Client
-}
-
-/**
- * The role of the Media Endpoint is exclusively to handle file uploads and
- * return a URL that can be used in a subsequent Micropub request.
- *
- * To upload a file to the Media Endpoint, the client sends a multipart/form-data
- * request with one part named file.
- *
- * @see https://micropub.spec.indieweb.org/#media-endpoint
- */
-export const defMediaPost = (config: MediaPostConfig) => {
-  const { base_url, bucket_name, s3 } = config
-
-  const mediaPost: RouteHandler = async (request, reply) => {
-    if (!request.isMultipart()) {
-      // To upload a file to the Media Endpoint, the client sends a
-      // multipart/form-data request with one part named file.
-      // https://micropub.spec.indieweb.org/#request
-      const message =
-        'request is not multi-part (TIP: use Content-Type: multipart/form-data to make requests to the media endpoint)'
-      request.log.warn(
-        `${PREFIX} request ${request.id} is not a multi-part request`
-      )
-      return reply.micropubInvalidRequest(message)
-    }
-
-    const data = await request.file()
-    if (!data) {
-      request.log.warn(
-        `${PREFIX} request ${request.id} is multi-part but has no file`
-      )
-      return reply.micropubInvalidRequest('multi-part request has no file')
-    }
-
-    let filename = 'unknown.xyz'
-    if (data.filename) {
-      filename = data.filename
-    } else if (data.fields.name) {
-      filename = (data.fields.name as any).value
-    }
-
-    const Body = await data.toBuffer()
-    const ContentType = data.mimetype
-
-    const bucket_path = `media/${filename}`
-
-    const params = {
-      Bucket: bucket_name,
-      Key: bucket_path,
-      Body,
-      ContentType
-    }
-
-    // https://www.w3.org/TR/micropub/#response-3
-    // The Media Endpoint processes the file upload, storing it in whatever
-    // backend it wishes, and generates a URL to the file.
-    // The URL SHOULD be unguessable, such as using a UUID in the path.
-    // If the request is successful, the endpoint MUST return the URL to the file that was created in the HTTP Location
-    // header, and respond with HTTP 201 Created.
-    // The response body is left undefined.
-
-    const public_url = `${base_url}${bucket_path}`
-
-    try {
-      const output = await s3.send(new PutObjectCommand(params))
-      // const etag = output.ETag
-      // const metadata = output.$metadata
-      // const version_id = output.VersionId
-
-      const message = `file uploaded to R2 bucket ${bucket_name} at path ${bucket_path} and publicly available at ${public_url}`
-      request.log.info({ output }, message)
-
-      reply.header('Location', public_url)
-
-      return reply.code(201).send({ message })
-    } catch (error) {
-      request.log.error(`${PREFIX} error uploading to R2:`, error)
-      return reply
-        .status(500)
-        .send({ error: `Failed to upload to bucket ${bucket_name}` })
-    }
-  }
-
-  return mediaPost
 }

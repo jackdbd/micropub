@@ -1,4 +1,3 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import { applyToDefaults } from '@hapi/hoek'
@@ -6,19 +5,17 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
-import { NAME } from './constants.js'
 import {
-  defValidateGetRequest,
+  defValidateAccessTokenNotBlacklisted,
+  defValidateAccessTokenNotExpired,
   defValidateMeClaimInAccessToken,
-  defValidateScopeInAccessToken,
-  validateAccessTokenNotExpired,
-  validateAccessTokenNotBlacklisted,
   validateAuthorizationHeader
-} from './hooks.js'
+} from '../../lib/fastify-hooks/index.js'
+import { NAME } from './constants.js'
+import { defValidateGetRequest } from './hooks.js'
 import {
   defAuthCallback,
   defEditor,
-  defMediaPost,
   defMicropubGet,
   defMicropubPost,
   defSubmit,
@@ -49,11 +46,6 @@ export interface PluginOptions extends FastifyPluginOptions {
   baseUrl: string
 
   clientId: string
-
-  cloudflareAccountId: string
-  cloudflareR2BucketName: string
-  cloudflareR2AccessKeyId: string
-  cloudflareR2SecretAccessKey: string
 
   codeChallengeMethod?: string
 
@@ -103,7 +95,7 @@ const default_options: Partial<PluginOptions> = {
   syndicateTo: []
 }
 
-const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
+const micropubEndpoint: FastifyPluginCallback<PluginOptions> = (
   fastify,
   options,
   done
@@ -198,10 +190,6 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
     authorizationCallbackRoute: auth_callback,
     baseUrl: base_url,
     clientId: client_id,
-    cloudflareAccountId: account_id,
-    cloudflareR2AccessKeyId: accessKeyId,
-    cloudflareR2BucketName: bucket_name,
-    cloudflareR2SecretAccessKey: secretAccessKey,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
@@ -211,10 +199,17 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
 
   const redirect_uri = `${base_url}${auth_callback}`
 
-  const validateMeClaimInAccessToken = defValidateMeClaimInAccessToken({ me })
-  const validateMediaScopeInAccessToken = defValidateScopeInAccessToken({
-    scope: 'media'
+  const validateMeClaimInAccessToken = defValidateMeClaimInAccessToken({
+    me,
+    prefix: NAME
   })
+
+  const validateAccessTokenNotExpired = defValidateAccessTokenNotExpired({
+    prefix: NAME
+  })
+
+  const validateAccessTokenNotBlacklisted =
+    defValidateAccessTokenNotBlacklisted({ prefix: NAME })
 
   fastify.get(
     auth_callback,
@@ -235,41 +230,13 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   )
   fastify.log.debug(`${NAME} route registered: GET /micropub`)
 
-  // To upload files, the Micropub client MUST check for the presence of a Media
-  // Endpoint. If there is no Media Endpoint, the client can assume that the
-  // Micropub endpoint accepts files directly, and can send the request to it
-  // directly. To upload a file to the Micropub endpoint, format the whole
-  // request as multipart/form-data and send the file(s) as a standard property.
-  // https://micropub.spec.indieweb.org/#uploading-files
-
-  const s3 = new S3Client({
-    region: 'auto',
-    endpoint: `https://${account_id}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey }
+  const micropubPost = defMicropubPost({
+    ajv,
+    me,
+    media_endpoint,
+    micropub_endpoint,
+    store
   })
-
-  const mediaPost = defMediaPost({
-    base_url: 'https://content.giacomodebidda.com/',
-    bucket_name,
-    s3
-  })
-  fastify.post(
-    '/media',
-    {
-      onRequest: [
-        validateAuthorizationHeader,
-        validateMeClaimInAccessToken,
-        validateMediaScopeInAccessToken,
-        validateAccessTokenNotExpired,
-        validateAccessTokenNotBlacklisted
-      ]
-      // schema: media_post_request
-    },
-    mediaPost
-  )
-  fastify.log.debug(`${NAME} route registered: POST /media`)
-
-  const micropubPost = defMicropubPost({ ajv, me, store })
   fastify.post(
     '/micropub',
     {
@@ -297,10 +264,13 @@ const fastifyMicropub: FastifyPluginCallback<PluginOptions> = (
   done()
 }
 
-/**
- * https://indieweb.org/Micropub#Handling_a_micropub_request
- */
-export default fp(fastifyMicropub, {
+export default fp(micropubEndpoint, {
   fastify: '5.x',
-  name: NAME
+  name: NAME,
+  // By default, fastify-plugin breaks the plugin encapsulation. We need to keep
+  // the plugin encapsulated because Fastify can have only one parser for each
+  // Content type. Removing the encapsulation would mean that if another plugin
+  // tried to use @fastify/formbody or @fastify/multipart, the Fastify app would
+  // fail to start.
+  encapsulate: true
 })

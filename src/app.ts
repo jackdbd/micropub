@@ -15,6 +15,7 @@ import { defStore } from './lib/github-contents/store.js'
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
 import indieauth from './plugins/indieauth/index.js'
+import media from './plugins/media-endpoint/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
 import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
 import revocationEndpoint from './plugins/revocation-endpoint/index.js'
@@ -161,13 +162,18 @@ export function defFastify(config: Config) {
     }
   })
 
-  fastify.register(micropub, {
-    baseUrl: base_url,
-    clientId: client_id,
+  fastify.register(media, {
+    baseUrl: 'https://content.giacomodebidda.com/',
     cloudflareAccountId: cloudflare_account_id,
     cloudflareR2AccessKeyId: cloudflare_r2_access_key_id,
     cloudflareR2BucketName: cloudflare_r2_bucket_name,
     cloudflareR2SecretAccessKey: cloudflare_r2_secret_access_key,
+    me
+  })
+
+  fastify.register(micropub, {
+    baseUrl: base_url,
+    clientId: client_id,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
