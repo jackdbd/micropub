@@ -2,8 +2,9 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
 import type { RouteHandler } from 'fastify'
 import { NAME } from './constants.js'
+import { INVALID_REQUEST } from '../../lib/http-error.js'
 
-const PREFIX = `${NAME}/routes`
+const PREFIX = `${NAME}/routes `
 
 export interface MediaPostConfig {
   base_url: string
@@ -35,26 +36,37 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
   const mediaPost: RouteHandler = async (request, reply) => {
     if (!request.isMultipart()) {
-      const message =
+      const error_description =
         'request is not multi-part (TIP: use Content-Type: multipart/form-data to make requests to the media endpoint)'
-      request.log.warn(
-        `${PREFIX} request ${request.id} is not a multi-part request`
-      )
-      return reply.micropubInvalidRequest(message)
+      request.log.warn(`${PREFIX}${error_description}`)
+
+      return reply.mediaErrorResponse(INVALID_REQUEST.code, {
+        error: INVALID_REQUEST.error,
+        error_description
+      })
     }
 
     let data: MultipartFile | undefined
     try {
       data = await request.file()
     } catch (err: any) {
-      request.log.warn(`${PREFIX} ${err.message}`)
-      return reply.micropubInvalidRequest(err.message)
+      const error_description = err.message
+      request.log.warn(`${PREFIX}${error_description}`)
+
+      return reply.mediaErrorResponse(INVALID_REQUEST.code, {
+        error: INVALID_REQUEST.error,
+        error_description
+      })
     }
 
     if (!data) {
-      const message = 'multi-part request has no file'
-      request.log.warn(`${PREFIX} ${message}`)
-      return reply.micropubInvalidRequest(message)
+      const error_description = 'multi-part request has no file'
+      request.log.warn(`${PREFIX}${error_description}`)
+
+      return reply.mediaErrorResponse(INVALID_REQUEST.code, {
+        error: INVALID_REQUEST.error,
+        error_description
+      })
     }
 
     let filename: string
@@ -64,9 +76,13 @@ export const defMediaPost = (config: MediaPostConfig) => {
       const value = data.fields.filename as MultipartValue<string>
       filename = value.value
     } else {
-      const message = `request has no field 'filename'`
-      request.log.warn(`${PREFIX} ${message}`)
-      return reply.micropubInvalidRequest(message)
+      const error_description = `request has no field 'filename'`
+      request.log.warn(`${PREFIX}${error_description}`)
+
+      return reply.mediaErrorResponse(INVALID_REQUEST.code, {
+        error: INVALID_REQUEST.error,
+        error_description
+      })
     }
 
     const Body = await data.toBuffer()
@@ -96,7 +112,7 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
       return reply.code(201).send({ message })
     } catch (error) {
-      request.log.error(`${PREFIX} error uploading to R2:`, error)
+      request.log.error(`${PREFIX}error uploading to R2:`, error)
       return reply
         .status(500)
         .send({ error: `Failed to upload to bucket ${bucket_name}` })

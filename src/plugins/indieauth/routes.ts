@@ -26,14 +26,14 @@ export const defLogin = (config: LoginConfig) => {
     const state = reply.generateCsrf()
     request.session.set('state', state)
     request.log.debug(
-      `${prefix} generated state (CSRF token) and set it in secure session`
+      `${prefix}generated state (CSRF token) and set it in secure session`
     )
 
     const code_verifier = codeVerifier({ len })
-    request.log.debug(`${prefix} generated code_verifier of ${len} characters`)
+    request.log.debug(`${prefix}generated code_verifier of ${len} characters`)
     request.session.set('code_verifier', code_verifier)
     request.log.debug(
-      `${prefix} generated code_verifier and set it in secure session`
+      `${prefix}generated code_verifier and set it in secure session`
     )
 
     const code_challenge = codeChallenge({
@@ -43,7 +43,7 @@ export const defLogin = (config: LoginConfig) => {
 
     request.session.set('code_challenge', code_challenge)
     request.log.debug(
-      `${prefix} generated ${code_challenge_method} code_challenge (PKCE) and set it in secure session`
+      `${prefix}generated ${code_challenge_method} code_challenge (PKCE) and set it in secure session`
     )
 
     return reply.view('login.njk', {

@@ -26,3 +26,7 @@ export const unixTimestampInSeconds = () => {
 export const msToUTCString = (ms: number) => {
   return new Date(ms).toUTCString()
 }
+
+export const secondsToUTCString = (s: number) => {
+  return new Date(s * 1000).toUTCString()
+}

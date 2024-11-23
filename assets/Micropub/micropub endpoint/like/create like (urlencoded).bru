@@ -10,6 +10,10 @@ post {
   auth: bearer
 }
 
+headers {
+  Accept: text/html
+}
+
 auth:bearer {
   token: {{access_token}}
 }
@@ -24,5 +28,5 @@ body:json {
 body:form-urlencoded {
   like-of: https://github.com/paulrobertlloyd/paulrobertlloyd-content
   h: entry
-  ~mp-slug: content-divorced-from-presentation
+  mp-slug: test-like
 }

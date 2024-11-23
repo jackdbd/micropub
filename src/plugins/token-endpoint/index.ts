@@ -1,9 +1,17 @@
+import formbody from '@fastify/formbody'
+import { applyToDefaults } from '@hapi/hoek'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
-import { applyToDefaults } from '@hapi/hoek'
+import {
+  DEFAULT_ACCESS_TOKEN_EXPIRATION,
+  DEFAULT_ALGORITHM,
+  DEFAULT_AUTHORIZATION_ENDPOINT,
+  NAME
+} from './constants.js'
+import { tokenErrorResponse } from './decorators.js'
 import { defTokenPost, defTokenGet } from './routes.js'
 
-const NAME = '@jackdbd/fastify-indieauth-token-endpoint'
+const PREFIX = `${NAME} `
 
 export interface PluginOptions extends FastifyPluginOptions {
   algorithm?: string
@@ -14,9 +22,9 @@ export interface PluginOptions extends FastifyPluginOptions {
 }
 
 const defaultOptions: Partial<PluginOptions> = {
-  algorithm: 'HS256',
-  authorizationEndpoint: 'https://indieauth.com/auth',
-  expiration: '3600 seconds'
+  algorithm: DEFAULT_ALGORITHM,
+  authorizationEndpoint: DEFAULT_AUTHORIZATION_ENDPOINT,
+  expiration: DEFAULT_ACCESS_TOKEN_EXPIRATION
 }
 
 const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
@@ -28,14 +36,14 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
     defaultOptions,
     options
   ) as Required<PluginOptions>
-  fastify.log.debug(config, `${NAME} configuration`)
+  fastify.log.debug(config, `${PREFIX}configuration`)
 
   // const {
   //   validatePluginOptions,
   // } = compileSchemasAndGetValidateFunctions()
-  fastify.log.debug(
-    `${NAME} compiled JSON schemas and created validate functions`
-  )
+  // fastify.log.debug(
+  //   `${NAME} compiled JSON schemas and created validate functions`
+  // )
 
   // validatePluginOptions(config)
 
@@ -49,29 +57,41 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
   // }
   // fastify.log.debug(`${NAME} validated its configuration`)
 
-  const { baseUrl, issuer } = config
-  const prefix = NAME
+  // Parse application/x-www-form-urlencoded requests
+  fastify.register(formbody)
+  fastify.log.debug(`${PREFIX}registered Fastify plugin: formbody`)
 
-  fastify.get('/token', defTokenGet({ base_url: baseUrl, prefix }))
-  fastify.log.debug(`${NAME} route registered: GET /token`)
+  const {
+    algorithm,
+    authorizationEndpoint: authorization_endpoint,
+    baseUrl: base_url,
+    expiration,
+    issuer
+  } = config
+
+  fastify.decorateReply('tokenErrorResponse', tokenErrorResponse)
+  fastify.log.debug(`${PREFIX}decorateReply: tokenErrorResponse`)
+
+  fastify.get('/token', defTokenGet({ base_url, prefix: PREFIX }))
+  fastify.log.debug(`${PREFIX}route registered: GET /token`)
 
   fastify.post(
     '/token',
     defTokenPost({
-      algorithm: config.algorithm,
-      authorization_endpoint: config.authorizationEndpoint,
-      base_url: baseUrl,
-      expiration: config.expiration,
+      algorithm,
+      authorization_endpoint,
+      expiration,
       issuer,
-      prefix
+      prefix: PREFIX
     })
   )
-  fastify.log.debug(`${NAME} route registered: POST /token`)
+  fastify.log.debug(`${PREFIX}route registered: POST /token`)
 
   done()
 }
 
 export default fp(fastifyIndieAuthTokenEndpoint, {
   fastify: '5.x',
-  name: NAME
+  name: NAME,
+  encapsulate: true
 })

@@ -1,7 +1,7 @@
 import * as jose from 'jose'
 import { unixTimestamp } from './date.js'
 
-interface AccessTokenPayload {
+export interface AccessTokenClaims {
   exp: number // will expire at timestamp
   iat: number // issued at timestamp
   iss: string // issuer
@@ -89,7 +89,16 @@ export interface DecodeConfig {
 }
 
 export const decode = ({ jwt }: DecodeConfig) => {
-  return jose.decodeJwt(jwt) as unknown as AccessTokenPayload
+  return jose.decodeJwt(jwt) as unknown as AccessTokenClaims
+}
+
+export const safeDecode = async (jwt: string) => {
+  try {
+    const value = jose.decodeJwt(jwt) as unknown as AccessTokenClaims
+    return { value }
+  } catch (err) {
+    return { error: err as Error }
+  }
 }
 
 interface ExpiredConfig {

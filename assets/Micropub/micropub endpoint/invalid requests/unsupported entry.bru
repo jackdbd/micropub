@@ -10,6 +10,10 @@ post {
   auth: bearer
 }
 
+headers {
+  Accept: text/html
+}
+
 auth:bearer {
   token: {{access_token}}
 }
@@ -25,5 +29,5 @@ body:json {
 
 body:form-urlencoded {
   h: unsupported
-  content: This will not be stored
+  content: This should not be stored
 }

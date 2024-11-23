@@ -1,5 +1,5 @@
 meta {
-  name: reply with incorrect mp-syndicate-to
+  name: reply with (maybe?) incorrect mp-syndicate-to
   type: http
   seq: 3
 }
@@ -8,6 +8,10 @@ post {
   url: {{base_url}}/micropub
   body: formUrlEncoded
   auth: bearer
+}
+
+headers {
+  Accept: text/html
 }
 
 auth:bearer {

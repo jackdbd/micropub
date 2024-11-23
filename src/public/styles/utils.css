@@ -6,7 +6,7 @@
   list-style: none !important;
 }
 
-#access-token-payload,
+#access-token-claims,
 #authorization-code-received {
   line-break: anywhere;
 }

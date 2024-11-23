@@ -5,23 +5,36 @@ import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import formAutoContent from 'form-auto-content'
 import { nowUTC } from '../../lib/date.js'
-import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
+import {
+  areSameOrigin,
+  clientAcceptsHtml
+} from '../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../lib/mf2-to-jf2.js'
 import { Jf2PostType } from '../../lib/microformats2/index.js'
-import { slugify } from '../../lib/slugify.js'
-import { defActions, type UpdatePatch } from './actions.js'
+import type {
+  ActionType,
+  BaseStoreError,
+  BaseStoreValue,
+  Store,
+  UpdatePatch
+} from '../../lib/micropub/index.js'
+import {
+  invalidRequest,
+  unauthorized
+} from '../../lib/micropub/error-responses.js'
 import { NAME } from './constants.js'
-import { unauthorized, mpError } from './errors.js'
-import { isLocalRequest } from './predicates.js'
 import type { PostRequestBody } from './request.js'
-import type { Store } from './store.js'
-import { syndicate, type SyndicateToItem } from './syndication.js'
-import { defValidateJf2 } from './validate-jf2.js'
+import {
+  storeErrorToMicropubError,
+  storeValueToMicropubValue
+} from './store-to-micropub.js'
+import type { SyndicateToItem } from './syndication.js'
 
-const PREFIX = `${NAME}/routes`
+const PREFIX = `${NAME}/routes `
 
 export interface CallbackConfig {
   client_id: string
+  include_error_description: boolean
   prefix: string
   redirect_uri: string
   token_endpoint: string
@@ -36,7 +49,13 @@ interface AuthQuery {
 }
 
 export const defAuthCallback = (config: CallbackConfig) => {
-  const { client_id, prefix, redirect_uri, token_endpoint } = config
+  const {
+    client_id,
+    include_error_description,
+    prefix,
+    redirect_uri,
+    token_endpoint
+  } = config
 
   const callback: RouteHandler<{ Querystring: AuthQuery }> = async (
     request,
@@ -45,7 +64,8 @@ export const defAuthCallback = (config: CallbackConfig) => {
     // TODO: I think I need to implement indieauth-metadata to receive `iss` in
     // the query string from the authorization endpoint.
     // https://indieauth.spec.indieweb.org/#authorization-response
-    const { code, me } = request.query
+    const { code } = request.query
+    // const { code, me } = request.query
 
     const state = request.session.get('state')
 
@@ -58,7 +78,7 @@ export const defAuthCallback = (config: CallbackConfig) => {
     }
 
     request.log.debug(
-      `${prefix} extracted state (CSRF token) from secure session`
+      `${prefix}extracted state (CSRF token) from secure session`
     )
 
     if (state !== request.query.state) {
@@ -70,7 +90,7 @@ export const defAuthCallback = (config: CallbackConfig) => {
     }
 
     request.log.debug(
-      `${prefix} state (CSRF token) from query string matches state from session`
+      `${prefix}state (CSRF token) from query string matches state from session`
     )
 
     const code_verifier = request.session.get('code_verifier')
@@ -83,7 +103,7 @@ export const defAuthCallback = (config: CallbackConfig) => {
       })
     }
 
-    request.log.debug(`${prefix} extracted code_verifier from secure session`)
+    request.log.debug(`${prefix}extracted code_verifier from secure session`)
 
     ////////////////////////////////////////////////////////////////////////////
     // This is for testing/demoing the token exchange.
@@ -119,7 +139,7 @@ export const defAuthCallback = (config: CallbackConfig) => {
 
     if (!response.ok) {
       request.log.error(
-        `${prefix} failed to exchange authorization code for access token`
+        `${prefix}failed to exchange authorization code for access token`
       )
       return reply.view('error.njk', {
         message: `Failed to exchange authorization code for access token`,
@@ -128,11 +148,12 @@ export const defAuthCallback = (config: CallbackConfig) => {
       })
     }
 
-    let payload: string
+    // let payload: string
     try {
       const tokenResponse = await response.json()
+      console.log('=== defAuthCallback tokenResponse ===', tokenResponse)
       // payload = stringify(tokenResponse, undefined, 2)
-      payload = stringify(tokenResponse.payload, undefined, 2)
+      // payload = stringify(tokenResponse.payload, undefined, 2)
     } catch (err) {
       const error = err as Error
       return reply.view('error.njk', {
@@ -145,23 +166,28 @@ export const defAuthCallback = (config: CallbackConfig) => {
     const auth = response.headers.get('Authorization')
 
     if (!auth) {
-      return reply.code(unauthorized.code).view('error.njk', {
-        message: `missing Authorization header`,
-        description: 'Auth error page',
-        title: 'Auth error'
+      const error_description = `missing Authorization header`
+
+      const { code, body } = unauthorized({
+        error_description,
+        include_error_description
       })
+
+      if (clientAcceptsHtml(request)) {
+        return reply.code(code).view('error.njk', {
+          message: error_description,
+          description: 'Auth error page',
+          title: 'Auth error'
+        })
+      } else {
+        return reply.code(code).send(body)
+      }
     }
 
     request.session.set('jwt', auth)
-    request.log.debug(`${prefix} set jwt in secure session`)
-    // TODO: redirect to /editor?
+    request.log.debug(`${prefix}set jwt in secure session`)
 
-    return reply.view('token.njk', {
-      description: 'Token page',
-      title: 'Token',
-      me,
-      payload
-    })
+    return reply.redirect(token_endpoint)
   }
 
   return callback
@@ -180,7 +206,7 @@ export const defSubmit = (config: SubmitConfig) => {
 
     if (!jwt) {
       request.log.debug(
-        `${prefix} redirect to /login since jwt is not in secure session`
+        `${prefix}redirect to /login since jwt is not in secure session`
       )
       return reply.redirect('/login')
     }
@@ -198,14 +224,14 @@ export const defSubmit = (config: SubmitConfig) => {
 
     if (response.status === 202) {
       const location = response.headers.get('Location')
-      request.log.debug(`${prefix} redirect to /accepted`)
+      request.log.debug(`${prefix}redirect to /accepted`)
       const uri = `/accepted?data=${encodeURIComponent(
         stringify({ ...data, location }, undefined, 2)
       )}`
       // return reply.send({ ...data, location })
       return reply.redirect(uri)
     } else {
-      request.log.debug(`${prefix} redirect to /created`)
+      request.log.debug(`${prefix}redirect to /created`)
       // return reply.send(data)
       const uri = `/created?data=${encodeURIComponent(
         stringify(data, undefined, 2)
@@ -245,7 +271,7 @@ export const defEditor = (config: EditorConfig) => {
 
     if (!jwt) {
       request.log.debug(
-        `${PREFIX} redirect to /login since jwt is not in secure session`
+        `${PREFIX}redirect to /login since jwt is not in secure session`
       )
       return reply.redirect('/login')
     }
@@ -278,13 +304,13 @@ export const defMicropubGet = (config: MicropubGetConfig) => {
     }
 
     if (clientAcceptsHtml(request)) {
-      return reply.view('micropub-config.njk', {
-        description: 'Configuration for this micropub endpoint.',
+      return reply.code(200).view('micropub-config.njk', {
         title: 'Micropub config',
+        description: 'Configuration for this micropub endpoint.',
         data: stringify(data, undefined, 2)
       })
     } else {
-      return reply.send(data)
+      return reply.code(200).send(data)
     }
   }
 
@@ -295,12 +321,16 @@ interface PostRouteGeneric extends RouteGenericInterface {
   Body: PostRequestBody
 }
 
-export interface MicropubPostConfig {
+export interface MicropubPostConfig<
+  StoreError extends BaseStoreError = BaseStoreError,
+  StoreValue extends BaseStoreValue = BaseStoreValue
+> {
   ajv: Ajv
+  include_error_description: boolean
   me: string
   media_endpoint: string
   micropub_endpoint: string
-  store: Store
+  store: Store<StoreError, StoreValue>
 }
 
 // We should return a Location response header if we can't (or don't want to)
@@ -335,13 +365,18 @@ export interface MicropubPostConfig {
  *
  * @see https://indieweb.org/Micropub#Handling_a_micropub_request
  */
-export const defMicropubPost = (config: MicropubPostConfig) => {
-  const { ajv, me, media_endpoint, micropub_endpoint, store } = config
-
-  const { validateCard, validateCite, validateEntry, validateEvent } =
-    defValidateJf2(ajv)
-
-  const actions = defActions({ store })
+export const defMicropubPost = <
+  StoreError extends BaseStoreError = BaseStoreError,
+  StoreValue extends BaseStoreValue = BaseStoreValue
+>(
+  config: MicropubPostConfig<StoreError, StoreValue>
+) => {
+  const {
+    include_error_description,
+    media_endpoint,
+    micropub_endpoint,
+    store
+  } = config
 
   const micropubPost: RouteHandler<PostRouteGeneric> = async (
     request,
@@ -353,11 +388,11 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       const data: Record<string, any> = {}
       for await (const part of parts) {
         if (part.type === 'field') {
-          // collect form field ${part.fieldname}
+          request.log.debug(`${PREFIX}collect form field ${part.fieldname}`)
           data[part.fieldname] = part.value
         } else if (part.type === 'file') {
           request.log.debug(
-            `received file ${part.filename}. Passing the request to the /media endpoint`
+            `${PREFIX}received file ${part.filename}. Passing the request to the /media endpoint`
           )
 
           // const buf = await part.toBuffer()
@@ -390,13 +425,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             payload: form.payload
           })
 
-          if (isLocalRequest(micropub_endpoint, media_endpoint)) {
+          if (areSameOrigin(micropub_endpoint, media_endpoint)) {
             request.log.debug(
-              `make request to local media endpoint ${media_endpoint} (inject)`
+              `${PREFIX}make request to local media endpoint ${media_endpoint} (inject)`
             )
           } else {
             request.log.debug(
-              `make request to remote media endpoint ${media_endpoint} (fetch)`
+              `${PREFIX}make request to remote media endpoint ${media_endpoint} (fetch)`
             )
           }
 
@@ -413,7 +448,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
           request.log.debug(
             response.headers,
-            'response headers from media endpoint'
+            `${PREFIX}response headers from media endpoint`
           )
 
           // console.log('=== response body from media endpoint ===')
@@ -434,7 +469,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           // data.photo = response.headers.location
 
           data.photo = {
-            alt: 'TODO: where to get the alternate text?',
+            alt: 'TODO: where to get the alternate text? Maybe use mp-photo-alt',
             url: response.headers.location
           }
         }
@@ -445,7 +480,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     }
 
     if (!request_body) {
-      return reply.micropubInvalidRequest('request has no body')
+      const { code, body } = invalidRequest({
+        error_description: `request has no body`,
+        include_error_description
+      })
+      request.log.warn(`${PREFIX}${body.error}: ${body.error_description}`)
+
+      return reply.micropubErrorResponse(code, body)
     }
 
     // Micropub requests from Quill include an access token in the body.
@@ -453,20 +494,33 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // plugin.
     // Obviously, we don't want the access token to appear in any published
     // content, so we need to remove it.
-    const { access_token: _, action, url, h, ...rest } = request_body
+    const { access_token: _, url, h, ...rest } = request_body
+
+    // I couldn't find it in the Micropub specs, but the default action is 'create'
+    const action: ActionType = request_body.action || 'create'
+
+    // If no type is specified, the default type [h-entry] SHOULD be used.
+    // https://micropub.spec.indieweb.org/#create
 
     let jf2: Jf2
     let post_type: Jf2PostType
     if (h) {
       post_type = h
-      jf2 = { ...rest, date: nowUTC() } as Jf2
+      jf2 = { ...rest, date: nowUTC(), type: post_type } as Jf2
     } else {
       const items = [rest] as Mf2Item[]
       const { error, value } = await mf2tTojf2({ items })
 
       if (error) {
-        request.log.warn({ request_body }, error.message)
-        return reply.micropubInvalidRequest(error.message)
+        const error_description = error.message
+        request.log.warn({ request_body }, `${PREFIX}${error_description}`)
+
+        const { code, body } = invalidRequest({
+          error_description,
+          include_error_description
+        })
+
+        return reply.micropubErrorResponse(code, body)
       } else {
         jf2 = { ...value, date: nowUTC() }
         post_type = jf2.type
@@ -480,55 +534,80 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // error we can access it in the error handler.
     requestContext.set('jf2', jf2)
 
-    // TODO: should actions be syndicated?
+    // The server MUST respond to successful delete and undelete requests with
+    // HTTP 200, 201 or 204. If the undelete operation caused the URL of the
+    // post to change, the server MUST respond with HTTP 201 and include the new
+    // URL in the HTTP Location header.
+    // https://micropub.spec.indieweb.org/#delete
 
-    if (url && action) {
+    if (!store[action]) {
+      const { code, body } = request.noActionSupportedResponse(action, {
+        include_error_description
+      })
+      return reply.micropubErrorResponse(code, body)
+    }
+
+    if (!request.hasScope(action)) {
+      const { code, body } = request.noScopeResponse(action, {
+        include_error_description
+      })
+      return reply.micropubErrorResponse(code, body)
+    }
+
+    if (url) {
       switch (action) {
         case 'delete': {
-          const result = await actions.delete(url)
+          const result = await store[action](url)
 
           if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
+            const { code, body } = storeErrorToMicropubError(result.error)
+            request.log.error(
+              `${PREFIX}${body.error}: ${body.error_description}`
+            )
+            return reply.micropubErrorResponse(code, body)
+          } else {
+            const value = storeValueToMicropubValue(result.value)
+            const { code, summary } = value
+            request.log.info(`${PREFIX}${summary}`)
+            return reply.micropubDeleteSuccessResponse(code, { summary })
           }
-
-          request.log.info(`${PREFIX} deleted ${url}`)
-          const { status_code, message } = result.value
-          return reply.code(status_code).send({ message })
         }
 
         case 'undelete': {
-          const result = await actions.undelete(url)
+          const result = await store[action](url)
 
           if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
+            const { code, body } = storeErrorToMicropubError(result.error)
+            request.log.error(
+              `${PREFIX}${body.error}: ${body.error_description}`
+            )
+            return reply.micropubErrorResponse(code, body)
+          } else {
+            const value = storeValueToMicropubValue(result.value)
+            const { code, summary } = value
+            request.log.info(`${PREFIX}${summary}`)
+            return reply.micropubUndeleteSuccessResponse(code, { summary })
           }
-
-          // The server MUST respond to successful delete and undelete requests
-          // with HTTP 200, 201 or 204. If the undelete operation caused the URL of the post to change, the server MUST
-          // respond with HTTP 201 and include the new URL in the HTTP Location
-          // header.
-          // https://micropub.spec.indieweb.org/#delete
-
-          request.log.info(`${PREFIX} undeleted ${url}`)
-          const { status_code, message } = result.value
-          return reply.code(status_code).send({ message })
         }
 
         case 'update': {
-          // Updating entries is done by sending an HTTP POST with a JSON payload describing the changes to make.
-          // https://micropub.spec.indieweb.org/#update-p-2
-          // https://micropub.spec.indieweb.org/#update-p-3
           const patch = rest as UpdatePatch
-          const result = await actions.update(url, patch)
+          const result = await store[action](url, patch)
 
           if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
+            const { code, body } = storeErrorToMicropubError(result.error)
+            request.log.error(
+              `${PREFIX}${body.error}: ${body.error_description}`
+            )
+            return reply.micropubErrorResponse(code, body)
+          } else {
+            const value = storeValueToMicropubValue(result.value)
+            const { code, payload, summary } = value
+            request.log.info(patch, `${PREFIX}${summary}`)
+            return reply.micropubUpdateSuccessResponse(code, {
+              summary,
+              payload
+            })
           }
 
           // TODO: return correct response upon successful update operation
@@ -541,322 +620,51 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           // or 204, depending on whether the response body has content.
           // No body is required in the response, but the response MAY contain a
           // JSON object describing the changes that were made.
-
-          request.log.info(`${PREFIX} updated ${url}`)
-          const { status_code, message } = result.value
-          return reply.code(status_code).send({
-            message,
-            body: result.value.body
-          })
         }
 
         default: {
-          const message = `action '${action}' is not supported by this Micropub server`
-          request.log.warn({ action }, message)
-          return reply.micropubInvalidRequest(message)
+          const error_description = `Action '${action}' is not supported by this Micropub server.`
+          request.log.warn({ action, jf2 }, `${PREFIX}${error_description}`)
+
+          const { code, body } = invalidRequest({
+            error_description,
+            include_error_description
+          })
+
+          return reply.micropubErrorResponse(code, body)
         }
       }
     }
 
-    // TODO: JSON schema to TypeScript type/interface?
-    // https://github.com/bcherny/json-schema-to-typescript
-
+    // If `url` is undefined, it's because action is 'create' (i.e. we need to
+    // create the Micropub post)
     switch (post_type) {
       case 'card': {
-        const valid = validateCard(jf2)
-        if (!valid) {
-          const message = 'invalid JF2 card'
-          request.log.warn({ jf2, errors: validateCard.errors || [] }, message)
-          return reply.micropubInvalidRequest(message)
-        }
-
-        const slug = slugify(jf2)
-        const content = store.jf2ToContent(jf2)
-        const { type: _, ...card } = jf2
-
-        const result = await store.create({
-          path: `cards/${slug}.md`,
-          content
-        })
-
-        if (result.error) {
-          const { code, error, error_description } = mpError(result.error)
-          request.log.error(error_description)
-          return reply.code(code).send({ error, error_description })
-        } else {
-          // TODO: syndicate card
-          const messages = await syndicate(card as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          reply.header('Location', me)
-
-          return reply.code(result.value.status_code).send({
-            card,
-            body: result.value.body,
-            message: result.value.message
-          })
-        }
+        return reply.micropubResponseCard(jf2)
       }
 
       case 'cite': {
-        const valid = validateCite(jf2)
-        if (!valid) {
-          const message = 'invalid JF2 cite'
-          request.log.warn({ jf2, errors: validateCite.errors || [] }, message)
-          return reply.micropubInvalidRequest(message)
-        }
-
-        const slug = slugify(jf2)
-        const content = store.jf2ToContent(jf2)
-        const { type: _, ...cite } = jf2
-
-        const result = await store.create({
-          path: `quotes/${slug}.md`,
-          content
-        })
-
-        if (result.error) {
-          const { code, error, error_description } = mpError(result.error)
-          request.log.error(error_description)
-          return reply.code(code).send({ error, error_description })
-        } else {
-          // TODO: syndicate cite
-          const messages = await syndicate(cite as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          reply.header('Location', me)
-
-          return reply.code(result.value.status_code).send({
-            cite,
-            body: result.value.body,
-            message: result.value.message
-          })
-        }
-      }
-
-      case 'entry': {
-        const valid = validateEntry(jf2)
-        if (!valid) {
-          const message = 'invalid JF2 entry'
-          request.log.warn({ jf2, errors: validateEntry.errors || [] }, message)
-          return reply.micropubInvalidRequest(message)
-        }
-
-        const slug = slugify(jf2)
-        const content = store.jf2ToContent(jf2)
-        const { type: _, ...entry } = jf2
-
-        if (entry['bookmark-of']) {
-          const result = await store.create({
-            path: `bookmarks/${slug}.md`,
-            content
-          })
-
-          // TODO: syndicate bookmark
-          const messages = await syndicate(entry as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
-          } else {
-            reply.header('Location', me)
-
-            return reply.code(result.value.status_code).send({
-              entry,
-              body: result.value.body,
-              message: result.value.message
-            })
-          }
-        }
-
-        if (entry['like-of']) {
-          const result = await store.create({
-            path: `likes/${slug}.md`,
-            content
-          })
-
-          // TODO: syndicate like
-          const messages = await syndicate(entry as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
-          } else {
-            reply.header('Location', me)
-
-            return reply.code(result.value.status_code).send({
-              entry,
-              body: result.value.body,
-              message: result.value.message
-            })
-          }
-        }
-
-        // TODO: test that this works
-        if (entry['in-reply-to']) {
-          const result = await store.create({
-            path: `replies/${slug}.md`,
-            content
-          })
-
-          // TODO: syndicate in-reply-to
-          const messages = await syndicate(entry as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
-          } else {
-            reply.header('Location', me)
-
-            return reply.code(result.value.status_code).send({
-              entry,
-              body: result.value.body,
-              message: result.value.message
-            })
-          }
-        }
-
-        // An app that sends read-of entries is indiebookclub.biz
-        // https://indieweb.org/indiebookclub
-        if (entry['read-of']) {
-          const result = await store.create({
-            path: `reads/${slug}.md`,
-            content
-          })
-
-          // TODO: syndicate read
-          const messages = await syndicate(entry as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
-          } else {
-            reply.header('Location', me)
-
-            return reply.code(result.value.status_code).send({
-              entry,
-              body: result.value.body,
-              message: result.value.message
-            })
-          }
-        }
-
-        if (entry['repost-of']) {
-          const result = await store.create({
-            path: `reposts/${slug}.md`,
-            content
-          })
-
-          // TODO: syndicate repost
-          const messages = await syndicate(entry as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
-          } else {
-            reply.header('Location', me)
-
-            return reply.code(result.value.status_code).send({
-              entry,
-              body: result.value.body,
-              message: result.value.message
-            })
-          }
-        }
-
-        if (entry['content']) {
-          // TODO: distinguish between articles and notes
-
-          const result = await store.create({
-            path: `notes/${slug}.md`,
-            content
-          })
-
-          // TODO: syndicate article or note
-          // Use a queue on Fly.io? Cloudflare Queues? Cloud Tasks?
-          // https://fly.io/docs/laravel/the-basics/cron-and-queues/#queue-worker
-          const messages = await syndicate(entry as any)
-          console.log('=== syndication ===')
-          console.log(messages)
-
-          if (result.error) {
-            const { code, error, error_description } = mpError(result.error)
-            request.log.error(error_description)
-            return reply.code(code).send({ error, error_description })
-          } else {
-            reply.header('Location', me)
-
-            return reply.code(result.value.status_code).send({
-              entry,
-              body: result.value.body,
-              message: result.value.message
-            })
-          }
-        }
-
-        const message = `Entry not supported by this Micropub server`
-        request.log.warn({ entry }, message)
-        return reply.micropubInvalidRequest(message)
+        return reply.micropubResponseCite(jf2)
       }
 
       case 'event': {
-        const valid = validateEvent(jf2)
-        if (!valid) {
-          const message = 'invalid JF2 event'
-          request.log.warn({ jf2, errors: validateEvent.errors || [] }, message)
-          return reply.micropubInvalidRequest(message)
-        }
+        return reply.micropubResponseEvent(jf2)
+      }
 
-        const slug = slugify(jf2)
-        const content = store.jf2ToContent(jf2)
-        const { type: _, ...event } = jf2
-
-        const result = await store.create({
-          path: `events/${slug}.md`,
-          content
-        })
-
-        // TODO: syndicate event
-        const messages = await syndicate({ ...jf2, 'mp-slug': slug })
-        console.log('=== syndication ===')
-        console.log(messages)
-
-        if (result.error) {
-          const { code, error, error_description } = mpError(result.error)
-          request.log.error(error_description)
-          return reply.code(code).send({ error, error_description })
-        } else {
-          reply.header('Location', me)
-
-          return reply.code(result.value.status_code).send({
-            event,
-            body: result.value.body,
-            message: result.value.message
-          })
-        }
+      case 'entry': {
+        return reply.micropubResponseEntry(jf2)
       }
 
       default: {
-        const message = `h=${post_type} not supported by this Micropub server`
-        request.log.warn({ jf2 }, message)
-        return reply.micropubInvalidRequest(message)
+        const error_description = `Post type '${post_type}' is not supported by this Micropub server.`
+        request.log.warn({ action, jf2 }, `${PREFIX}${error_description}`)
+
+        const { code, body } = invalidRequest({
+          error_description,
+          include_error_description
+        })
+
+        return reply.micropubErrorResponse(code, body)
       }
     }
   }

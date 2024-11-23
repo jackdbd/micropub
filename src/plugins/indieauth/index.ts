@@ -4,6 +4,7 @@ import { applyToDefaults } from '@hapi/hoek'
 import { defLogin, logout } from './routes.js'
 
 const NAME = '@jackdbd/fastify-indieauth'
+const PREFIX = `${NAME} `
 
 export interface PluginOptions extends FastifyPluginOptions {
   authorizationCallbackRoute?: string
@@ -31,7 +32,7 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
     defaultOptions,
     options
   ) as Required<PluginOptions>
-  fastify.log.debug(config, `${NAME} configuration`)
+  fastify.log.debug(config, `${PREFIX}configuration`)
 
   const {
     authorizationCallbackRoute: auth_callback,
@@ -64,14 +65,14 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
       code_challenge_method,
       len: config.codeVerifierLength,
       me,
-      prefix: NAME,
+      prefix: PREFIX,
       redirect_uri
     })
   )
-  fastify.log.debug(`${NAME} route registered: GET /login`)
+  fastify.log.debug(`${PREFIX}route registered: GET /login`)
 
   fastify.get('/logout', logout)
-  fastify.log.debug(`${NAME} route registered: GET /logout`)
+  fastify.log.debug(`${PREFIX}route registered: GET /logout`)
 
   done()
 }

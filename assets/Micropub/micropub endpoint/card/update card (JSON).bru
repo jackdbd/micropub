@@ -10,8 +10,12 @@ post {
   auth: bearer
 }
 
+headers {
+  Accept: text/html
+}
+
 auth:bearer {
-  token: {{access_token}}
+  token: {{access_token_without_delete_scope}}
 }
 
 body:json {

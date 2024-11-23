@@ -1,13 +1,17 @@
 meta {
   name: delete event (urlencoded)
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
   url: {{base_url}}/micropub
   body: formUrlEncoded
   auth: bearer
+}
+
+headers {
+  Accept: text/html
 }
 
 auth:bearer {

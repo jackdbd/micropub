@@ -1,0 +1,15 @@
+meta {
+  name: GitHub user
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://api.github.com/user
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{github_token}}
+}

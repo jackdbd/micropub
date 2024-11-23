@@ -1,13 +1,17 @@
 meta {
   name: create event (urlencoded)
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
   url: {{base_url}}/micropub
   body: formUrlEncoded
   auth: bearer
+}
+
+headers {
+  Accept: text/html
 }
 
 auth:bearer {

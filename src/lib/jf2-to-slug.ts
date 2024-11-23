@@ -1,6 +1,6 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import slugifyFn from 'slugify'
-import { nowUTC } from './date.js'
+// import { nowUTC } from './date.js'
 
 const replacement_character = '-'
 
@@ -10,28 +10,30 @@ const slugify_options = {
   remove: /[*+~.·,()'"`´%!?¿:@\/]/g
 }
 
-export const slugify = (jf2: Jf2) => {
+export const jf2ToSlug = (jf2: Jf2) => {
   let str = jf2['mp-slug']
   if (str) {
     return str.toLowerCase()
   }
 
-  const yyyy_mm_dd = nowUTC().split('T')[0]
+  // const yyyy_mm_dd = nowUTC().split('T')[0]
+  // const prefix = `${yyyy_mm_dd}-`
+  const prefix = ''
 
   if (jf2.name) {
     str = jf2.name
   } else if (jf2.summary) {
     str = jf2.summary
   } else if (jf2['bookmark-of']) {
-    str = `${yyyy_mm_dd}-${jf2['bookmark-of']
+    str = `${prefix}${jf2['bookmark-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`
   } else if (jf2['like-of']) {
-    str = `${yyyy_mm_dd}-${jf2['like-of']
+    str = `${prefix}${jf2['like-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`
   } else if (jf2['repost-of']) {
-    str = `${yyyy_mm_dd}-${jf2['repost-of']
+    str = `${prefix}${jf2['repost-of']
       .replace(/^https?:\/\//, '')
       .replaceAll(/\./g, replacement_character)}`
   } else if (jf2.content) {

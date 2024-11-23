@@ -3,8 +3,17 @@ import type { SyndicateToItem } from './plugins/micropub-endpoint/syndication.js
 // TODO: use a short-lived access token (e.g. 3600 seconds) and a long-lived
 // refresh token.
 const access_token_expiration = '72 hours'
+// const access_token_expiration = '5 seconds'
 
 const me = 'https://giacomodebidda.com/'
+
+// Max file size (in bytes) for multipart/form-data requests
+// 10MB might be enough for a photo or an audio file, but not for a video.
+// TODO: try setting this to 1 byte to test error handling in media endpoint.
+const multipart_form_data_max_file_size = 10_000_000
+
+// const soft_delete = true
+const soft_delete = false
 
 // TODO: read syndication_to from a JSON file?
 const syndicate_to: SyndicateToItem[] = [
@@ -48,13 +57,16 @@ export interface Config {
   github_repo: string
   github_token: string
   host: string
+  include_error_description: boolean
   log_level: string
   me: string
+  multipart_form_data_max_file_size: number
   port: number
   report_all_ajv_errors: boolean
   secure_session_expiration: number
   secure_session_key_one_buf: string
   secure_session_key_two_buf: string
+  soft_delete: boolean
   syndicate_to: SyndicateToItem[]
   telegram_chat_id: string
   telegram_token: string
@@ -136,6 +148,10 @@ export const defConfig = () => {
     return { error: new Error('SECURE_SESSION_KEY_TWO not set') }
   }
 
+  const include_error_description = process.env.INCLUDE_ERROR_DESCRIPTION
+    ? true
+    : false
+
   const telegram_chat_id = process.env.TELEGRAM_CHAT_ID
   if (!telegram_chat_id) {
     return { error: new Error('TELEGRAM_CHAT_ID not set') }
@@ -146,8 +162,13 @@ export const defConfig = () => {
     return { error: new Error('TELEGRAM_TOKEN not set') }
   }
 
+  // Either passing base_url to the nunjucks templates or not is fine. But if we
+  // do pass it, we need to make sure to specify 'https' when we're not on
+  // localhost, otherwise we will have mixed content errors.
+  const base_url = process.env.BASE_URL || `http://localhost:${port}`
+
   const config: Config = {
-    base_url: process.env.BASE_URL || `http://localhost:${port}`,
+    base_url,
     access_token_expiration,
     cloudflare_account_id,
     cloudflare_r2_access_key_id,
@@ -157,14 +178,17 @@ export const defConfig = () => {
     github_repo,
     github_token,
     host: process.env.HOST || '0.0.0.0',
+    include_error_description,
     log_level: process.env.PINO_LOG_LEVEL || 'info',
     me,
+    multipart_form_data_max_file_size,
     port,
     report_all_ajv_errors:
       process.env.NODE_ENV === 'development' ? true : false,
     secure_session_expiration: 60 * 60, // in seconds
     secure_session_key_one_buf,
     secure_session_key_two_buf,
+    soft_delete,
     syndicate_to,
     telegram_chat_id,
     telegram_token,
@@ -174,16 +198,6 @@ export const defConfig = () => {
       process.env.NODE_ENV === 'production' ? true : false,
     NODE_ENV: process.env.NODE_ENV || 'production'
   }
-
-  // if (config.NODE_ENV !== 'test') {
-  //   const unsensitive = unsentiveEntries(config)
-  //   console.log(`=== CONFIG: ${unsensitive.length} non-sensitive entries ===`)
-  //   console.log(Object.fromEntries(unsensitive))
-  //   console.log(
-  //     `=== CONFIG: ${SENSITIVE.size} sensitive fields (values not shown) ===`
-  //   )
-  //   console.log(sensitive_fields)
-  // }
 
   return { value: config }
 }

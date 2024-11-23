@@ -10,6 +10,10 @@ post {
   auth: bearer
 }
 
+headers {
+  Accept: text/html
+}
+
 auth:bearer {
   token: {{access_token}}
 }
@@ -27,6 +31,7 @@ body:form-urlencoded {
   content: Andy Bell's article on design tokens
   category[]: design
   category[]: css
-  name: what-are-design-tokens
   mp-syndicate-to[]: {{syndication_uid_mastodon}}
+  mp-slug: test-bookmark
+  ~name: what-are-design-tokens
 }

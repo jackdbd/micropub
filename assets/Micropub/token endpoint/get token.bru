@@ -1,0 +1,19 @@
+meta {
+  name: get token
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/token
+  body: none
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

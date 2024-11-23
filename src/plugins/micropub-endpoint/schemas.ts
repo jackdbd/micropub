@@ -5,21 +5,31 @@ import {
   h_entry,
   h_event
 } from '../../lib/microformats2/index.js'
+import { DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE } from './constants.js'
 
 export const plugin_options = Type.Object(
   {
-    me: Type.String({
-      format: 'uri',
-      title: 'me',
-      description: `URL of the user's website trying to authenticate using Web sign-in.`
-    }),
-
     authorizationEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'authorization endpoint',
         description: `Micropub clients that want to post to a user's Micropub endpoint need to obtain authorization from the user in order to get an access token.`,
         default: 'https://indieauth.com/auth'
+      })
+    ),
+
+    me: Type.String({
+      format: 'uri',
+      title: 'me',
+      description: `URL of the user's website trying to authenticate using Web sign-in.`
+    }),
+
+    multipartFormDataMaxFileSize: Type.Optional(
+      Type.Number({
+        title: 'multipart/form-data max file size',
+        description: `Max file size (in bytes) for multipart/form-data requests.`,
+        default: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
+        minimum: 0
       })
     ),
 
@@ -33,13 +43,13 @@ export const plugin_options = Type.Object(
     )
   },
   {
-    $id: 'fastify-micropub-options',
-    title: 'fastify-micropub options',
-    description: 'Options for the fastify-micropub plugin'
+    $id: 'fastify-micropub-endpoint-options',
+    title: 'Fastify plugin micropub-endpoint options',
+    description: 'Options for the Fastify micropub-endpoint plugin'
   }
 )
 
-export type MicropubPluginOptions = Static<typeof plugin_options>
+export type MicropubEndpointPluginOptions = Static<typeof plugin_options>
 
 export const micropub_get_request = Type.Object(
   { query: Type.Object({ q: Type.String() }) },

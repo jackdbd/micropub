@@ -1,16 +1,19 @@
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
-import { validateAuthorizationHeader } from '../hooks.js'
+import { defValidateAuthorizationHeader } from '../../lib/fastify-hooks/index.js'
 import { defIntrospect } from './routes.js'
 
 const NAME = '@jackdbd/fastify-indieauth-introspection-endpoint'
 
 export interface PluginOptions extends FastifyPluginOptions {
   clientId: string
+  include_error_description: boolean
 }
 
-const defaultOptions: Partial<PluginOptions> = {}
+const defaultOptions: Partial<PluginOptions> = {
+  include_error_description: false
+}
 
 const fastifyIndieAuthIntrospectionEndpoint: FastifyPluginCallback<
   PluginOptions
@@ -21,7 +24,12 @@ const fastifyIndieAuthIntrospectionEndpoint: FastifyPluginCallback<
   ) as Required<PluginOptions>
   fastify.log.debug(config, `${NAME} configuration`)
 
-  const { clientId: client_id } = config
+  const { clientId: client_id, include_error_description } = config
+
+  const validateAuthorizationHeader = defValidateAuthorizationHeader({
+    include_error_description,
+    log_prefix: `${NAME} `
+  })
 
   // https://indieauth.spec.indieweb.org/#access-token-verification-request
   // OAuth 2.0 Token Introspection

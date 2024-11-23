@@ -7,3 +7,7 @@ export const clientAcceptsHtml = (request: FastifyRequest) => {
     return false
   }
 }
+
+export const areSameOrigin = (src: string, dest: string) => {
+  return new URL(src).origin === new URL(dest).origin
+}

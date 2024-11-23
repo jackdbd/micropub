@@ -2,9 +2,20 @@
 
 {% block content %}
 <div>
-  <p>You have an <strong>access token</strong>. Use it to <code>POST</code> to <code>/micropub</code> and publish to <a href="{{ me }}">{{ me }}</a>.</p>
+  <p>You can use this <strong>access token</strong> to:</p>
+  <ul>
+    <li><p>publish posts to <a href="{{ claims.me }}">{{ claims.me }}</a> by making <code>POST</code> requests to <code>{{ base_url }}/micropub</code>.</p></li>
+    <li><p>upload files by making <code>POST</code> requests to <code>{{ base_url }}/media</code>.</p></li>
+  </ul>
+  <h2>JWT</h2>
   <pre>
-    <code id="access-token-payload">{{ payload }}</code>
+    <code id="access-token-undecoded">{{ jwt | tap('JWT undecoded') }}</code>
   </pre>
+  <h2>Claims</h2>
+  <pre>
+    <code id="access-token-claims">{{ claims | tap('JWT claims') | dump(2) }}</code>
+  </pre>
+  <h2>Expiration</h2>
+  <p>{{ claims.exp | secondsToUTCString }}</p>
 </div>
 {% endblock %}

@@ -1,5 +1,8 @@
 import { applyToDefaults } from '@hapi/hoek'
-import { ACCEPT, GITHUB_API_VERSION, REF } from './defaults.js'
+import { ACCEPT, BASE_URL, GITHUB_API_VERSION, REF } from './defaults.js'
+import type { GetResponseBody } from './interfaces.js'
+
+export type { GetResponseBody }
 
 export interface AuthorOrCommitter {
   name: string
@@ -32,7 +35,7 @@ const headers = (options?: HeadersOptions) => {
 
 const internalServerError = (err: any) => {
   return {
-    message: err.message,
+    error_description: err.message,
     status_code: 500,
     status_text: 'Internal Server Error'
   }
@@ -51,6 +54,7 @@ export interface GetOptions extends SharedConfig {
 }
 
 const get_defaults: Partial<GetOptions> = {
+  base_url: BASE_URL,
   path: '',
   ref: REF
 }
@@ -83,7 +87,7 @@ export const get = async (options: GetOptions) => {
   if (response.status !== 200) {
     return {
       error: {
-        message: `could not retrieve ${config.path} from repo ${owner}/${repo}, ref=${ref}`,
+        error_description: `could not retrieve ${config.path} from repo ${owner}/${repo}, ref=${ref}`,
         status_code: response.status,
         status_text: response.statusText
       }
@@ -91,13 +95,14 @@ export const get = async (options: GetOptions) => {
   }
 
   try {
-    const body = await response.json()
+    const body: GetResponseBody = await response.json()
 
     return {
       value: {
-        message: `retrieved ${config.path} from repo ${owner}/${repo}, ref=${ref}`,
+        summary: `retrieved ${config.path} from repo ${owner}/${repo}, ref=${ref}`,
         body,
-        status_code: response.status
+        status_code: response.status,
+        status_text: response.statusText
       }
     }
   } catch (err: any) {
@@ -117,6 +122,7 @@ export interface CreateOrUpdateOptions extends SharedConfig {
 }
 
 const create_or_update_defaults: Partial<CreateOrUpdateOptions> = {
+  base_url: BASE_URL,
   branch: REF,
   path: ''
 }
@@ -181,7 +187,7 @@ export const createOrUpdate = async (options: CreateOrUpdateOptions) => {
   if (sha && response.status !== 200) {
     return {
       error: {
-        message: `could not update ${config.path} in repo ${owner}/${repo}`,
+        error_description: `could not update ${config.path} in repo ${owner}/${repo}`,
         status_code: response.status,
         status_text: response.statusText
       }
@@ -191,18 +197,18 @@ export const createOrUpdate = async (options: CreateOrUpdateOptions) => {
   if (!sha && response.status !== 201) {
     return {
       error: {
-        message: `could not create ${config.path} in repo ${owner}/${repo}`,
+        error_description: `could not create ${config.path} in repo ${owner}/${repo}`,
         status_code: response.status,
         status_text: response.statusText
       }
     }
   }
 
-  let message: string
+  let summary: string
   if (sha) {
-    message = `updated ${config.path} in repo ${owner}/${repo}`
+    summary = `updated ${config.path} in repo ${owner}/${repo}`
   } else {
-    message = `created ${config.path} in repo ${owner}/${repo}`
+    summary = `created ${config.path} in repo ${owner}/${repo}`
   }
 
   try {
@@ -211,9 +217,10 @@ export const createOrUpdate = async (options: CreateOrUpdateOptions) => {
     // instead of the entire response body.
     return {
       value: {
-        message,
+        summary,
         body,
-        status_code: response.status
+        status_code: response.status,
+        status_text: response.statusText
       }
     }
   } catch (err: any) {
@@ -232,6 +239,7 @@ export interface DeleteOptions extends SharedConfig {
 }
 
 const delete_defaults: Partial<DeleteOptions> = {
+  base_url: BASE_URL,
   branch: REF,
   path: ''
 }
@@ -247,8 +255,30 @@ export const hardDelete = async (options: DeleteOptions) => {
     options
   ) as Required<DeleteOptions>
 
-  const { base_url, branch, committer, owner, path, repo, sha, token } = config
+  const { base_url, branch, committer, owner, path, repo, token } = config
   const author = config.author || committer
+
+  let sha: string
+  if (!config.sha) {
+    const result_get = await get({
+      base_url,
+      path,
+      ref: branch,
+      owner,
+      repo,
+      token
+    })
+
+    if (result_get.error) {
+      const original = result_get.error.error_description
+      const error_description = `could not delete ${path} in repo ${owner}/${repo} because it couldn't be retrieved: ${original}`
+      return { error: { ...result_get.error, error_description } }
+    }
+
+    sha = result_get.value.body.sha
+  } else {
+    sha = config.sha
+  }
 
   const endpoint = `/repos/${owner}/${repo}/contents/${path}`
   const url = `${base_url}${endpoint}`
@@ -280,7 +310,7 @@ export const hardDelete = async (options: DeleteOptions) => {
   if (response.status !== 200) {
     return {
       error: {
-        message: `could not delete ${path} from repo ${owner}/${repo}, branch=${branch}`,
+        error_description: `could not delete ${path} from repo ${owner}/${repo}, branch=${branch}`,
         status_code: response.status,
         status_text: response.statusText
       }
@@ -292,9 +322,10 @@ export const hardDelete = async (options: DeleteOptions) => {
 
     return {
       value: {
-        message: `deleted ${path} in repo ${owner}/${repo}, branch=${branch}`,
+        summary: `deleted ${path} in repo ${owner}/${repo}, branch=${branch}`,
         body,
-        status_code: response.status
+        status_code: response.status,
+        status_text: response.statusText
       }
     }
   } catch (err: any) {
@@ -313,6 +344,7 @@ export interface MoveOptions extends SharedConfig {
 }
 
 const move_defaults: Partial<MoveOptions> = {
+  base_url: BASE_URL,
   ref: REF
 }
 
@@ -362,7 +394,9 @@ export const move = async (options: MoveOptions) => {
   })
 
   if (result_create.error) {
-    return { error: result_create.error }
+    const tip = `Make sure you can write to ${path_after}.`
+    const error_description = `Cannot move ${path_before} to ${path_after} in repository ${owner}/${repo} on branch ${ref}. ${tip}`
+    return { error: { ...result_create.error, error_description } }
   }
 
   const result_hard_delete = await hardDelete({
@@ -381,14 +415,15 @@ export const move = async (options: MoveOptions) => {
   }
 
   const messages = [
-    result_create.value.message,
-    result_hard_delete.value.message
+    result_create.value.summary,
+    result_hard_delete.value.summary
   ]
 
   return {
     value: {
-      message: messages.join('; '),
-      status_code: 200
+      summary: messages.join('; '),
+      status_code: 200,
+      status_text: 'Success'
     }
   }
 }

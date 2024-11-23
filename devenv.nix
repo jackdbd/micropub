@@ -31,6 +31,7 @@ in {
     GITHUB_OWNER = "jackdbd";
     GITHUB_REPO = "giacomodebidda-content";
     GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
+    INCLUDE_ERROR_DESCRIPTION = true;
     # Since the fly CLI uses the LOG_LEVEL environment variable, I use a
     # different environment variable for pino.
     # https://betterstack.com/community/guides/logging/how-to-install-setup-and-use-pino-to-log-node-js-applications/

@@ -10,6 +10,10 @@ post {
   auth: bearer
 }
 
+headers {
+  Accept: text/html
+}
+
 auth:bearer {
   token: {{access_token}}
 }
@@ -19,4 +23,5 @@ body:form-urlencoded {
   name: Giacomo Debidda
   job-title: developer
   mp-slug: test-card
+  ~email: invalid
 }

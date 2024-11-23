@@ -10,7 +10,7 @@
 
   {% block css %}
   <link rel="stylesheet" href="https://unpkg.com/mvp.css"> 
-  <link rel="stylesheet" href="{{ base_url }}/styles/layout.css">
+  <link rel="stylesheet" href="{{ base_url | tap ('base_url') }}/styles/layout.css">
   <link rel="stylesheet" href="{{ base_url }}/styles/utils.css">
   {% endblock %}
   
