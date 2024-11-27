@@ -46,6 +46,8 @@ const syndicate_to: SyndicateToItem[] = [
   }
 ]
 
+const should_media_endpoint_ignore_filename = true
+
 export interface Config {
   access_token_expiration: string
   base_url: string
@@ -66,6 +68,7 @@ export interface Config {
   secure_session_expiration: number
   secure_session_key_one_buf: string
   secure_session_key_two_buf: string
+  should_media_endpoint_ignore_filename: boolean
   soft_delete: boolean
   syndicate_to: SyndicateToItem[]
   telegram_chat_id: string
@@ -188,6 +191,7 @@ export const defConfig = () => {
     secure_session_expiration: 60 * 60, // in seconds
     secure_session_key_one_buf,
     secure_session_key_two_buf,
+    should_media_endpoint_ignore_filename,
     soft_delete,
     syndicate_to,
     telegram_chat_id,

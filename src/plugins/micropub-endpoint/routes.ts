@@ -71,7 +71,8 @@ export const defAuthCallback = (config: CallbackConfig) => {
 
     if (!state) {
       return reply.view('error.njk', {
-        message: `state not found in session`,
+        error: `invalid_request`,
+        error_description: 'TODO: error description',
         description: 'Auth error page',
         title: 'Auth error'
       })
@@ -83,7 +84,8 @@ export const defAuthCallback = (config: CallbackConfig) => {
 
     if (state !== request.query.state) {
       return reply.view('error.njk', {
-        message: `state from query string does not match state from session`,
+        error: `invalid_request`,
+        error_description: `state from query string does not match state from session`,
         description: 'Auth error page',
         title: 'Auth error'
       })
@@ -97,7 +99,8 @@ export const defAuthCallback = (config: CallbackConfig) => {
 
     if (!code_verifier) {
       return reply.view('error.njk', {
-        message: `code_verifier not found in session`,
+        error: `invalid_request`,
+        error_description: `code_verifier not found in session`,
         description: 'Auth error page',
         title: 'Auth error'
       })
@@ -142,7 +145,8 @@ export const defAuthCallback = (config: CallbackConfig) => {
         `${prefix}failed to exchange authorization code for access token`
       )
       return reply.view('error.njk', {
-        message: `Failed to exchange authorization code for access token`,
+        error: `invalid_request`,
+        error_description: `Failed to exchange authorization code for access token`,
         description: 'Token error page',
         title: 'Token error'
       })
@@ -157,9 +161,10 @@ export const defAuthCallback = (config: CallbackConfig) => {
     } catch (err) {
       const error = err as Error
       return reply.view('error.njk', {
+        error: `invalid_request`,
+        error_description: `TODO: error description`,
         description: 'Error page',
-        title: error.name,
-        message: error.message
+        title: error.name
       })
     }
 
@@ -173,14 +178,17 @@ export const defAuthCallback = (config: CallbackConfig) => {
         include_error_description
       })
 
+      reply.code(code)
+
       if (clientAcceptsHtml(request)) {
-        return reply.code(code).view('error.njk', {
-          message: error_description,
+        return reply.view('error.njk', {
+          error: body.error,
+          error_description,
           description: 'Auth error page',
           title: 'Auth error'
         })
       } else {
-        return reply.code(code).send(body)
+        return reply.send(body)
       }
     }
 
@@ -567,9 +575,9 @@ export const defMicropubPost = <
             return reply.micropubErrorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
-            const { code, summary } = value
+            const { summary } = value
             request.log.info(`${PREFIX}${summary}`)
-            return reply.micropubDeleteSuccessResponse(code, { summary })
+            return reply.micropubDeleteSuccessResponse(summary)
           }
         }
 

@@ -2,13 +2,14 @@ import formbody from '@fastify/formbody'
 import { applyToDefaults } from '@hapi/hoek'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
+import { errorResponse } from '../../lib/fastify-decorators/reply.js'
 import {
   DEFAULT_ACCESS_TOKEN_EXPIRATION,
   DEFAULT_ALGORITHM,
   DEFAULT_AUTHORIZATION_ENDPOINT,
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   NAME
 } from './constants.js'
-import { tokenErrorResponse } from './decorators.js'
 import { defTokenPost, defTokenGet } from './routes.js'
 
 const PREFIX = `${NAME} `
@@ -16,15 +17,16 @@ const PREFIX = `${NAME} `
 export interface PluginOptions extends FastifyPluginOptions {
   algorithm?: string
   authorizationEndpoint?: string
-  baseUrl: string
   expiration?: string
-  issuer: string // Indiekit uses `application.url`
+  includeErrorDescription?: boolean
+  issuer: string // Indiekit uses `application.url` Maybe I can use request.url? Or reply.server.url?
 }
 
-const defaultOptions: Partial<PluginOptions> = {
+const defaults: Partial<PluginOptions> = {
   algorithm: DEFAULT_ALGORITHM,
   authorizationEndpoint: DEFAULT_AUTHORIZATION_ENDPOINT,
-  expiration: DEFAULT_ACCESS_TOKEN_EXPIRATION
+  expiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
+  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION
 }
 
 const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
@@ -32,60 +34,50 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
   options,
   done
 ) => {
-  const config = applyToDefaults(
-    defaultOptions,
-    options
-  ) as Required<PluginOptions>
-  fastify.log.debug(config, `${PREFIX}configuration`)
-
-  // const {
-  //   validatePluginOptions,
-  // } = compileSchemasAndGetValidateFunctions()
-  // fastify.log.debug(
-  //   `${NAME} compiled JSON schemas and created validate functions`
-  // )
-
-  // validatePluginOptions(config)
-
-  // if (validatePluginOptions.errors) {
-  //   const details = validatePluginOptions.errors.map((err) => {
-  //     return `${err.instancePath.slice(1)} ${err.message}`
-  //   })
-  //   throw new Error(
-  //     `${NAME} plugin registered using invalid options: ${details.join('; ')}`
-  //   )
-  // }
-  // fastify.log.debug(`${NAME} validated its configuration`)
-
-  // Parse application/x-www-form-urlencoded requests
-  fastify.register(formbody)
-  fastify.log.debug(`${PREFIX}registered Fastify plugin: formbody`)
+  const config = applyToDefaults(defaults, options) as Required<PluginOptions>
 
   const {
     algorithm,
     authorizationEndpoint: authorization_endpoint,
-    baseUrl: base_url,
     expiration,
+    includeErrorDescription: include_error_description,
     issuer
   } = config
 
-  fastify.decorateReply('tokenErrorResponse', tokenErrorResponse)
-  fastify.log.debug(`${PREFIX}decorateReply: tokenErrorResponse`)
+  // === PLUGINS ============================================================ //
+  // Parse application/x-www-form-urlencoded requests
+  fastify.register(formbody)
+  fastify.log.debug(`${PREFIX}registered Fastify plugin: formbody`)
 
-  fastify.get('/token', defTokenGet({ base_url, prefix: PREFIX }))
-  fastify.log.debug(`${PREFIX}route registered: GET /token`)
+  // === DECORATORS ========================================================= //
+  fastify.decorateReply('errorResponse', errorResponse)
+  fastify.log.debug(`${PREFIX}decorateReply: errorResponse`)
+
+  // === HOOKS ============================================================== //
+
+  fastify.addHook('onRoute', (routeOptions) => {
+    fastify.log.debug(
+      `${PREFIX}registered route ${routeOptions.method} ${routeOptions.url}`
+    )
+  })
+
+  // === ROUTES ============================================================= //
+  fastify.get(
+    '/token',
+    defTokenGet({ include_error_description, log_prefix: `${NAME}/routes ` })
+  )
 
   fastify.post(
     '/token',
     defTokenPost({
       algorithm,
       authorization_endpoint,
+      include_error_description,
       expiration,
       issuer,
-      prefix: PREFIX
+      log_prefix: `${NAME}/routes `
     })
   )
-  fastify.log.debug(`${PREFIX}route registered: POST /token`)
 
   done()
 }

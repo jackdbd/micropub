@@ -1,6 +1,6 @@
 import type { onRequestHookHandler } from 'fastify'
-import { decode, type AccessTokenClaims } from '../token.js'
 import { unauthorized } from '../micropub/error-responses.js'
+import { decode, type AccessTokenClaims } from '../token.js'
 
 export interface Options {
   header?: string

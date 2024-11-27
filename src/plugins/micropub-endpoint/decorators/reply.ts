@@ -7,12 +7,11 @@ import { INVALID_REQUEST } from '../../../lib/http-error.js'
 import type {
   BaseStoreError,
   BaseStoreValue,
-  ClientErrorResponseBody,
-  ClientErrorStatusCode,
+  ErrorResponseBody,
   Store
 } from '../../../lib/micropub/index.js'
+import { invalidRequest } from '../../../lib/micropub/error-responses.js'
 import {
-  errorPage,
   deleteSuccessPage,
   undeleteSuccessPage,
   updateSuccessPage,
@@ -37,16 +36,28 @@ const DEFAULT_PUBLISHED_LOCATION = 'https://giacomodebidda.com/'
 
 export function micropubErrorResponse(
   this: FastifyReply,
-  code: ClientErrorStatusCode,
-  body: ClientErrorResponseBody
+  code: number,
+  body: ErrorResponseBody
 ) {
-  const base_url = `${this.request.protocol}://${this.request.host}`
+  // Either passing base_url to the nunjucks template or not is fine. But if we
+  // do pass it, we need to make sure to specify 'https' when we're not on
+  // localhost, otherwise we will have mixed content errors.
+
+  // const base_url =
+  //   this.request.hostname === 'localhost'
+  //     ? `http://${this.request.host}`
+  //     : `https://${this.request.host}`
 
   this.code(code)
 
   if (clientAcceptsHtml(this.request)) {
     this.header('Content-Type', TEXT_HTML)
-    return this.send(errorPage({ ...body, base_url }))
+    return this.view('error.njk', {
+      error: body.error,
+      error_description: body.error_description,
+      description: 'Error page',
+      title: `Error: ${body.error}`
+    })
   } else {
     this.header('Content-Type', APPLICATION_JSON)
     return this.send(body)
@@ -55,15 +66,17 @@ export function micropubErrorResponse(
 
 export function micropubDeleteSuccessResponse(
   this: FastifyReply,
-  code: number,
-  body: SuccessPageOptions
+  summary?: string
 ) {
-  const base_url = `${this.request.protocol}://${this.request.host}`
-  this.code(code)
+  // The typical status code for a successful DELETE request is 204, but if we
+  // want to send a HTML page to the client we need to use 200 (or 202 if we
+  // didn't actually deleted the file but we scheduled its deletion).
+  this.code(200)
+  const body = { summary }
 
   if (clientAcceptsHtml(this.request)) {
     this.header('Content-Type', TEXT_HTML)
-    return this.send(deleteSuccessPage({ ...body, base_url }))
+    return this.send(deleteSuccessPage(body))
   } else {
     this.header('Content-Type', APPLICATION_JSON)
     return this.send(body)
@@ -75,13 +88,11 @@ export function micropubUndeleteSuccessResponse(
   code: number,
   body: SuccessPageOptions
 ) {
-  const base_url = `${this.request.protocol}://${this.request.host}`
-
   this.code(code)
 
   if (clientAcceptsHtml(this.request)) {
     this.header('Content-Type', TEXT_HTML)
-    return this.send(undeleteSuccessPage({ ...body, base_url }))
+    return this.send(undeleteSuccessPage(body))
   } else {
     this.header('Content-Type', APPLICATION_JSON)
     return this.send(body)
@@ -93,13 +104,11 @@ export function micropubUpdateSuccessResponse(
   code: number,
   body: SuccessPageOptions
 ) {
-  const base_url = `${this.request.protocol}://${this.request.host}`
-
   this.code(code)
 
   if (clientAcceptsHtml(this.request)) {
     this.header('Content-Type', TEXT_HTML)
-    return this.send(updateSuccessPage({ ...body, base_url }))
+    return this.send(updateSuccessPage(body))
   } else {
     this.header('Content-Type', APPLICATION_JSON)
     return this.send(body)
@@ -125,7 +134,14 @@ export function defMicropubResponse<
   const { include_error_description, store, validate } = config
 
   return async function micropubResponse(this: FastifyReply, jf2: Jf2) {
-    const base_url = `${this.request.protocol}://${this.request.host}`
+    // Either passing base_url to the nunjucks template or not is fine. But if we
+    // do pass it, we need to make sure to specify 'https' when we're not on
+    // localhost, otherwise we will have mixed content errors.
+
+    // const base_url =
+    //   this.request.hostname === 'localhost'
+    //     ? `http://${this.request.host}`
+    //     : `https://${this.request.host}`
 
     if (validate) {
       let schema_id = 'unknown (TIP: set $id and title in the schema)'
@@ -150,10 +166,12 @@ export function defMicropubResponse<
           `${PREFIX}${error_description}`
         )
 
-        return this.micropubErrorResponse(INVALID_REQUEST.code, {
-          error: INVALID_REQUEST.error,
-          error_description
+        const { code, body } = invalidRequest({
+          error_description: INVALID_REQUEST.error,
+          include_error_description
         })
+
+        return this.micropubErrorResponse(code, body)
       } else {
         const message = `received valid JF2 according to schema ${schema_id}`
         this.request.log.debug(`${PREFIX}${message}`)
@@ -172,7 +190,13 @@ export function defMicropubResponse<
 
       if (clientAcceptsHtml(this.request)) {
         this.header('Content-Type', TEXT_HTML)
-        return this.send(errorPage({ ...payload, base_url }))
+        return this.view('error.njk', {
+          error: body.error,
+          error_description: body.error_description,
+          description: 'Error page',
+          title: `Error: ${body.error}`,
+          payload
+        })
       } else {
         this.header('Content-Type', APPLICATION_JSON)
         return this.send(payload)
@@ -193,7 +217,7 @@ export function defMicropubResponse<
       const title = `Post of type '${jf2.type}' created`
       if (clientAcceptsHtml(this.request)) {
         this.header('Content-Type', TEXT_HTML)
-        return this.send(successPage({ base_url, summary, title }))
+        return this.send(successPage({ summary, title }))
       } else {
         this.header('Content-Type', APPLICATION_JSON)
         return this.send({ summary, title })

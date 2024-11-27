@@ -13,11 +13,12 @@ import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 import { secondsToUTCString } from './lib/date.js'
 import { defStore } from './lib/github-store/index.js'
+import { defMediaStore } from './lib/r2-media-store/index.js'
 import type {
   ActionType as MicropubActionType,
-  ClientErrorResponseBody as MicropubClientErrorResponseBody
+  ErrorResponseBody
 } from './lib/micropub/index.js'
-import type { SuccessPageOptions } from './lib/micropub-html-responses/index.js'
+import { type SuccessPageOptions } from './lib/micropub-html-responses/index.js'
 import type { AccessTokenClaims } from './lib/token.js'
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
@@ -28,10 +29,6 @@ import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
 import revocationEndpoint from './plugins/revocation-endpoint/index.js'
 import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
-import type {
-  AuthorizationErrorResponseBody,
-  TokenErrorResponseBody
-} from './plugins/token-endpoint/error.js'
 import { tap } from './nunjucks/filters.js'
 import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
 import { defDefaultPublication } from './lib/github-store/publication.js'
@@ -51,32 +48,19 @@ declare module 'fastify' {
     noScopeResponse: (
       action: MicropubActionType,
       options?: NoScopeResponseOptions
-    ) => { code: number; body: MicropubClientErrorResponseBody }
+    ) => { code: number; body: ErrorResponseBody }
 
     noActionSupportedResponse: (
       action: MicropubActionType,
       options?: NoActionSupportedResponseOptions
-    ) => { code: number; body: MicropubClientErrorResponseBody }
+    ) => { code: number; body: ErrorResponseBody }
   }
   interface FastifyReply {
-    authorizationErrorResponse(
-      code: number,
-      body: AuthorizationErrorResponseBody
-    ): void
+    errorResponse(code: number, body: ErrorResponseBody): void
 
-    tokenErrorResponse(code: number, body: TokenErrorResponseBody): void
+    micropubErrorResponse(code: number, body: ErrorResponseBody): void
 
-    mediaErrorResponse(
-      code: number, // MicropubClientErrorStatusCode
-      body: MicropubClientErrorResponseBody
-    ): void
-
-    micropubErrorResponse(
-      code: number, // MicropubClientErrorStatusCode
-      body: MicropubClientErrorResponseBody
-    ): void
-
-    micropubDeleteSuccessResponse(code: number, body: SuccessPageOptions): void
+    micropubDeleteSuccessResponse(summary?: string): void
 
     micropubUndeleteSuccessResponse(
       code: number,
@@ -130,11 +114,12 @@ export function defFastify(config: Config) {
     include_error_description,
     log_level,
     me,
-    multipart_form_data_max_file_size,
-    report_all_ajv_errors,
+    multipart_form_data_max_file_size: multipartFormDataMaxFileSize,
+    report_all_ajv_errors: reportAllAjvErrors,
     secure_session_expiration,
     secure_session_key_one_buf,
     secure_session_key_two_buf,
+    should_media_endpoint_ignore_filename,
     soft_delete,
     syndicate_to,
     telegram_chat_id,
@@ -199,12 +184,11 @@ export function defFastify(config: Config) {
   const micropub_endpoint = `${base_url}/micropub`
   const media_endpoint = `${base_url}/media`
   const submit_endpoint = `${base_url}/submit`
-  const media_content_base_url = 'https://content.giacomodebidda.com/'
+  let media_content_base_url = 'https://content.giacomodebidda.com/'
 
   fastify.register(tokenEndpoint, {
-    algorithm: 'HS256',
-    baseUrl: base_url,
     expiration: access_token_expiration,
+    includeErrorDescription: include_error_description,
     issuer
   })
 
@@ -242,18 +226,24 @@ export function defFastify(config: Config) {
       email: 'giacomo@giacomodebidda.com'
     }
   })
-  fastify.log.info(store.info())
-  // console.table(store.info())
+
+  const mediaStore = defMediaStore({
+    account_id: cloudflare_account_id,
+    bucket_name: cloudflare_r2_bucket_name,
+    credentials: {
+      accessKeyId: cloudflare_r2_access_key_id,
+      secretAccessKey: cloudflare_r2_secret_access_key
+    },
+    ignore_filename: should_media_endpoint_ignore_filename,
+    public_base_url: media_content_base_url
+  })
 
   fastify.register(media, {
-    baseUrl: media_content_base_url,
-    cloudflareAccountId: cloudflare_account_id,
-    cloudflareR2AccessKeyId: cloudflare_r2_access_key_id,
-    cloudflareR2BucketName: cloudflare_r2_bucket_name,
-    cloudflareR2SecretAccessKey: cloudflare_r2_secret_access_key,
     includeErrorDescription: include_error_description,
     me,
-    multipartFormDataMaxFileSize: multipart_form_data_max_file_size
+    multipartFormDataMaxFileSize,
+    reportAllAjvErrors,
+    store: mediaStore
   })
 
   fastify.register(micropub, {
@@ -263,8 +253,8 @@ export function defFastify(config: Config) {
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
-    multipartFormDataMaxFileSize: multipart_form_data_max_file_size,
-    reportAllAjvErrors: report_all_ajv_errors,
+    multipartFormDataMaxFileSize,
+    reportAllAjvErrors,
     store,
     submitEndpoint: submit_endpoint,
     syndicateTo: syndicate_to,

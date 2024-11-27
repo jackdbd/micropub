@@ -1,12 +1,12 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
+import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import { unixTimestamp } from '../../lib/date.js'
+import { errorResponse } from '../../lib/fastify-decorators/reply.js'
 import {
   defDecodeJwtAndSetClaims,
   defLogIatAndExpClaims,
@@ -14,110 +14,90 @@ import {
   defValidateScope,
   defValidateAccessTokenNotBlacklisted
 } from '../../lib/fastify-hooks/index.js'
-import { NAME, DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE } from './constants.js'
-import { mediaErrorResponse } from './decorators/reply.js'
-import { defMediaPost } from './routes.js'
-// import { plugin_options, type MediaEndpointPluginOptions } from './schemas.js'
-import { plugin_options } from './schemas.js'
+import { validationErrors } from '../../lib/validators.js'
+import { micropubDeleteSuccessResponse } from '../micropub-endpoint/decorators/reply.js'
+import {
+  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_REPORT_ALL_AJV_ERRORS,
+  NAME
+} from './constants.js'
+import { defMediaGet, defMediaPost } from './routes.js'
+import { options as options_schema, type Options } from './schemas.js'
 
-export interface PluginOptions extends FastifyPluginOptions {
-  baseUrl: string
+const PREFIX = `${NAME} `
 
-  cloudflareAccountId: string
-  cloudflareR2BucketName: string
-  cloudflareR2AccessKeyId: string
-  cloudflareR2SecretAccessKey: string
-
-  /**
-   * The Micropub server MAY include a human-readable description of the error
-   * in the error_description property. This is meant to assist the Micropub
-   * client developer in understanding the error. This is NOT meant to be shown
-   * to the end user.
-   *
-   * @see https://micropub.spec.indieweb.org/#error-response
-   */
-  includeErrorDescription: boolean
-
-  /**
-   * URL of the user's website trying to authenticate using Web sign-in.
-   *
-   * See: https://indieweb.org/Web_sign-in
-   */
-  me: string
-
-  multipartFormDataMaxFileSize: number
-
-  /**
-   * https://ajv.js.org/security.html#security-risks-of-trusted-schemas
-   */
-  reportAllAjvErrors?: boolean
-}
-
-const default_options: Partial<PluginOptions> = {
+const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  reportAllAjvErrors: false
+  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
 }
 
-const mediaEndpoint: FastifyPluginCallback<PluginOptions> = (
+const mediaEndpoint: FastifyPluginCallback<Options> = (
   fastify,
   options,
   done
 ) => {
-  const config = applyToDefaults(
-    default_options,
-    options
-  ) as Required<PluginOptions>
-  // fastify.log.debug(config, `${NAME} configuration`)
-
-  const ajv = addFormats(new Ajv({ allErrors: config.reportAllAjvErrors }), [
-    'uri'
-  ])
-
-  const validatePluginOptions = ajv.compile(plugin_options)
-  validatePluginOptions(config)
-
-  if (validatePluginOptions.errors) {
-    const details = validatePluginOptions.errors.map((err) => {
-      return `${err.instancePath.slice(1)} ${err.message}`
-    })
-    throw new Error(
-      `${NAME} plugin registered using invalid options: ${details.join('; ')}`
-    )
-  }
-  fastify.log.debug(`${NAME} validated its configuration`)
-
-  // Parse application/x-www-form-urlencoded requests
-  // https://github.com/fastify/fastify-formbody/
-  fastify.register(formbody)
-  fastify.log.debug(`${NAME} registered Fastify plugin: formbody`)
-
-  // Parse multipart/form-data requests
-  // https://github.com/fastify/fastify-multipart
-  fastify.register(multipart, {
-    limits: {
-      fileSize: config.multipartFormDataMaxFileSize
-    }
-  })
-  fastify.log.debug(`${NAME} registered Fastify plugin: multipart`)
-
-  fastify.decorateReply('mediaErrorResponse', mediaErrorResponse)
-  fastify.log.debug(`${NAME} decorateReply: mediaErrorResponse`)
+  const config = applyToDefaults(defaults, options) as Required<Options>
 
   const {
-    baseUrl: base_url,
-    cloudflareAccountId: account_id,
-    cloudflareR2AccessKeyId: accessKeyId,
-    cloudflareR2BucketName: bucket_name,
-    cloudflareR2SecretAccessKey: secretAccessKey,
     includeErrorDescription: include_error_description,
-    me
+    me,
+    multipartFormDataMaxFileSize: fileSize,
+    reportAllAjvErrors: allErrors,
+    store
   } = config
 
+  const ajv = addFormats(new Ajv({ allErrors }), ['uri'])
+
+  const errors = validationErrors(ajv, options_schema, config)
+  if (errors.length > 0) {
+    throw new Error(
+      `${PREFIX}plugin registered using invalid options: ${errors.join('; ')}`
+    )
+  }
+
+  // === BEGIN plugins ====================================================== //
+  fastify.register(formbody)
+  fastify.log.debug(
+    `${PREFIX}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+  )
+
+  fastify.register(multipart, { limits: { fileSize } })
+  fastify.log.debug(
+    `${PREFIX}registered plugin: multipart (for parsing multipart/form-data)`
+  )
+  // === END plugins ======================================================== //
+
+  // === BEGIN decorators =================================================== //
+  fastify.decorateReply('errorResponse', errorResponse)
+  fastify.log.debug(`${PREFIX}decorateReply: errorResponse`)
+
+  fastify.decorateReply(
+    'micropubDeleteSuccessResponse',
+    micropubDeleteSuccessResponse
+  )
+  fastify.log.debug(`${PREFIX}decorateReply: micropubDeleteSuccessResponse`)
+  // === END decorators ===================================================== //
+
+  // === BEGIN hooks ======================================================== //
   const log_prefix = `${NAME}/hooks `
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
+  fastify.addHook('onRoute', (routeOptions) => {
+    fastify.log.debug(
+      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+    )
+  })
 
-  const logIatAndExpClaims = defLogIatAndExpClaims({ log_prefix })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
+    include_error_description,
+    log_prefix
+  })
+
+  const logIatAndExpClaims = defLogIatAndExpClaims({
+    include_error_description,
+    log_prefix
+  })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
@@ -144,14 +124,9 @@ const mediaEndpoint: FastifyPluginCallback<PluginOptions> = (
       include_error_description,
       log_prefix
     })
+  // === END hooks ========================================================== //
 
-  const s3 = new S3Client({
-    region: 'auto',
-    endpoint: `https://${account_id}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId, secretAccessKey }
-  })
-
-  const mediaPost = defMediaPost({ base_url, bucket_name, s3 })
+  fastify.get('/media', defMediaGet({ store }))
 
   fastify.post(
     '/media',
@@ -165,13 +140,17 @@ const mediaEndpoint: FastifyPluginCallback<PluginOptions> = (
         validateAccessTokenNotBlacklisted
       ]
     },
-    mediaPost
+    defMediaPost({ store, include_error_description })
   )
-  fastify.log.debug(`${NAME} route registered: POST /media`)
 
   done()
 }
 
+/**
+ * Adds a Media Endpoint to a Micropub server.
+ *
+ * @see https://www.w3.org/TR/micropub/#media-endpoint
+ */
 export default fp(mediaEndpoint, {
   fastify: '5.x',
   name: NAME,

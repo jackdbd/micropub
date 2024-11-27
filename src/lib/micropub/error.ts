@@ -6,7 +6,7 @@ export type ClientErrorType =
   | 'forbidden'
   | 'insufficient_scope'
 
-export interface ClientErrorResponseBody {
+export interface ErrorResponseBody {
   // error: ClientErrorType // too strict. Users would need to cast generic strings to this type
   error: string
   error_description?: string
@@ -16,7 +16,6 @@ export interface ClientErrorResponseBody {
  * @see https://micropub.spec.indieweb.org/#error-response
  */
 export interface ClientErrorResponse {
-  code: ClientErrorCode // too strict. Users would need to cast generic numbers to this type
-  // code: number
-  body: ClientErrorResponseBody
+  code: ClientErrorCode
+  body: ErrorResponseBody
 }

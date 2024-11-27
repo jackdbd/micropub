@@ -2,6 +2,19 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { UpdatePatch } from './actions.js'
 import type { Location } from './publication.js'
 
+export interface BaseError {
+  status_code?: number
+  status_text?: string
+  error_description?: string
+}
+
+export interface BaseValue {
+  status_code?: number
+  status_text?: string
+  summary?: string
+  payload?: any
+}
+
 export interface Failure<E> {
   error: E
   value?: undefined
@@ -36,17 +49,8 @@ export type Undelete<E, V> = (url: string) => Promise<Result<E, V>>
 
 export type Jf2ToContent = (jf2: Jf2) => string
 
-export interface BaseError {
-  status_code?: number
-  status_text?: string
-  error_description?: string
-}
-
-export interface BaseValue {
-  status_code?: number
-  status_text?: string
-  summary?: string
-  payload?: any
+export interface Info {
+  name: string
 }
 
 /**
@@ -61,9 +65,8 @@ export interface Store<
   create: Create<StoreError, StoreValue>
   delete?: Delete<StoreError, StoreValue>
   get: Get<StoreError, StoreValue>
-  info: () => string
+  info: Info
   jf2ToContent: Jf2ToContent
-  name: string
   publishedUrlToStoreLocation: (url: string) => Location
   undelete?: Undelete<StoreError, StoreValue>
   update?: Update<StoreError, StoreValue>

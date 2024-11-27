@@ -2,10 +2,10 @@ import type { RouteHandler } from 'fastify'
 import { unixTimestamp } from '../../lib/date.js'
 import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 import {
-  INVALID_REQUEST,
-  INVALID_TOKEN,
-  UNAUTHORIZED
-} from '../../lib/http-error.js'
+  invalidRequest,
+  invalidToken,
+  unauthorized
+} from '../../lib/micropub/error-responses.js'
 import * as token from '../../lib/token.js'
 import { safeDecode } from '../../lib/token.js'
 
@@ -13,8 +13,9 @@ export interface TokenPostConfig {
   algorithm: string
   authorization_endpoint: string
   expiration: string
+  include_error_description: boolean
   issuer: string
-  prefix: string
+  log_prefix: string
 }
 
 interface ResponseBodyFromAuth {
@@ -26,8 +27,14 @@ interface ResponseBodyFromAuth {
 }
 
 export const defTokenPost = (config: TokenPostConfig) => {
-  const { algorithm, authorization_endpoint, expiration, issuer, prefix } =
-    config
+  const {
+    algorithm,
+    authorization_endpoint,
+    expiration,
+    include_error_description,
+    issuer,
+    log_prefix
+  } = config
 
   const tokenPost: RouteHandler = async (request, reply) => {
     const { client_id, code, redirect_uri } =
@@ -39,12 +46,14 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (token_error) {
       const error_description = `Could not generate secret: ${token_error.message}`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.tokenErrorResponse(INVALID_REQUEST.code, {
-        error: INVALID_REQUEST.error,
-        error_description
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -60,12 +69,14 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (!authResponse.ok) {
       const error_description = `could not verify authorization code`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.authorizationErrorResponse(INVALID_REQUEST.code, {
-        error: INVALID_REQUEST.error,
-        error_description
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
     const auth_response = await authResponse.json()
@@ -73,17 +84,19 @@ export const defTokenPost = (config: TokenPostConfig) => {
     const { me, scope } = auth_response
     request.session.set('scope', scope)
     request.log.debug(
-      `${prefix}verified authorization code and stored scope in secure session`
+      `${log_prefix}verified authorization code and stored scope in secure session`
     )
 
     if (!scope) {
       const error_description = `scope not found in session`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.authorizationErrorResponse(INVALID_REQUEST.code, {
-        error: INVALID_REQUEST.error,
-        error_description
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
     const payload = { me, scope }
@@ -98,12 +111,14 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (sign_error) {
       const error_description = `could not sign token: ${sign_error.message}`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.tokenErrorResponse(INVALID_TOKEN.code, {
-        error: INVALID_TOKEN.error,
-        error_description
+      const { code, body } = invalidToken({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
     const { error: verify_error, value: verified } = await token.verify({
@@ -115,16 +130,18 @@ export const defTokenPost = (config: TokenPostConfig) => {
 
     if (verify_error) {
       const error_description = `could not verify token: ${verify_error.message}`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.tokenErrorResponse(INVALID_TOKEN.code, {
-        error: INVALID_TOKEN.error,
-        error_description
+      const { code, body } = invalidToken({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
     reply.header('Authorization', jwt)
-    request.log.debug(`${prefix}set Bearer <JWT> in Authorization header`)
+    request.log.debug(`${log_prefix}set Bearer <JWT> in Authorization header`)
 
     // https://indieauth.spec.indieweb.org/#access-token-response-p-5
 
@@ -150,45 +167,48 @@ export const defTokenPost = (config: TokenPostConfig) => {
 }
 
 export interface TokenGetConfig {
-  base_url: string
-  prefix: string
+  include_error_description: boolean
+  log_prefix: string
 }
 
 export const defTokenGet = (config: TokenGetConfig) => {
-  const { base_url, prefix } = config
+  const { include_error_description, log_prefix } = config
 
   const tokenGet: RouteHandler = async (request, reply) => {
     const jwt = request.session.get('jwt')
 
     if (!jwt) {
       const error_description = `access token not found in session`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.tokenErrorResponse(UNAUTHORIZED.code, {
-        error: UNAUTHORIZED.error,
-        error_description
+      const { code, body } = unauthorized({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
-    request.log.debug(`${prefix}access token extracted from session`)
+    request.log.debug(`${log_prefix}access token extracted from session`)
 
     const result = await safeDecode(jwt)
 
     if (result.error) {
       const error_description = `failed to decode token: ${result.error.message}`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
-      return reply.tokenErrorResponse(INVALID_TOKEN.code, {
-        error: INVALID_TOKEN.error,
-        error_description
+      const { code, body } = invalidToken({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     } else {
       const claims = result.value
-      request.log.debug(claims, `${prefix}claims decoded from access token`)
+      request.log.debug(claims, `${log_prefix}claims decoded from access token`)
 
       if (clientAcceptsHtml(request)) {
         return reply.view('token.njk', {
-          base_url,
           claims,
           description: 'IndieAuth token endpoint success page',
           jwt,

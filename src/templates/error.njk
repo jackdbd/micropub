@@ -2,6 +2,16 @@
 
 {% block content %}
 <div>
-  <p class="error">{{ message }}</p>
+  <p class="error">{{ error }}</p>
+
+  <h2>Error description</h2>
+  <p class="error_description">{{ error_description }}</p>
+
+  {% if payload %}
+  <pre>
+    <code id="error-payload">{{ payload | tap('Error payload') | dump(2) }}</code>
+  </pre>
+  {% endif %}
+
 </div>
 {% endblock %}

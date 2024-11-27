@@ -1,7 +1,7 @@
 meta {
-  name: upload photo
+  name: upload photo (jpeg)
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
@@ -11,12 +11,11 @@ post {
 }
 
 headers {
-  Content-Disposition: form-data; name="h"
-  Content-Disposition: form-data; name="content"
-  Content-Disposition: form-data; name="photo"; filename="henohenomoheji.jpeg"
+  Accept: text/html
   Content-Type: image/jpeg
-  Content-Transfer-Encoding: binary
-  ~Accept: text/html
+  ~Content-Disposition: form-data; name="h"
+  ~Content-Disposition: form-data; name="content"
+  ~Content-Transfer-Encoding: binary
 }
 
 auth:bearer {

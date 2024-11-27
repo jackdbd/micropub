@@ -1,0 +1,15 @@
+meta {
+  name: Media endpoint configuration
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/media
+  body: none
+  auth: none
+}
+
+headers {
+  ~Accept: text/html
+}

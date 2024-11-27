@@ -17,7 +17,15 @@ import type {
   BaseStoreValue,
   Store
 } from '../../lib/micropub/index.js'
-import { NAME, DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE } from './constants.js'
+import {
+  NAME,
+  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
+  DEFAULT_CODE_CHALLENGE_METHOD,
+  DEFAULT_CODE_VERIFIER_LENGTH,
+  DEFAULT_REPORT_ALL_AJV_ERRORS
+} from './constants.js'
 import {
   defMicropubResponse,
   micropubErrorResponse,
@@ -112,11 +120,12 @@ export interface PluginOptions<
 }
 
 const default_options = {
-  authorizationCallbackRoute: '/auth/callback',
-  codeChallengeMethod: 'S256',
-  codeVerifierLength: 128,
+  authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
+  codeChallengeMethod: DEFAULT_CODE_CHALLENGE_METHOD,
+  codeVerifierLength: DEFAULT_CODE_VERIFIER_LENGTH,
+  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  reportAllAjvErrors: false,
+  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS,
   syndicateTo: [] as SyndicateToItem[]
 }
 
@@ -130,12 +139,28 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const config = applyToDefaults(default_options, options) as Required<Options>
   // fastify.log.debug(config, `${NAME} configuration`)
 
+  const {
+    authorizationCallbackRoute: auth_callback,
+    baseUrl: base_url,
+    clientId: client_id,
+    includeErrorDescription: include_error_description,
+    me,
+    mediaEndpoint: media_endpoint,
+    micropubEndpoint: micropub_endpoint,
+    multipartFormDataMaxFileSize,
+    reportAllAjvErrors: allErrors,
+    store,
+    submitEndpoint,
+    syndicateTo: syndicate_to,
+    tokenEndpoint: token_endpoint
+  } = config
+
   // TODO: can I get an existing Ajv instance somehow? Should I?
   // Do NOT use allErrors in production
   // https://ajv.js.org/security.html#security-risks-of-trusted-schemas
   // We need these extra formats to fully support fluent-json-schema
   // https://github.com/ajv-validator/ajv-formats#formats
-  const ajv = addFormats(new Ajv({ allErrors: config.reportAllAjvErrors }), [
+  const ajv = addFormats(new Ajv({ allErrors }), [
     'date',
     'date-time',
     'email',
@@ -173,23 +198,10 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   // https://github.com/fastify/fastify-multipart
   fastify.register(multipart, {
     limits: {
-      fileSize: config.multipartFormDataMaxFileSize
+      fileSize: multipartFormDataMaxFileSize
     }
   })
   fastify.log.debug(`${NAME} registered Fastify plugin: multipart`)
-
-  const {
-    authorizationCallbackRoute: auth_callback,
-    baseUrl: base_url,
-    clientId: client_id,
-    includeErrorDescription: include_error_description,
-    me,
-    mediaEndpoint: media_endpoint,
-    micropubEndpoint: micropub_endpoint,
-    store,
-    syndicateTo: syndicate_to,
-    tokenEndpoint: token_endpoint
-  } = config
 
   // === BEGIN apply decorators ============================================= //
   fastify.decorateReply('micropubErrorResponse', micropubErrorResponse)
@@ -334,7 +346,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   )
   fastify.log.debug(`${NAME} route registered: GET ${auth_callback}`)
 
-  fastify.get('/editor', defEditor({ submit_endpoint: config.submitEndpoint }))
+  fastify.get('/editor', defEditor({ submit_endpoint: submitEndpoint }))
   fastify.log.debug(`${NAME} route registered: GET /editor`)
 
   const micropubGet = defMicropubGet({ media_endpoint, syndicate_to })

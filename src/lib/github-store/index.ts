@@ -22,6 +22,7 @@ import type {
   Store,
   StoreCreate,
   StoreGet,
+  StoreInfo,
   StoreUpdate,
   StoreDelete,
   StoreUndelete,
@@ -58,9 +59,7 @@ export interface Config {
 
 export interface GitHubStoreError extends BaseStoreError {}
 
-export interface GitHubStoreValue extends BaseStoreValue {
-  message?: string
-}
+export interface GitHubStoreValue extends BaseStoreValue {}
 
 const store_defaults: Partial<Config> = {
   branch: REF,
@@ -94,31 +93,30 @@ export const defStore = (
 
   const author = config.author || committer
 
-  const name = `GitHub repository ${owner}/${repo}`
+  const info: StoreInfo = {
+    name: `GitHub repository ${owner}/${repo}`
+    // const entries = Object.entries(publication.items).map(([key, item]) => {
+    //   const loc = item.location
+    //   return {
+    //     key,
+    //     store: loc.store,
+    //     store_deleted: loc.store_deleted,
+    //     website: loc.website
+    //   }
+    // })
 
-  const info = () => {
-    const entries = Object.entries(publication.items).map(([key, item]) => {
-      const loc = item.location
-      return {
-        key,
-        store: loc.store,
-        store_deleted: loc.store_deleted,
-        website: loc.website
-      }
-    })
+    // // return entries // for console.table
 
-    // return entries // for console.table
-
-    const xs = [
-      `=== GitHub store info ===`,
-      `Name: ${name}`,
-      `Publications:`,
-      JSON.stringify(entries, null, 2),
-      `Posts will be committed by ${committer.name} on branch ${branch}`,
-      `Posts will be authored by ${author.name}`,
-      `=== END OF STORE INFO ===`
-    ]
-    return xs.join('\n')
+    // const xs = [
+    //   `=== GitHub store info ===`,
+    //   `Name: ${name}`,
+    //   `Publications:`,
+    //   JSON.stringify(entries, null, 2),
+    //   `Posts will be committed by ${committer.name} on branch ${branch}`,
+    //   `Posts will be authored by ${author.name}`,
+    //   `=== END OF STORE INFO ===`
+    // ]
+    // return xs.join('\n')
   }
 
   const update: StoreUpdate<GitHubStoreError, GitHubStoreValue> = async (
@@ -413,7 +411,6 @@ export const defStore = (
     get,
     jf2ToContent,
     info,
-    name,
     publishedUrlToStoreLocation,
     undelete: store_cfg.soft_delete ? undelete : undefined,
     update

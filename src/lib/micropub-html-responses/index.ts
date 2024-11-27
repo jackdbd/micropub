@@ -1,41 +1,3 @@
-// import { UpdatePatch } from '../micropub/index.js'
-
-export interface ErrorPageOptions {
-  base_url: string
-  error?: string
-  error_description?: string
-}
-
-export const errorPage = (options: ErrorPageOptions) => {
-  const { base_url } = options
-
-  const title = options.error ? `Error: ${options.error}` : 'Error'
-
-  const layout_css_href = `${base_url}/styles/layout.css`
-
-  const details = options.error_description
-    ? [`<h2>Error description</h2>`, `<p>${options.error_description}</p>`]
-    : []
-
-  const xs = [
-    `<!doctype html>`,
-    `<html lang="en">`,
-    `<head>`,
-    `<meta charset="utf-8">`,
-    `<title>${title}</title>`,
-    `<link rel="stylesheet" href="https://unpkg.com/mvp.css"> `,
-    `<link rel="stylesheet" href=${layout_css_href}>`,
-    `</head>`,
-    `<body>`,
-    `<h1>${title}</h1>`,
-    `<p>Your request was not successful.</p>`,
-    details.join(''),
-    `</body>`,
-    `</html>`
-  ]
-  return xs.join('')
-}
-
 export interface SuccessPageOptions {
   base_url?: string
   title?: string
@@ -43,20 +5,18 @@ export interface SuccessPageOptions {
   payload?: any
 }
 
-export const successPage = (options: SuccessPageOptions) => {
-  console.log(
-    '=== successPage options (TODO: check base_url in production) ===',
-    options
-  )
-  const { base_url } = options
-  const layout_css_href = `${base_url}/styles/layout.css`
-  const summary = options.summary || 'Your request was successful.'
-  const title = options.title || 'Success'
+export const successPage = (options?: SuccessPageOptions) => {
+  const opt = options || {}
+  const base_url = opt.base_url || ''
+  const summary = opt.summary || 'Your request was successful.'
+  const title = opt.title || 'Success'
 
-  const payload = options.payload
+  const layout_css_href = `${base_url}/styles/layout.css`
+
+  const payload = opt.payload
     ? [
         `<h2>Payload</h2>`,
-        `<pre><code>${JSON.stringify(options.payload, null, 2)}</code></pre>`
+        `<pre><code>${JSON.stringify(opt.payload, null, 2)}</code></pre>`
       ]
     : []
 

@@ -1,13 +1,17 @@
 meta {
-  name: upload audio
+  name: delete file
   type: http
-  seq: 2
+  seq: 4
 }
 
 post {
   url: {{base_url}}/media
-  body: multipartForm
+  body: formUrlEncoded
   auth: bearer
+}
+
+headers {
+  Accept: text/html
 }
 
 auth:bearer {
@@ -22,6 +26,11 @@ body:json {
   }
 }
 
+body:form-urlencoded {
+  action: delete
+  url: https://content.giacomodebidda.com/media/866-200x300.jpg
+}
+
 body:multipart-form {
-  : @file(/home/jack/repos/micropub/assets/audio/example_700KB.mp3)
+  : @file()
 }
