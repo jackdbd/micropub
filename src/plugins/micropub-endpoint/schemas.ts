@@ -5,9 +5,44 @@ import {
   h_entry,
   h_event
 } from '../../lib/microformats2/index.js'
-import { DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE } from './constants.js'
+import {
+  DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
+  DEFAULT_CODE_CHALLENGE_METHOD,
+  DEFAULT_CODE_VERIFIER_LENGTH,
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
+  DEFAULT_REPORT_ALL_AJV_ERRORS
+} from './constants.js'
 
-export const plugin_options = Type.Object(
+const service = Type.Object({
+  name: Type.String(),
+  url: Type.String(),
+  photo: Type.Optional(Type.String())
+})
+
+const user = Type.Object({
+  name: Type.String(),
+  url: Type.String(),
+  photo: Type.Optional(Type.String())
+})
+
+const syndicate_to_item = Type.Object({
+  uid: Type.String(),
+  name: Type.String(),
+  service: Type.Optional(service),
+  user: Type.Optional(user)
+})
+
+const store = Type.Object({
+  create: Type.Any(),
+  delete: Type.Optional(Type.Any()),
+  get: Type.Any(),
+  info: Type.Any(),
+  jf2ToContent: Type.Any(),
+  publishedUrlToStoreLocation: Type.Any()
+})
+
+export const options = Type.Object(
   {
     authorizationEndpoint: Type.Optional(
       Type.String({
@@ -18,11 +53,45 @@ export const plugin_options = Type.Object(
       })
     ),
 
+    authorizationCallbackRoute: Type.Optional(
+      Type.String({ default: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE })
+    ),
+
+    baseUrl: Type.String(),
+
+    clientId: Type.String(),
+
+    codeChallengeMethod: Type.Optional(
+      Type.String({ default: DEFAULT_CODE_CHALLENGE_METHOD })
+    ),
+
+    codeVerifierLength: Type.Optional(
+      Type.Number({ default: DEFAULT_CODE_VERIFIER_LENGTH })
+    ),
+
+    includeErrorDescription: Type.Optional(
+      Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
+    ),
+
     me: Type.String({
       format: 'uri',
       title: 'me',
       description: `URL of the user's website trying to authenticate using Web sign-in.`
     }),
+
+    mediaEndpoint: Type.Optional(
+      Type.String({
+        format: 'uri',
+        title: 'media endpoint'
+      })
+    ),
+
+    micropubEndpoint: Type.Optional(
+      Type.String({
+        format: 'uri',
+        title: 'micropub endpoint'
+      })
+    ),
 
     multipartFormDataMaxFileSize: Type.Optional(
       Type.Number({
@@ -32,6 +101,21 @@ export const plugin_options = Type.Object(
         minimum: 0
       })
     ),
+
+    reportAllAjvErrors: Type.Optional(
+      Type.Boolean({ default: DEFAULT_REPORT_ALL_AJV_ERRORS })
+    ),
+
+    store,
+
+    submitEndpoint: Type.Optional(
+      Type.String({
+        format: 'uri',
+        title: 'submit endpoint'
+      })
+    ),
+
+    syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
 
     tokenEndpoint: Type.Optional(
       Type.String({
@@ -49,7 +133,7 @@ export const plugin_options = Type.Object(
   }
 )
 
-export type MicropubEndpointPluginOptions = Static<typeof plugin_options>
+export type Options = Static<typeof options>
 
 export const micropub_get_request = Type.Object(
   { query: Type.Object({ q: Type.String() }) },

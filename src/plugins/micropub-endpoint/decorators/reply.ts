@@ -1,13 +1,13 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { ValidateFunction } from 'ajv'
 import type { FastifyReply } from 'fastify'
+
 import { APPLICATION_JSON, TEXT_HTML } from '../../../lib/content-type.js'
 import { clientAcceptsHtml } from '../../../lib/fastify-request-predicates/index.js'
 import { INVALID_REQUEST } from '../../../lib/http-error.js'
 import type {
   BaseStoreError,
   BaseStoreValue,
-  ErrorResponseBody,
   Store
 } from '../../../lib/micropub/index.js'
 import { invalidRequest } from '../../../lib/micropub/error-responses.js'
@@ -18,6 +18,7 @@ import {
   successPage,
   type SuccessPageOptions
 } from '../../../lib/micropub-html-responses/index.js'
+
 import { NAME } from '../constants.js'
 import {
   storeErrorToMicropubError,
@@ -33,36 +34,6 @@ const DEFAULT_PUBLISHED_LOCATION = 'https://giacomodebidda.com/'
 
 // TODO: add links to Micropub docs in HTML responses
 // https://micropub.spec.indieweb.org/#error-response
-
-export function micropubErrorResponse(
-  this: FastifyReply,
-  code: number,
-  body: ErrorResponseBody
-) {
-  // Either passing base_url to the nunjucks template or not is fine. But if we
-  // do pass it, we need to make sure to specify 'https' when we're not on
-  // localhost, otherwise we will have mixed content errors.
-
-  // const base_url =
-  //   this.request.hostname === 'localhost'
-  //     ? `http://${this.request.host}`
-  //     : `https://${this.request.host}`
-
-  this.code(code)
-
-  if (clientAcceptsHtml(this.request)) {
-    this.header('Content-Type', TEXT_HTML)
-    return this.view('error.njk', {
-      error: body.error,
-      error_description: body.error_description,
-      description: 'Error page',
-      title: `Error: ${body.error}`
-    })
-  } else {
-    this.header('Content-Type', APPLICATION_JSON)
-    return this.send(body)
-  }
-}
 
 export function micropubDeleteSuccessResponse(
   this: FastifyReply,
@@ -171,7 +142,7 @@ export function defMicropubResponse<
           include_error_description
         })
 
-        return this.micropubErrorResponse(code, body)
+        return this.errorResponse(code, body)
       } else {
         const message = `received valid JF2 according to schema ${schema_id}`
         this.request.log.debug(`${PREFIX}${message}`)
@@ -204,9 +175,6 @@ export function defMicropubResponse<
     } else {
       const { code, summary } = storeValueToMicropubValue(result.value)
       this.request.log.debug(`${PREFIX}${summary}`)
-
-      console.log('=== TODO: syndicate ===')
-      // const messages = await syndicate(jf2)
 
       const published_location = DEFAULT_PUBLISHED_LOCATION
 

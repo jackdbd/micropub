@@ -32,6 +32,14 @@ export const isCite = (jf2: Jf2) => {
   }
 }
 
+export const isEntry = (jf2: Jf2) => {
+  if (jf2.type === 'entry') {
+    return true
+  } else {
+    return false
+  }
+}
+
 export const isEvent = (jf2: Jf2) => {
   if (jf2.type === 'event') {
     return true
@@ -48,13 +56,13 @@ export const isLike = (jf2: Jf2) => {
   }
 }
 
-// export const isNote = (jf2: Jf2) => {
-//   if (jf2.content) {
-//     return true
-//   } else {
-//     return false
-//   }
-// }
+export const isNote = (jf2: Jf2) => {
+  if (isEntry(jf2) && jf2.content) {
+    return true
+  } else {
+    return false
+  }
+}
 
 export const isReply = (jf2: Jf2) => {
   if (jf2['in-reply-to']) {

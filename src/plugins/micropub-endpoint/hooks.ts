@@ -1,7 +1,12 @@
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
-import { INSUFFICIENT_SCOPE, INVALID_REQUEST } from '../../lib/http-error.js'
+
 import type { ActionType } from '../../lib/micropub/index.js'
+import {
+  insufficientScope,
+  invalidRequest
+} from '../../lib/micropub/error-responses.js'
+
 import { NAME } from './constants.js'
 import { micropub_get_request } from './schemas.js'
 
@@ -13,10 +18,11 @@ export interface ValidateAccessTokenConfig {
 
 export interface ValidateGetConfig {
   ajv: Ajv
+  include_error_description: boolean
 }
 
 export const defValidateGetRequest = (config: ValidateGetConfig) => {
-  const { ajv } = config
+  const { ajv, include_error_description } = config
   const validate = ajv.compile(micropub_get_request)
 
   const validateGetRequest: onRequestHookHandler = (request, reply, done) => {
@@ -31,10 +37,12 @@ export const defValidateGetRequest = (config: ValidateGetConfig) => {
         .join('; ')
       request.log.warn(`${PREFIX}${error_description}`)
 
-      return reply.micropubErrorResponse(INVALID_REQUEST.code, {
-        error: INVALID_REQUEST.error,
-        error_description
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
       })
+
+      return reply.errorResponse(code, body)
     }
 
     done()
@@ -62,13 +70,12 @@ export const defEnsureRequestHasScope = (config: {
       const error_description = `action '${action}' not allowed, since access token has no scope '${action}'`
       request.log.warn(`${PREFIX}${error_description}`)
 
-      const error = INSUFFICIENT_SCOPE.error
+      const { code, body } = insufficientScope({
+        error_description,
+        include_error_description
+      })
 
-      const body = include_error_description
-        ? { error, error_description }
-        : { error }
-
-      return reply.micropubErrorResponse(INSUFFICIENT_SCOPE.code, body)
+      return reply.errorResponse(code, body)
     }
 
     return done()

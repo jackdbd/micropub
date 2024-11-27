@@ -108,6 +108,7 @@ export const defMediaPost = (config: MediaPostConfig) => {
     let data: MultipartFile | undefined
     try {
       data = await request.file()
+      // request.log.warn({ data }, '====== INCOMING DATA ======')
     } catch (err: any) {
       const error_description = err.message
       request.log.warn(`${PREFIX}${error_description}`)

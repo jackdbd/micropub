@@ -57,6 +57,14 @@ export const defDefaultPublication = (config: Config): Publication => {
           website: `${base_url}/likes/`
         }
       },
+      note: {
+        predicate: { store: spred.isNote, website: wpred.isNote },
+        location: {
+          store: `notes/`,
+          store_deleted: 'deleted/notes/',
+          website: `${base_url}/notes/`
+        }
+      },
       reply: {
         predicate: { store: spred.isReply, website: wpred.isReply },
         location: {

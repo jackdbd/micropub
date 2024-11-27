@@ -5,9 +5,13 @@ meta {
 }
 
 post {
-  url: {{base_url}}/micropub
+  url: locationlocation{{base_url}}/micropub
   body: multipartForm
   auth: bearer
+}
+
+headers {
+  Accept: text/html
 }
 
 auth:bearer {

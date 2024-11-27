@@ -26,7 +26,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
         include_error_description
       })
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     const op = assertion.op || '=='
@@ -57,7 +57,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         } else {
           return done()
         }
@@ -73,7 +73,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         } else {
           return done()
         }
@@ -89,7 +89,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         } else {
           return done()
         }
@@ -105,7 +105,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         } else {
           return done()
         }
@@ -121,7 +121,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         } else {
           return done()
         }
@@ -137,7 +137,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         } else {
           return done()
         }

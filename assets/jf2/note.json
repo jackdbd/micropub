@@ -1,0 +1,9 @@
+{
+  "content": {
+    "html": "<p>Hello <b>world</b></p>",
+    "text": "Hello world"
+  },
+  "category": ["jawbone", "quantifiedself", "api"],
+  "mp-syndicate-to": "https://myfavoritesocialnetwork.example/aaronpk",
+  "type": "entry"
+}

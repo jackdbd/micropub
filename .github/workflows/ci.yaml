@@ -51,12 +51,14 @@ jobs:
           GITHUB_OWNER: jackdbd
           GITHUB_REPO: giacomodebidda-content
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_ENV: test
+          PINO_LOG_LEVEL: warn
           PORT: 3000
           SECURE_SESSION_KEY_ONE: ${{ secrets.SECURE_SESSION_KEY_ONE }}
           SECURE_SESSION_KEY_TWO: ${{ secrets.SECURE_SESSION_KEY_TWO }}
           TELEGRAM_CHAT_ID: ${{ fromJSON(secrets.TELEGRAM).chat_id }}
           TELEGRAM_TOKEN: ${{ fromJSON(secrets.TELEGRAM).token }}
-        run: npm run test
+        run: node --test
 
       - uses: superfly/flyctl-actions/setup-flyctl@1
 

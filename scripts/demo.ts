@@ -65,7 +65,10 @@ const main = async () => {
     selectPostsByCity
   } = preparedStatements(db)
 
-  const json = fs.readFileSync(path.join(assets_dir, 'note.json'), 'utf8')
+  const json = fs.readFileSync(
+    path.join(assets_dir, 'jf2', 'note.json'),
+    'utf8'
+  )
   let result = createPost.run({ json })
   const id = result.lastInsertRowid
 

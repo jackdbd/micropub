@@ -1,0 +1,31 @@
+meta {
+  name: upload video (webm)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/media
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "h": "card",
+    "name": "Giacomo Debidda",
+    "job-title": "developer"
+  }
+}
+
+body:multipart-form {
+  : @file(/home/jack/repos/micropub/assets/video/file_example_WEBM_480_900KB.webm)
+}

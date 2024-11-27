@@ -46,7 +46,8 @@ const syndicate_to: SyndicateToItem[] = [
   }
 ]
 
-const should_media_endpoint_ignore_filename = true
+const should_media_endpoint_ignore_filename = false
+// const should_media_endpoint_ignore_filename = true
 
 export interface Config {
   access_token_expiration: string

@@ -17,6 +17,8 @@ export const isEvent = (url: string) => is({ url, key: 'events' })
 
 export const isLike = (url: string) => is({ url, key: 'likes' })
 
+export const isNote = (url: string) => is({ url, key: 'notes' })
+
 export const isReply = (url: string) => is({ url, key: 'replies' })
 
 export const isRepost = (url: string) => is({ url, key: 'reposts' })

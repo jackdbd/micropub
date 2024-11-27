@@ -58,8 +58,6 @@ declare module 'fastify' {
   interface FastifyReply {
     errorResponse(code: number, body: ErrorResponseBody): void
 
-    micropubErrorResponse(code: number, body: ErrorResponseBody): void
-
     micropubDeleteSuccessResponse(summary?: string): void
 
     micropubUndeleteSuccessResponse(

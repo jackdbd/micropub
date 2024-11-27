@@ -4,6 +4,7 @@ import Ajv from 'ajv'
 import stringify from 'fast-safe-stringify'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import formAutoContent from 'form-auto-content'
+
 import { nowUTC } from '../../lib/date.js'
 import {
   areSameOrigin,
@@ -22,6 +23,7 @@ import {
   invalidRequest,
   unauthorized
 } from '../../lib/micropub/error-responses.js'
+
 import { NAME } from './constants.js'
 import type { PostRequestBody } from './request.js'
 import {
@@ -403,65 +405,76 @@ export const defMicropubPost = <
             `${PREFIX}received file ${part.filename}. Passing the request to the /media endpoint`
           )
 
-          // const buf = await part.toBuffer()
-
-          // I'm not sure I'm passing all the required form fields.
-          const form = formAutoContent(
-            {
-              // This doesn't work
-              // fields: { file: part.file, filename: part.filename }
-
-              file: part.file,
-              // file: buf,
-              filename: part.filename
-            },
-            { forceMultiPart: true }
-          )
-
-          // TODO: only if the media endpoint is on this same server we can
-          // inject the request.
-
           // let response: LightMyRequestResponse | Response
-
-          const response = await request.server.inject({
-            url: media_endpoint,
-            method: 'POST',
-            headers: {
-              ...form.headers,
-              authorization: request.headers.authorization
-            },
-            payload: form.payload
-          })
-
+          let location: string | undefined = undefined
           if (areSameOrigin(micropub_endpoint, media_endpoint)) {
             request.log.debug(
-              `${PREFIX}make request to local media endpoint ${media_endpoint} (inject)`
+              `${PREFIX}make request to LOCAL media endpoint ${media_endpoint} (inject)`
             )
+
+            // I find this quite clanky to use...
+            const form = formAutoContent(
+              {
+                file: {
+                  value: part.file,
+                  options: {
+                    filename: part.filename,
+                    contentType: part.mimetype
+                  }
+                }
+              },
+              { forceMultiPart: true }
+            )
+
+            const response = await request.server.inject({
+              url: media_endpoint,
+              method: 'POST',
+              headers: {
+                ...form.headers,
+                authorization: request.headers.authorization
+              },
+              payload: form.payload
+            })
+
+            if (response.headers.location) {
+              location = response.headers.location.toString()
+            }
           } else {
             request.log.debug(
-              `${PREFIX}make request to remote media endpoint ${media_endpoint} (fetch)`
+              `${PREFIX}make request to REMOTE media endpoint ${media_endpoint} (fetch)`
             )
+
+            const form = formAutoContent(
+              {
+                file: {
+                  value: part.file,
+                  options: {
+                    filename: part.filename,
+                    contentType: part.mimetype
+                  }
+                }
+              },
+              { forceMultiPart: true }
+            )
+
+            // I am afraid this fetch is not correct
+            const response = await fetch(media_endpoint, {
+              method: 'POST',
+              headers: {
+                ...form.headers,
+                Authorization: request.headers.authorization!
+                // 'Content-Disposition': `form-data; name="${part.fieldname}"; filename="${part.filename}"`,
+                // 'Content-Type': 'multipart/form-data'
+              },
+              body: await part.toBuffer()
+            })
+
+            location = response.headers.get('location') || undefined
           }
 
-          // This doesn't work. The media endpoint receives a request that has
-          // no data. TODO: How should I pass the body?
-          // const response = await fetch(media_endpoint, {
-          //   method: 'POST',
-          //   headers: new Headers({
-          //     ...form.headers,
-          //     authorization: request.headers.authorization!
-          //   }),
-          //   body: form.payload as any
-          // })
-
           request.log.debug(
-            response.headers,
-            `${PREFIX}response headers from media endpoint`
+            `${PREFIX} file location got from media endpoint: ${location}`
           )
-
-          // console.log('=== response body from media endpoint ===')
-          // const response_body = response.json()
-          // console.log(response_body)
 
           // I could create a photos array:
           // 1. collect the photo alt text when part.type === 'field'. Maybe use
@@ -476,10 +489,10 @@ export const defMicropubPost = <
 
           // data.photo = response.headers.location
 
-          data.photo = {
-            alt: 'TODO: where to get the alternate text? Maybe use mp-photo-alt',
-            url: response.headers.location
-          }
+          // data.photo = {
+          //   alt: 'TODO: where to get the alternate text?',
+          //   url: location
+          // }
         }
       }
       request_body = data
@@ -494,14 +507,13 @@ export const defMicropubPost = <
       })
       request.log.warn(`${PREFIX}${body.error}: ${body.error_description}`)
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     // Micropub requests from Quill include an access token in the body.
-    // I think it's not a Quill issue. I think it's due to the Fastify formbody
-    // plugin.
-    // Obviously, we don't want the access token to appear in any published
-    // content, so we need to remove it.
+    // I think it's not a Quill issue. I think it's due to how the Fastify
+    // formbody plugin works. Obviously we don't want the access token to appear
+    // in any published content, so we need to remove it.
     const { access_token: _, url, h, ...rest } = request_body
 
     // I couldn't find it in the Micropub specs, but the default action is 'create'
@@ -528,7 +540,7 @@ export const defMicropubPost = <
           include_error_description
         })
 
-        return reply.micropubErrorResponse(code, body)
+        return reply.errorResponse(code, body)
       } else {
         jf2 = { ...value, date: nowUTC() }
         post_type = jf2.type
@@ -552,14 +564,14 @@ export const defMicropubPost = <
       const { code, body } = request.noActionSupportedResponse(action, {
         include_error_description
       })
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     if (!request.hasScope(action)) {
       const { code, body } = request.noScopeResponse(action, {
         include_error_description
       })
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     if (url) {
@@ -572,7 +584,7 @@ export const defMicropubPost = <
             request.log.error(
               `${PREFIX}${body.error}: ${body.error_description}`
             )
-            return reply.micropubErrorResponse(code, body)
+            return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { summary } = value
@@ -589,7 +601,7 @@ export const defMicropubPost = <
             request.log.error(
               `${PREFIX}${body.error}: ${body.error_description}`
             )
-            return reply.micropubErrorResponse(code, body)
+            return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, summary } = value
@@ -607,7 +619,7 @@ export const defMicropubPost = <
             request.log.error(
               `${PREFIX}${body.error}: ${body.error_description}`
             )
-            return reply.micropubErrorResponse(code, body)
+            return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, payload, summary } = value
@@ -639,7 +651,7 @@ export const defMicropubPost = <
             include_error_description
           })
 
-          return reply.micropubErrorResponse(code, body)
+          return reply.errorResponse(code, body)
         }
       }
     }
@@ -672,7 +684,7 @@ export const defMicropubPost = <
           include_error_description
         })
 
-        return reply.micropubErrorResponse(code, body)
+        return reply.errorResponse(code, body)
       }
     }
   }

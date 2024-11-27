@@ -34,7 +34,7 @@ export const defValidateScope = (options?: Options) => {
 
     if (error) {
       const { code, body } = error
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     return done()

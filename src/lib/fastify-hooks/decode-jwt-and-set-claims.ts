@@ -32,7 +32,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
         include_error_description
       })
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     // The value of a request header can be an array. This typically happens
@@ -47,7 +47,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
         include_error_description
       })
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     const splits = hval.split(' ')
@@ -61,7 +61,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
         include_error_description
       })
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     const jwt = splits.at(1)
@@ -75,7 +75,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
         include_error_description
       })
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     let claims: AccessTokenClaims
@@ -90,7 +90,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
         include_error_description
       })
 
-      return reply.micropubErrorResponse(code, body)
+      return reply.errorResponse(code, body)
     }
 
     request.requestContext.set('access_token_claims', claims)
