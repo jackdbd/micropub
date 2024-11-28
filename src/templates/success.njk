@@ -1,0 +1,14 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<div>
+  <p class="success">{{ summary }}</p>
+
+  {% if payload %}
+  <pre>
+    <code id="success-payload">{{ payload | tap('Success payload') | dump(2) }}</code>
+  </pre>
+  {% endif %}
+
+</div>
+{% endblock %}

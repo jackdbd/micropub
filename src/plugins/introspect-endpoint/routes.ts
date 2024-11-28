@@ -1,5 +1,5 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import { INVALID_REQUEST, INVALID_TOKEN } from '../../lib/http-error.js'
+import { invalidRequest, invalidToken } from '../../lib/micropub/index.js'
 import { isExpired, isBlacklisted, safeDecode } from '../../lib/token.js'
 import { NAME } from './constants.js'
 
@@ -7,6 +7,7 @@ const PREFIX = `${NAME}/routes `
 
 export interface IntrospectConfig {
   client_id: string
+  include_error_description: boolean
 }
 
 interface RequestBody {
@@ -21,16 +22,23 @@ interface RouteGeneric extends RouteGenericInterface {
  * https://indieauth.spec.indieweb.org/#access-token-verification
  */
 export const defIntrospect = (config: IntrospectConfig) => {
-  const { client_id } = config
+  const { client_id, include_error_description } = config
 
   const introspect: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
-      const error_description = 'missing request body'
+      const error_description = 'Request has no body'
       request.log.warn(`${PREFIX}${error_description}`)
 
-      return reply
-        .code(INVALID_REQUEST.code)
-        .send({ error: INVALID_REQUEST.error, error_description })
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        description: 'Introspection endpoint error page',
+        title: 'Invalid request'
+      })
     }
 
     const { token } = request.body
@@ -39,16 +47,22 @@ export const defIntrospect = (config: IntrospectConfig) => {
       const error_description = 'The `token` parameter is missing'
       request.log.warn(`${PREFIX}${error_description}`)
 
-      return reply
-        .code(INVALID_TOKEN.code)
-        .send({ error: INVALID_TOKEN.error, error_description })
+      const { code, body } = invalidToken({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Invalid token',
+        description: 'Introspection endpoint error page'
+      })
     }
 
     const blacklisted = await isBlacklisted({ jwt: token })
-    // Should I tell the client that the token is expired or blacklisted?
-    // Probably not.
-    // Should I log whether the token is expired or blacklisted?
-    // Probably yes.
+    // Should I tell the client that the token has expired or has been
+    // blacklisted? Probably not.
+    // Should I log whether the token is expired or blacklisted? Probably yes.
 
     const result = await safeDecode(token)
 
@@ -56,11 +70,15 @@ export const defIntrospect = (config: IntrospectConfig) => {
       const error_description = result.error.message
       request.log.warn(`${PREFIX}${error_description}`)
 
-      // support content-type JSON and HTML
+      const { code, body } = invalidToken({
+        error_description,
+        include_error_description
+      })
 
-      return reply.code(INVALID_TOKEN.code).send({
-        error: INVALID_TOKEN.error,
-        error_description
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Invalid token',
+        description: 'Introspection endpoint error page'
       })
     } else {
       const claims = result.value
@@ -70,10 +88,10 @@ export const defIntrospect = (config: IntrospectConfig) => {
       // be a string...
       const active = !expired && !blacklisted ? 'true' : 'false'
 
-      return reply.send({
-        ...claims,
-        active,
-        client_id
+      return reply.successResponse(200, {
+        title: 'Token introspection',
+        summary: `Client ID: ${client_id} (Active: ${active})`,
+        payload: claims
       })
     }
   }

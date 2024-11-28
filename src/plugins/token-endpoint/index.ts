@@ -2,7 +2,7 @@ import formbody from '@fastify/formbody'
 import { applyToDefaults } from '@hapi/hoek'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
-import { errorResponse } from '../../lib/fastify-decorators/reply.js'
+import responseDecorators from '../response-decorators/index.js'
 import {
   DEFAULT_ACCESS_TOKEN_EXPIRATION,
   DEFAULT_ALGORITHM,
@@ -49,12 +49,12 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
   fastify.register(formbody)
   fastify.log.debug(`${PREFIX}registered Fastify plugin: formbody`)
 
+  fastify.register(responseDecorators)
+  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
+
   // === DECORATORS ========================================================= //
-  fastify.decorateReply('errorResponse', errorResponse)
-  fastify.log.debug(`${PREFIX}decorateReply: errorResponse`)
 
   // === HOOKS ============================================================== //
-
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
       `${PREFIX}registered route ${routeOptions.method} ${routeOptions.url}`

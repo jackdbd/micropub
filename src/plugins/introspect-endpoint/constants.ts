@@ -1,1 +1,1 @@
-export const NAME = '@jackdbd/fastify-indieauth-introspection-endpoint'
+export const NAME = '@jackdbd/fastify-introspection-endpoint'

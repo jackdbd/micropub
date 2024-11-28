@@ -6,6 +6,15 @@ export type {
   ErrorResponseBody
 } from './error.js'
 
+export {
+  forbidden,
+  insufficientScope,
+  invalidRequest,
+  invalidToken,
+  serverError,
+  unauthorized
+} from './error-responses.js'
+
 export type {
   Location as PublicationLocation,
   Publication

@@ -1,5 +1,6 @@
 import type { RouteHandler } from 'fastify'
-import { codeChallenge, codeVerifier } from './utils.js'
+import { codeChallenge } from './code-challenge.js'
+import { codeVerifier } from './code-verifier.js'
 
 export interface LoginConfig {
   authorization_endpoint: string
@@ -26,15 +27,13 @@ export const defLogin = (config: LoginConfig) => {
     const state = reply.generateCsrf()
     request.session.set('state', state)
     request.log.debug(
-      `${prefix}generated state (CSRF token) and set it in secure session`
+      `${prefix}generated state (CSRF token) and set it in session`
     )
 
     const code_verifier = codeVerifier({ len })
     request.log.debug(`${prefix}generated code_verifier of ${len} characters`)
     request.session.set('code_verifier', code_verifier)
-    request.log.debug(
-      `${prefix}generated code_verifier and set it in secure session`
-    )
+    request.log.debug(`${prefix}generated code_verifier and set it in session`)
 
     const code_challenge = codeChallenge({
       code_challenge_method,
@@ -43,7 +42,7 @@ export const defLogin = (config: LoginConfig) => {
 
     request.session.set('code_challenge', code_challenge)
     request.log.debug(
-      `${prefix}generated ${code_challenge_method} code_challenge (PKCE) and set it in secure session`
+      `${prefix}generated ${code_challenge_method} code_challenge (PKCE) and set it in session`
     )
 
     return reply.view('login.njk', {

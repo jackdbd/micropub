@@ -7,7 +7,6 @@ import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 
 import { unixTimestamp } from '../../lib/date.js'
-import { errorResponse } from '../../lib/fastify-decorators/reply.js'
 import {
   defDecodeJwtAndSetClaims,
   defLogIatAndExpClaims,
@@ -15,6 +14,8 @@ import {
   defValidateAccessTokenNotBlacklisted
 } from '../../lib/fastify-hooks/index.js'
 import { validationErrors } from '../../lib/validators.js'
+
+import responseDecorators from '../response-decorators/index.js'
 
 import {
   NAME,
@@ -25,12 +26,7 @@ import {
   DEFAULT_CODE_VERIFIER_LENGTH,
   DEFAULT_REPORT_ALL_AJV_ERRORS
 } from './constants.js'
-import {
-  defMicropubResponse,
-  micropubDeleteSuccessResponse,
-  micropubUndeleteSuccessResponse,
-  micropubUpdateSuccessResponse
-} from './decorators/reply.js'
+import { defMicropubResponse } from './decorators/reply.js'
 import {
   hasScope,
   noActionSupportedResponse,
@@ -54,8 +50,6 @@ import {
 } from './schemas.js'
 import type { SyndicateToItem } from './syndication.js'
 import { defValidateJf2 } from './validate-jf2.js'
-
-const PREFIX = `${NAME} `
 
 const defaults: Partial<Options> = {
   authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
@@ -115,14 +109,15 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const errors = validationErrors(ajv, options_schema, config)
   if (errors.length > 0) {
     throw new Error(
-      `${PREFIX}plugin registered using invalid options: ${errors.join('; ')}`
+      `${NAME} plugin registered using invalid options: ${errors.join('; ')}`
     )
   }
 
-  // === PLUGIN ============================================================= //
+  // === PLUGINS ============================================================ //
+  const prefix_plugins = `${NAME}/plugins `
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
-  fastify.log.debug(`${NAME} registered Fastify plugin: formbody`)
+  fastify.log.debug(`${prefix_plugins}registered Fastify plugin: formbody`)
 
   // Parse multipart/form-data requests
   // https://github.com/fastify/fastify-multipart
@@ -131,41 +126,26 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       fileSize: multipartFormDataMaxFileSize
     }
   })
-  fastify.log.debug(`${NAME} registered Fastify plugin: multipart`)
+  fastify.log.debug(`${prefix_plugins}registered plugin: multipart`)
+
+  fastify.register(responseDecorators)
+  fastify.log.debug(`${prefix_plugins}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
-  fastify.decorateReply('errorResponse', errorResponse)
-  fastify.log.debug(`${NAME} decorateReply: errorResponse`)
-
-  fastify.decorateReply(
-    'micropubDeleteSuccessResponse',
-    micropubDeleteSuccessResponse
-  )
-  fastify.log.debug(`${NAME} decorateReply: micropubDeleteSuccessResponse`)
-
-  fastify.decorateReply(
-    'micropubUndeleteSuccessResponse',
-    micropubUndeleteSuccessResponse
-  )
-  fastify.log.debug(`${NAME} decorateReply: micropubUndeleteSuccessResponse`)
-
-  fastify.decorateReply(
-    'micropubUpdateSuccessResponse',
-    micropubUpdateSuccessResponse
-  )
-  fastify.log.debug(`${NAME} decorateReply: micropubUpdateSuccessResponse`)
-
+  const prefix_decorators = `${NAME}/decorators `
   fastify.decorateRequest('hasScope', hasScope)
-  fastify.log.debug(`${NAME} decorateRequest: hasScope`)
+  fastify.log.debug(`${prefix_decorators}decorateRequest: hasScope`)
 
   fastify.decorateRequest(
     'noActionSupportedResponse',
     noActionSupportedResponse
   )
-  fastify.log.debug(`${NAME} decorateRequest: noActionSupportedResponse`)
+  fastify.log.debug(
+    `${prefix_decorators}decorateRequest: noActionSupportedResponse`
+  )
 
   fastify.decorateRequest('noScopeResponse', noScopeResponse)
-  fastify.log.debug(`${NAME} decorateRequest: noScopeResponse`)
+  fastify.log.debug(`${prefix_decorators}decorateRequest: noScopeResponse`)
 
   const { validateCard, validateCite, validateEvent, validateEntry } =
     defValidateJf2(ajv)
@@ -201,28 +181,28 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     micropubResponseCard,
     dependencies
   )
-  fastify.log.debug(`${NAME} decorateReply: micropubResponseCard`)
+  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseCard`)
 
   fastify.decorateReply(
     'micropubResponseCite',
     micropubResponseCite,
     dependencies
   )
-  fastify.log.debug(`${NAME} decorateReply: micropubResponseCite`)
+  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseCite`)
 
   fastify.decorateReply(
     'micropubResponseEvent',
     micropubResponseEvent,
     dependencies
   )
-  fastify.log.debug(`${NAME} decorateReply: micropubResponseEvent`)
+  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseEvent`)
 
   fastify.decorateReply(
     'micropubResponseEntry',
     micropubResponseEntry,
     dependencies
   )
-  fastify.log.debug(`${NAME} decorateReply: micropubResponseEntry`)
+  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseEntry`)
 
   // === HOOKS ============================================================== //
   const redirect_uri = `${base_url}${auth_callback}`
@@ -276,13 +256,16 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     defAuthCallback({
       client_id,
       include_error_description,
-      prefix: `${NAME} `,
+      prefix: `${NAME}/routes `,
       redirect_uri,
       token_endpoint
     })
   )
 
-  fastify.get('/editor', defEditor({ submit_endpoint: submitEndpoint }))
+  fastify.get(
+    '/editor',
+    defEditor({ prefix: `${NAME}/routes `, submit_endpoint: submitEndpoint })
+  )
 
   fastify.get(
     '/micropub',
@@ -308,6 +291,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       me,
       media_endpoint,
       micropub_endpoint,
+      prefix: `${NAME}/routes `,
       store
     })
   )
@@ -316,7 +300,10 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   fastify.get('/created', postCreated)
 
-  fastify.post('/submit', defSubmit({ micropub_endpoint, prefix: `${NAME} ` }))
+  fastify.post(
+    '/submit',
+    defSubmit({ micropub_endpoint, prefix: `${NAME}/routes ` })
+  )
 
   done()
 }

@@ -6,7 +6,6 @@ import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import { unixTimestamp } from '../../lib/date.js'
-import { errorResponse } from '../../lib/fastify-decorators/reply.js'
 import {
   defDecodeJwtAndSetClaims,
   defLogIatAndExpClaims,
@@ -15,7 +14,7 @@ import {
   defValidateAccessTokenNotBlacklisted
 } from '../../lib/fastify-hooks/index.js'
 import { validationErrors } from '../../lib/validators.js'
-import { micropubDeleteSuccessResponse } from '../micropub-endpoint/decorators/reply.js'
+import responseDecorators from '../response-decorators/index.js'
 import {
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
@@ -57,7 +56,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     )
   }
 
-  // === BEGIN plugins ====================================================== //
+  // === PLUGINS ============================================================ //
   fastify.register(formbody)
   fastify.log.debug(
     `${PREFIX}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
@@ -67,20 +66,13 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(
     `${PREFIX}registered plugin: multipart (for parsing multipart/form-data)`
   )
-  // === END plugins ======================================================== //
 
-  // === BEGIN decorators =================================================== //
-  fastify.decorateReply('errorResponse', errorResponse)
-  fastify.log.debug(`${PREFIX}decorateReply: errorResponse`)
+  fastify.register(responseDecorators)
+  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
 
-  fastify.decorateReply(
-    'micropubDeleteSuccessResponse',
-    micropubDeleteSuccessResponse
-  )
-  fastify.log.debug(`${PREFIX}decorateReply: micropubDeleteSuccessResponse`)
-  // === END decorators ===================================================== //
+  // === DECORATORS ========================================================= //
 
-  // === BEGIN hooks ======================================================== //
+  // === HOOKS ============================================================== //
   const log_prefix = `${NAME}/hooks `
 
   fastify.addHook('onRoute', (routeOptions) => {
@@ -124,8 +116,8 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
       include_error_description,
       log_prefix
     })
-  // === END hooks ========================================================== //
 
+  // === ROUTES ============================================================= //
   fastify.get('/media', defMediaGet({ store }))
 
   fastify.post(

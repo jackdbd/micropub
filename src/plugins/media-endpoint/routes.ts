@@ -1,8 +1,6 @@
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
 import type { RouteHandler } from 'fastify'
-import stringify from 'fast-safe-stringify'
 import { defErrorIfActionNotAllowed } from '../../lib/error-if-action-not-allowed.js'
-import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 import { errorIfMethodNotImplementedInStore } from '../../lib/micropub/index.js'
 import type {
   ActionType,
@@ -10,7 +8,10 @@ import type {
   BaseMediaStoreValue,
   MediaStore
 } from '../../lib/micropub/index.js'
-import { invalidRequest } from '../../lib/micropub/error-responses.js'
+import {
+  invalidRequest,
+  serverError
+} from '../../lib/micropub/error-responses.js'
 import { NAME } from './constants.js'
 
 const PREFIX = `${NAME}/routes `
@@ -82,26 +83,30 @@ export const defMediaPost = (config: MediaPostConfig) => {
 
       if (result.error) {
         const { error_description: original } = result.error
-        const code = result.error.status_code || 500
-        const status_text = result.error.status_text || 'Internal Server Error'
+        const status_code = result.error.status_code || 500
         const error_description = `Could not delete ${url} from media store ${store.info.name}: ${original}`
+        request.log.error(`${PREFIX}: ${error_description}`)
 
-        request.log.error(
-          `${PREFIX}${status_text} (${code}): ${error_description}`
-        )
-
-        // The Micropub spec doesn't define error codes for when it's the server's
-        // fault.
-        const error = 'delete_failed'
-
-        const body = include_error_description
-          ? { error, error_description }
-          : { error }
+        const { code, body } = serverError({
+          code: status_code,
+          error: 'delete_failed',
+          error_description,
+          include_error_description
+        })
 
         return reply.errorResponse(code, body)
       } else {
-        const { summary } = result.value
-        return reply.micropubDeleteSuccessResponse(summary)
+        const code = result.value.status_code || 200
+        // const url = result.value.url || ''
+        const summary = result.value.summary || `${url} deleted`
+        const payload = result.value.payload
+
+        return reply.successResponse(code, {
+          title: 'Delete success',
+          description: 'Delete success page',
+          summary,
+          payload
+        })
       }
     }
 
@@ -175,40 +180,32 @@ export const defMediaPost = (config: MediaPostConfig) => {
     if (result.error) {
       const { error_description: original } = result.error
       const status_code = result.error.status_code || 500
-      const status_text = result.error.status_text || 'Internal Server Error'
       const error_description = `Could not upload file ${filename} to media store ${store.info.name}: ${original}`
+      request.log.error(`${PREFIX}: ${error_description}`)
 
-      request.log.error(
-        `${PREFIX}${status_text} (${status_code}): ${error_description}`
-      )
+      const { code, body } = serverError({
+        code: status_code,
+        error: 'upload_failed',
+        error_description,
+        include_error_description
+      })
 
-      // The Micropub spec doesn't define error codes for when it's the server's
-      // fault.
-      const error = 'upload_failed'
-
-      const body = include_error_description
-        ? { error, error_description }
-        : { error }
-
-      return reply.errorResponse(status_code, body)
+      return reply.errorResponse(code, body)
     }
 
-    const { payload, summary, url } = result.value
     const code = result.value.status_code || 202 // 201
-    const response_body = { summary, url, payload }
+    const url = result.value.url || ''
+    const summary =
+      result.value.summary || `File uploaded successfully to ${url}`
 
-    reply.code(code)
     reply.header('Location', url)
 
-    if (clientAcceptsHtml(request)) {
-      return reply.view('file-upload-success.njk', {
-        title: 'Upload success',
-        description: 'Upload success page.',
-        response_body: stringify(response_body, undefined, 2)
-      })
-    } else {
-      return reply.send(response_body)
-    }
+    return reply.successResponse(code, {
+      title: 'Upload success',
+      description: 'Upload success page',
+      summary,
+      payload: result.value.payload
+    })
   }
 
   return mediaPost
@@ -224,23 +221,17 @@ export interface MediaGetConfig<
 export const defMediaGet = (config: MediaGetConfig) => {
   const { store } = config
 
-  const mediaGet: RouteHandler = async (request, reply) => {
+  const mediaGet: RouteHandler = async (_request, reply) => {
     // store capabilities
     const supports_delete = store.delete ? true : false
     const capabilities = { supports_upload: true, supports_delete }
 
-    const code = 200
-    const payload = { info: store.info, capabilities }
-
-    if (clientAcceptsHtml(request)) {
-      return reply.code(code).view('media-config.njk', {
-        title: 'Media endpoint configuration',
-        description: 'Configuration for the media endpoint.',
-        data: stringify(payload, undefined, 2)
-      })
-    } else {
-      return reply.code(code).send(payload)
-    }
+    return reply.successResponse(200, {
+      title: 'Media endpoint configuration',
+      description: 'Configuration page for the media endpoint.',
+      summary: 'Configuration for the Micropub media endpoint.',
+      payload: { info: store.info, capabilities }
+    })
   }
 
   return mediaGet

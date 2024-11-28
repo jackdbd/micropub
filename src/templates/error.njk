@@ -4,8 +4,10 @@
 <div>
   <p class="error">{{ error }}</p>
 
+  {% if error_description %}
   <h2>Error description</h2>
   <p class="error_description">{{ error_description }}</p>
+  {% endif %}
 
   {% if payload %}
   <pre>

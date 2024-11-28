@@ -8,38 +8,46 @@ import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
 import sensible from '@fastify/sensible'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
-import stringify from 'fast-safe-stringify'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
+
 import { secondsToUTCString } from './lib/date.js'
+import { defDefaultPublication } from './lib/github-store/publication.js'
 import { defStore } from './lib/github-store/index.js'
 import { defMediaStore } from './lib/r2-media-store/index.js'
 import type {
   ActionType as MicropubActionType,
   ErrorResponseBody
 } from './lib/micropub/index.js'
-import { type SuccessPageOptions } from './lib/micropub-html-responses/index.js'
 import type { AccessTokenClaims } from './lib/token.js'
+
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
 import indieauth from './plugins/indieauth/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
-import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
-import revocationEndpoint from './plugins/revocation-endpoint/index.js'
-import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
-import tokenEndpoint from './plugins/token-endpoint/index.js'
-import { tap } from './nunjucks/filters.js'
-import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
-import { defDefaultPublication } from './lib/github-store/publication.js'
 import {
   NoActionSupportedResponseOptions,
   NoScopeResponseOptions
 } from './plugins/micropub-endpoint/decorators/request.js'
-import { clientAcceptsHtml } from './lib/fastify-request-predicates/index.js'
+import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
+import responseDecorators from './plugins/response-decorators/index.js'
+import type {
+  BaseErrorResponseBody,
+  BaseSuccessResponseBody
+} from './plugins/response-decorators/index.js'
+import revocationEndpoint from './plugins/revocation-endpoint/index.js'
+import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
+import tokenEndpoint from './plugins/token-endpoint/index.js'
+
+import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
+import { tap } from './nunjucks/filters.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+const NAME = 'app'
+const PREFIX = `${NAME} `
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -56,16 +64,17 @@ declare module 'fastify' {
     ) => { code: number; body: ErrorResponseBody }
   }
   interface FastifyReply {
-    errorResponse(code: number, body: ErrorResponseBody): void
-
-    micropubDeleteSuccessResponse(summary?: string): void
-
-    micropubUndeleteSuccessResponse(
+    errorResponse<B extends BaseErrorResponseBody = BaseErrorResponseBody>(
       code: number,
-      body: SuccessPageOptions
+      body: B
     ): void
 
-    micropubUpdateSuccessResponse(code: number, body: SuccessPageOptions): void
+    successResponse<
+      B extends BaseSuccessResponseBody = BaseSuccessResponseBody
+    >(
+      code: number,
+      body: B
+    ): void
 
     micropubResponseCard(jf2: any): Promise<void>
     micropubResponseCite(jf2: any): Promise<void>
@@ -128,6 +137,7 @@ export function defFastify(config: Config) {
 
   const fastify = Fastify({ logger: { level: log_level } })
 
+  // === PLUGINS ============================================================ //
   fastify.register(sensible)
 
   fastify.register(fastifyRequestContext, {
@@ -156,7 +166,7 @@ export function defFastify(config: Config) {
       sessionName,
       expiry: secure_session_expiration
     },
-    `secure session created`
+    `${PREFIX}secure session created`
   )
 
   fastify.register(fastifyCsrf, {
@@ -183,6 +193,8 @@ export function defFastify(config: Config) {
   const media_endpoint = `${base_url}/media`
   const submit_endpoint = `${base_url}/submit`
   let media_content_base_url = 'https://content.giacomodebidda.com/'
+
+  fastify.register(responseDecorators)
 
   fastify.register(tokenEndpoint, {
     expiration: access_token_expiration,
@@ -264,13 +276,34 @@ export function defFastify(config: Config) {
     templates: [path.join(__dirname, 'templates')],
     options: {
       onConfigure: (env: Environment) => {
-        env.addFilter('secondsToUTCString', secondsToUTCString)
-        env.addFilter('tap', tap)
-        fastify.log.debug(`nunjucks environment configured`)
+        const xs = [
+          { name: 'secondsToUTCString', fn: secondsToUTCString },
+          { name: 'tap', fn: tap }
+        ]
+        xs.forEach(({ name, fn }) => env.addFilter(name, fn))
+        const filters = xs.map(({ name }) => name).join(', ')
+
+        // const gg = [{ name: 'foo', value: foo }]
+        // gg.forEach(({ name, value }) => env.addGlobal(name, value))
+        // const globals = gg.map(({ name }) => name).join(', ')
+
+        fastify.log.debug(
+          `${PREFIX}configured nunjucks environment. Filters: ${filters}`
+        )
       }
     }
   })
 
+  // === DECORATORS ========================================================= //
+
+  // === HOOKS ============================================================== //
+  fastify.addHook('onRoute', (routeOptions) => {
+    fastify.log.debug(
+      `${PREFIX}registered route ${routeOptions.method} ${routeOptions.url}`
+    )
+  })
+
+  // === ROUTES ============================================================= //
   fastify.get('/', async (_request, reply) => {
     return reply.view('home.njk', {
       title: 'Home page',
@@ -279,24 +312,18 @@ export function defFastify(config: Config) {
     })
   })
 
-  fastify.get('/config', async (request, reply) => {
+  fastify.get('/config', async (_request, reply) => {
     const non_sensitive = Object.fromEntries(unsentiveEntries(config))
 
-    if (clientAcceptsHtml(request)) {
-      // const base_url = `${request.protocol}://${request.host}`
-      return reply.code(200).view('config.njk', {
-        // base_url,
-        title: 'Config',
-        description: 'Configuration of the app',
-        non_sensitive: stringify(non_sensitive, undefined, 2),
+    return reply.successResponse(200, {
+      title: 'Config',
+      description: 'Configuration page the app',
+      summary: 'Configuration of the app',
+      payload: {
+        non_sensitive,
         sensitive_fields
-      })
-    } else {
-      return reply.code(200).send({
-        non_sensitive: stringify(non_sensitive, undefined, 2),
-        sensitive_fields
-      })
-    }
+      }
+    })
   })
 
   return fastify

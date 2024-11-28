@@ -1,6 +1,5 @@
 import type { RouteHandler } from 'fastify'
 import { unixTimestamp } from '../../lib/date.js'
-import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 import {
   invalidRequest,
   invalidToken,
@@ -84,7 +83,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
     const { me, scope } = auth_response
     request.session.set('scope', scope)
     request.log.debug(
-      `${log_prefix}verified authorization code and stored scope in secure session`
+      `${log_prefix}verified authorization code and stored scope in session`
     )
 
     if (!scope) {
@@ -178,7 +177,10 @@ export const defTokenGet = (config: TokenGetConfig) => {
     const jwt = request.session.get('jwt')
 
     if (!jwt) {
-      const error_description = `access token not found in session`
+      // Should we mention the session key we are using to store the access
+      // token? Can this be a security risk?
+      // const error_description = `Access token not found in session key 'jwt'.`
+      const error_description = `Access token not found in session.`
       request.log.warn(`${log_prefix}${error_description}`)
 
       const { code, body } = unauthorized({
@@ -207,16 +209,12 @@ export const defTokenGet = (config: TokenGetConfig) => {
       const claims = result.value
       request.log.debug(claims, `${log_prefix}claims decoded from access token`)
 
-      if (clientAcceptsHtml(request)) {
-        return reply.view('token.njk', {
-          claims,
-          description: 'IndieAuth token endpoint success page',
-          jwt,
-          title: 'Token'
-        })
-      } else {
-        return reply.send({ claims, jwt })
-      }
+      return reply.successResponse(200, {
+        title: 'Access token',
+        description: 'Token endpoint success page',
+        summary: 'The current session contains this access token.',
+        payload: { jwt, claims }
+      })
     }
   }
 

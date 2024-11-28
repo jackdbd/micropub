@@ -2,9 +2,9 @@ import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
 import { defValidateAuthorizationHeader } from '../../lib/fastify-hooks/index.js'
+import responseDecorators from '../response-decorators/index.js'
+import { NAME } from './constants.js'
 import { defIntrospect } from './routes.js'
-
-const NAME = '@jackdbd/fastify-indieauth-introspection-endpoint'
 
 export interface PluginOptions extends FastifyPluginOptions {
   clientId: string
@@ -31,19 +31,37 @@ const fastifyIndieAuthIntrospectionEndpoint: FastifyPluginCallback<
     log_prefix: `${NAME} `
   })
 
+  // === PLUGINS ============================================================ //
+  fastify.register(responseDecorators)
+  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
+
+  // === DECORATORS ========================================================= //
+
+  // === HOOKS ============================================================== //
+  const hooks_prefix = `${NAME}/hooks `
+
+  fastify.addHook('onRoute', (routeOptions) => {
+    fastify.log.debug(
+      `${hooks_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+    )
+  })
+
+  // === ROUTES ============================================================= //
+
   // https://indieauth.spec.indieweb.org/#access-token-verification-request
   // OAuth 2.0 Token Introspection
   // https://www.rfc-editor.org/rfc/rfc7662
   fastify.post(
     '/introspect',
     { onRequest: [validateAuthorizationHeader] },
-    defIntrospect({ client_id })
+    defIntrospect({ client_id, include_error_description })
   )
-  fastify.log.debug(`${NAME} route registered: POST /introspect`)
+
   done()
 }
 
 export default fp(fastifyIndieAuthIntrospectionEndpoint, {
   fastify: '5.x',
-  name: NAME
+  name: NAME,
+  encapsulate: true
 })

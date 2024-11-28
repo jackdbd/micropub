@@ -1,9 +1,9 @@
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
+import { NAME } from './constants.js'
 import { defLogin, logout } from './routes.js'
 
-const NAME = '@jackdbd/fastify-indieauth'
 const PREFIX = `${NAME} `
 
 export interface PluginOptions extends FastifyPluginOptions {
@@ -57,6 +57,16 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
   // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
   // https://github.com/aaronpk/indielogin.com/blob/35c8aa0ae627517d9c9a9578b901740736ded428/.env.example#L17
 
+  // === HOOKS ============================================================== //
+  const hooks_prefix = `${NAME}/hooks `
+
+  fastify.addHook('onRoute', (routeOptions) => {
+    fastify.log.debug(
+      `${hooks_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+    )
+  })
+
+  // === ROUTES ============================================================= //
   fastify.get(
     '/login',
     defLogin({
@@ -69,10 +79,8 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
       redirect_uri
     })
   )
-  fastify.log.debug(`${PREFIX}route registered: GET /login`)
 
   fastify.get('/logout', logout)
-  fastify.log.debug(`${PREFIX}route registered: GET /logout`)
 
   done()
 }

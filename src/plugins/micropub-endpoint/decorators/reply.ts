@@ -2,22 +2,12 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { ValidateFunction } from 'ajv'
 import type { FastifyReply } from 'fastify'
 
-import { APPLICATION_JSON, TEXT_HTML } from '../../../lib/content-type.js'
-import { clientAcceptsHtml } from '../../../lib/fastify-request-predicates/index.js'
-import { INVALID_REQUEST } from '../../../lib/http-error.js'
 import type {
   BaseStoreError,
   BaseStoreValue,
   Store
 } from '../../../lib/micropub/index.js'
 import { invalidRequest } from '../../../lib/micropub/error-responses.js'
-import {
-  deleteSuccessPage,
-  undeleteSuccessPage,
-  updateSuccessPage,
-  successPage,
-  type SuccessPageOptions
-} from '../../../lib/micropub-html-responses/index.js'
 
 import { NAME } from '../constants.js'
 import {
@@ -31,63 +21,6 @@ const PREFIX = `${NAME}/decorators/reply `
 // the result of store.create() to overwrite it? Or maybe not set the Location
 // header at all?
 const DEFAULT_PUBLISHED_LOCATION = 'https://giacomodebidda.com/'
-
-// TODO: add links to Micropub docs in HTML responses
-// https://micropub.spec.indieweb.org/#error-response
-
-export function micropubDeleteSuccessResponse(
-  this: FastifyReply,
-  summary?: string
-) {
-  // The typical status code for a successful DELETE request is 204, but if we
-  // want to send a HTML page to the client we need to use 200 (or 202 if we
-  // didn't actually deleted the file but we scheduled its deletion).
-  this.code(200)
-  const body = { summary }
-
-  if (clientAcceptsHtml(this.request)) {
-    this.header('Content-Type', TEXT_HTML)
-    return this.send(deleteSuccessPage(body))
-  } else {
-    this.header('Content-Type', APPLICATION_JSON)
-    return this.send(body)
-  }
-}
-
-export function micropubUndeleteSuccessResponse(
-  this: FastifyReply,
-  code: number,
-  body: SuccessPageOptions
-) {
-  this.code(code)
-
-  if (clientAcceptsHtml(this.request)) {
-    this.header('Content-Type', TEXT_HTML)
-    return this.send(undeleteSuccessPage(body))
-  } else {
-    this.header('Content-Type', APPLICATION_JSON)
-    return this.send(body)
-  }
-}
-
-export function micropubUpdateSuccessResponse(
-  this: FastifyReply,
-  code: number,
-  body: SuccessPageOptions
-) {
-  this.code(code)
-
-  if (clientAcceptsHtml(this.request)) {
-    this.header('Content-Type', TEXT_HTML)
-    return this.send(updateSuccessPage(body))
-  } else {
-    this.header('Content-Type', APPLICATION_JSON)
-    return this.send(body)
-  }
-}
-
-// TODO: add links to Micropub docs in HTML responses
-// https://micropub.spec.indieweb.org/#error-response
 
 export interface MicropubResponseConfig<
   StoreError extends BaseStoreError = BaseStoreError,
@@ -131,14 +64,14 @@ export function defMicropubResponse<
       const valid = validate(jf2)
 
       if (!valid) {
-        const error_description = `received invalid JF2 according to schema ${schema_id}`
+        const error_description = `Received invalid JF2 according to schema ${schema_id}`
         this.request.log.warn(
           { jf2, errors: validate.errors || [] },
           `${PREFIX}${error_description}`
         )
 
         const { code, body } = invalidRequest({
-          error_description: INVALID_REQUEST.error,
+          error_description,
           include_error_description
         })
 
@@ -155,41 +88,19 @@ export function defMicropubResponse<
       const { code, body } = storeErrorToMicropubError(result.error)
       this.request.log.error(`${PREFIX}${body.error}:${body.error_description}`)
 
-      const payload = include_error_description ? body : { error: body.error }
-
-      this.code(code)
-
-      if (clientAcceptsHtml(this.request)) {
-        this.header('Content-Type', TEXT_HTML)
-        return this.view('error.njk', {
-          error: body.error,
-          error_description: body.error_description,
-          description: 'Error page',
-          title: `Error: ${body.error}`,
-          payload
-        })
-      } else {
-        this.header('Content-Type', APPLICATION_JSON)
-        return this.send(payload)
-      }
+      return this.errorResponse(code, body)
     } else {
       const { code, summary } = storeValueToMicropubValue(result.value)
       this.request.log.debug(`${PREFIX}${summary}`)
 
       const published_location = DEFAULT_PUBLISHED_LOCATION
-
-      // assert status code 201?
-      this.code(code)
       this.header('Location', published_location)
 
-      const title = `Post of type '${jf2.type}' created`
-      if (clientAcceptsHtml(this.request)) {
-        this.header('Content-Type', TEXT_HTML)
-        return this.send(successPage({ summary, title }))
-      } else {
-        this.header('Content-Type', APPLICATION_JSON)
-        return this.send({ summary, title })
-      }
+      return this.successResponse(code, {
+        title: `Post of type '${jf2.type}' created`,
+        summary,
+        payload: { location: published_location }
+      })
     }
   }
 }

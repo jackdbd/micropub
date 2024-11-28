@@ -56,3 +56,19 @@ export const insufficientScope = (config: Config) => {
     body: body({ ...config, error: INSUFFICIENT_SCOPE.error })
   }
 }
+
+export interface ServerErrorConfig extends Config {
+  code?: number
+  error?: string
+}
+
+export const serverError = (config: ServerErrorConfig) => {
+  const { error_description, include_error_description } = config
+  const code = config.code || 500
+  const error = config.error || 'generic_server_error'
+
+  return {
+    code,
+    body: body({ error, error_description, include_error_description })
+  }
+}

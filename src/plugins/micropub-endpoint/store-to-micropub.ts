@@ -1,32 +1,46 @@
 import {
-  FORBIDDEN,
-  INVALID_REQUEST,
-  UNAUTHORIZED
-} from '../../lib/http-error.js'
-import { BaseStoreError, BaseStoreValue } from '../../lib/micropub/index.js'
+  forbidden,
+  invalidRequest,
+  unauthorized,
+  type BaseStoreError,
+  type BaseStoreValue
+} from '../../lib/micropub/index.js'
 
-export const storeErrorToMicropubError = (err: BaseStoreError = {}) => {
-  const status_code: number = err.status_code || INVALID_REQUEST.code
+const DEFAULT_INCLUDE_ERROR_DESCRIPTION = false
 
-  const error_description = err.error_description
+const DEFAULT_STATUS_CODE_ERROR = 400
+const DEFAULT_STATUS_CODE_SUCCESS = 200
+
+interface Options {
+  include_error_description?: boolean
+}
+
+export const storeErrorToMicropubError = (
+  err: BaseStoreError = {},
+  options?: Options
+) => {
+  const opt = options || {}
+
+  const include_error_description =
+    opt.include_error_description || DEFAULT_INCLUDE_ERROR_DESCRIPTION
+
+  const status_code = err.status_code || DEFAULT_STATUS_CODE_ERROR
+
+  const error_description =
+    err.error_description || 'There was an error with the Micropub store.'
 
   switch (status_code) {
     case 400: {
-      const error = err.status_text || INVALID_REQUEST.error
-      return { code: 400, body: { error, error_description } }
+      return invalidRequest({ error_description, include_error_description })
     }
     case 401: {
-      const error = err.status_text || UNAUTHORIZED.error
-      return { code: 401, body: { error, error_description } }
+      return unauthorized({ error_description, include_error_description })
     }
     case 403: {
-      const error = err.status_text || FORBIDDEN.error
-      return { code: 403, body: { error, error_description } }
+      return forbidden({ error_description, include_error_description })
     }
     default: {
-      const error = err.status_text || INVALID_REQUEST.error
-      const code = err.status_code || INVALID_REQUEST.code
-      return { code, body: { error, error_description } }
+      return invalidRequest({ error_description, include_error_description })
     }
   }
 }
@@ -37,7 +51,7 @@ export const storeErrorToMicropubError = (err: BaseStoreError = {}) => {
  * it.
  */
 export const storeValueToMicropubValue = (value: BaseStoreValue = {}) => {
-  const code: number = value.status_code || 200
+  const code = value.status_code || DEFAULT_STATUS_CODE_SUCCESS
   const status_text: string = value.status_text || 'Success'
   const summary: string = value.summary || 'Your request succeeded.'
   const payload = value.payload || undefined

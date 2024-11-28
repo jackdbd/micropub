@@ -6,10 +6,7 @@ import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import formAutoContent from 'form-auto-content'
 
 import { nowUTC } from '../../lib/date.js'
-import {
-  areSameOrigin,
-  clientAcceptsHtml
-} from '../../lib/fastify-request-predicates/index.js'
+import { areSameOrigin } from '../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../lib/mf2-to-jf2.js'
 import { Jf2PostType } from '../../lib/microformats2/index.js'
 import type {
@@ -24,15 +21,12 @@ import {
   unauthorized
 } from '../../lib/micropub/error-responses.js'
 
-import { NAME } from './constants.js'
 import type { PostRequestBody } from './request.js'
 import {
   storeErrorToMicropubError,
   storeValueToMicropubValue
 } from './store-to-micropub.js'
 import type { SyndicateToItem } from './syndication.js'
-
-const PREFIX = `${NAME}/routes `
 
 export interface CallbackConfig {
   client_id: string
@@ -72,24 +66,36 @@ export const defAuthCallback = (config: CallbackConfig) => {
     const state = request.session.get('state')
 
     if (!state) {
-      return reply.view('error.njk', {
-        error: `invalid_request`,
-        error_description: 'TODO: error description',
-        description: 'Auth error page',
-        title: 'Auth error'
+      const error_description = `Key 'state' was not found in session or it is undefined.`
+      request.log.error(`${prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Authentication error',
+        description: 'Authentication error page'
       })
     }
 
-    request.log.debug(
-      `${prefix}extracted state (CSRF token) from secure session`
-    )
+    request.log.debug(`${prefix}extracted state (CSRF token) from session`)
 
     if (state !== request.query.state) {
-      return reply.view('error.njk', {
-        error: `invalid_request`,
-        error_description: `state from query string does not match state from session`,
-        description: 'Auth error page',
-        title: 'Auth error'
+      const error_description = `Parameter 'state' found in query string does not match key 'state' found in session.`
+      request.log.error(`${prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Authentication error',
+        description: 'Authentication error page'
       })
     }
 
@@ -100,15 +106,22 @@ export const defAuthCallback = (config: CallbackConfig) => {
     const code_verifier = request.session.get('code_verifier')
 
     if (!code_verifier) {
-      return reply.view('error.njk', {
-        error: `invalid_request`,
-        error_description: `code_verifier not found in session`,
-        description: 'Auth error page',
-        title: 'Auth error'
+      const error_description = `Key 'code_verifier' was not found in session or it is undefined.`
+      request.log.error(`${prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Authentication error',
+        description: 'Authentication error page'
       })
     }
 
-    request.log.debug(`${prefix}extracted code_verifier from secure session`)
+    request.log.debug(`${prefix}extracted code_verifier from session`)
 
     ////////////////////////////////////////////////////////////////////////////
     // This is for testing/demoing the token exchange.
@@ -143,14 +156,18 @@ export const defAuthCallback = (config: CallbackConfig) => {
     })
 
     if (!response.ok) {
-      request.log.error(
-        `${prefix}failed to exchange authorization code for access token`
-      )
-      return reply.view('error.njk', {
-        error: `invalid_request`,
-        error_description: `Failed to exchange authorization code for access token`,
-        description: 'Token error page',
-        title: 'Token error'
+      const error_description = `Failed to exchange authorization code for access token.`
+      request.log.error(`${prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Token error',
+        description: 'Token error page'
       })
     }
 
@@ -162,40 +179,42 @@ export const defAuthCallback = (config: CallbackConfig) => {
       // payload = stringify(tokenResponse.payload, undefined, 2)
     } catch (err) {
       const error = err as Error
-      return reply.view('error.njk', {
-        error: `invalid_request`,
-        error_description: `TODO: error description`,
-        description: 'Error page',
-        title: error.name
+      const error_description = `Failed to parse response received from token endpoint: ${error.message}`
+      request.log.error(`${prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Token error',
+        description: 'Token error page'
       })
     }
 
     const auth = response.headers.get('Authorization')
 
     if (!auth) {
-      const error_description = `missing Authorization header`
+      const error_description = `Request has no Authorization header`
 
       const { code, body } = unauthorized({
         error_description,
         include_error_description
       })
 
-      reply.code(code)
-
-      if (clientAcceptsHtml(request)) {
-        return reply.view('error.njk', {
-          error: body.error,
-          error_description,
-          description: 'Auth error page',
-          title: 'Auth error'
-        })
-      } else {
-        return reply.send(body)
-      }
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Auth error',
+        description: 'Auth error page'
+      })
     }
 
     request.session.set('jwt', auth)
-    request.log.debug(`${prefix}set jwt in secure session`)
+    request.log.debug(
+      `${prefix}set access token in session key 'jwt'. Redirecting to token endpoint ${token_endpoint}`
+    )
 
     return reply.redirect(token_endpoint)
   }
@@ -216,7 +235,7 @@ export const defSubmit = (config: SubmitConfig) => {
 
     if (!jwt) {
       request.log.debug(
-        `${prefix}redirect to /login since jwt is not in secure session`
+        `${prefix}Key 'jwt' not found in session or it is undefined. Redirecting to /login`
       )
       return reply.redirect('/login')
     }
@@ -234,15 +253,15 @@ export const defSubmit = (config: SubmitConfig) => {
 
     if (response.status === 202) {
       const location = response.headers.get('Location')
-      request.log.debug(`${prefix}redirect to /accepted`)
+      request.log.debug(`${prefix}Redirecting to /accepted`)
       const uri = `/accepted?data=${encodeURIComponent(
         stringify({ ...data, location }, undefined, 2)
       )}`
-      // return reply.send({ ...data, location })
+
       return reply.redirect(uri)
     } else {
-      request.log.debug(`${prefix}redirect to /created`)
-      // return reply.send(data)
+      request.log.debug(`${prefix}Redirecting to /created`)
+
       const uri = `/created?data=${encodeURIComponent(
         stringify(data, undefined, 2)
       )}`
@@ -270,18 +289,19 @@ export const postCreated: RouteHandler = (request, reply) => {
 }
 
 export interface EditorConfig {
+  prefix: string
   submit_endpoint: string
 }
 
 export const defEditor = (config: EditorConfig) => {
-  const { submit_endpoint } = config
+  const { prefix, submit_endpoint } = config
 
   const editor: RouteHandler = (request, reply) => {
     const jwt = request.session.get('jwt')
 
     if (!jwt) {
       request.log.debug(
-        `${PREFIX}redirect to /login since jwt is not in secure session`
+        `${prefix}Key 'jwt' not found in session or it is undefined. Redirecting to /login`
       )
       return reply.redirect('/login')
     }
@@ -307,21 +327,18 @@ export interface MicropubGetConfig {
 export const defMicropubGet = (config: MicropubGetConfig) => {
   const { media_endpoint, syndicate_to } = config
 
-  const micropubGet: RouteHandler = (request, reply) => {
-    const data = {
+  const micropubGet: RouteHandler = (_request, reply) => {
+    const payload = {
       'media-endpoint': media_endpoint,
       'syndicate-to': syndicate_to
     }
 
-    if (clientAcceptsHtml(request)) {
-      return reply.code(200).view('micropub-config.njk', {
-        title: 'Micropub config',
-        description: 'Configuration for this micropub endpoint.',
-        data: stringify(data, undefined, 2)
-      })
-    } else {
-      return reply.code(200).send(data)
-    }
+    return reply.successResponse(200, {
+      title: 'Micropub config',
+      description: 'Configuration page for this micropub endpoint.',
+      summary: 'Configuration for this micropub endpoint.',
+      payload
+    })
   }
 
   return micropubGet
@@ -340,6 +357,7 @@ export interface MicropubPostConfig<
   me: string
   media_endpoint: string
   micropub_endpoint: string
+  prefix: string
   store: Store<StoreError, StoreValue>
 }
 
@@ -385,6 +403,7 @@ export const defMicropubPost = <
     include_error_description,
     media_endpoint,
     micropub_endpoint,
+    prefix,
     store
   } = config
 
@@ -398,18 +417,18 @@ export const defMicropubPost = <
       const data: Record<string, any> = {}
       for await (const part of parts) {
         if (part.type === 'field') {
-          request.log.debug(`${PREFIX}collect form field ${part.fieldname}`)
+          request.log.debug(`${prefix}collect form field ${part.fieldname}`)
           data[part.fieldname] = part.value
         } else if (part.type === 'file') {
           request.log.debug(
-            `${PREFIX}received file ${part.filename}. Passing the request to the /media endpoint`
+            `${prefix}received file ${part.filename}. Passing the request to the /media endpoint`
           )
 
           // let response: LightMyRequestResponse | Response
           let location: string | undefined = undefined
           if (areSameOrigin(micropub_endpoint, media_endpoint)) {
             request.log.debug(
-              `${PREFIX}make request to LOCAL media endpoint ${media_endpoint} (inject)`
+              `${prefix}make request to LOCAL media endpoint ${media_endpoint} (inject)`
             )
 
             // I find this quite clanky to use...
@@ -441,7 +460,7 @@ export const defMicropubPost = <
             }
           } else {
             request.log.debug(
-              `${PREFIX}make request to REMOTE media endpoint ${media_endpoint} (fetch)`
+              `${prefix}make request to REMOTE media endpoint ${media_endpoint} (fetch)`
             )
 
             const form = formAutoContent(
@@ -473,7 +492,7 @@ export const defMicropubPost = <
           }
 
           request.log.debug(
-            `${PREFIX} file location got from media endpoint: ${location}`
+            `${prefix}file location got from media endpoint: ${location}`
           )
 
           // I could create a photos array:
@@ -501,13 +520,19 @@ export const defMicropubPost = <
     }
 
     if (!request_body) {
+      const error_description = 'Request has no body.'
+      request.log.error(`${prefix}${error_description}`)
+
       const { code, body } = invalidRequest({
-        error_description: `request has no body`,
+        error_description,
         include_error_description
       })
-      request.log.warn(`${PREFIX}${body.error}: ${body.error_description}`)
 
-      return reply.errorResponse(code, body)
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'No request body',
+        description: 'Micropub endpoint error page'
+      })
     }
 
     // Micropub requests from Quill include an access token in the body.
@@ -533,7 +558,7 @@ export const defMicropubPost = <
 
       if (error) {
         const error_description = error.message
-        request.log.warn({ request_body }, `${PREFIX}${error_description}`)
+        request.log.warn({ request_body }, `${prefix}${error_description}`)
 
         const { code, body } = invalidRequest({
           error_description,
@@ -582,14 +607,20 @@ export const defMicropubPost = <
           if (result.error) {
             const { code, body } = storeErrorToMicropubError(result.error)
             request.log.error(
-              `${PREFIX}${body.error}: ${body.error_description}`
+              `${prefix}${body.error}: ${body.error_description}`
             )
             return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
-            const { summary } = value
-            request.log.info(`${PREFIX}${summary}`)
-            return reply.micropubDeleteSuccessResponse(summary)
+            const { code, summary, payload } = value
+            request.log.info(`${prefix}${summary}`)
+
+            return reply.successResponse(code, {
+              title: 'Delete success',
+              description: 'Delete success page',
+              summary,
+              payload
+            })
           }
         }
 
@@ -599,14 +630,20 @@ export const defMicropubPost = <
           if (result.error) {
             const { code, body } = storeErrorToMicropubError(result.error)
             request.log.error(
-              `${PREFIX}${body.error}: ${body.error_description}`
+              `${prefix}${body.error}: ${body.error_description}`
             )
             return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
-            const { code, summary } = value
-            request.log.info(`${PREFIX}${summary}`)
-            return reply.micropubUndeleteSuccessResponse(code, { summary })
+            const { code, summary, payload } = value
+            request.log.info(`${prefix}${summary}`)
+
+            return reply.successResponse(code, {
+              title: 'Undelete success',
+              description: 'Undelete success page',
+              summary,
+              payload
+            })
           }
         }
 
@@ -617,14 +654,17 @@ export const defMicropubPost = <
           if (result.error) {
             const { code, body } = storeErrorToMicropubError(result.error)
             request.log.error(
-              `${PREFIX}${body.error}: ${body.error_description}`
+              `${prefix}${body.error}: ${body.error_description}`
             )
             return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, payload, summary } = value
-            request.log.info(patch, `${PREFIX}${summary}`)
-            return reply.micropubUpdateSuccessResponse(code, {
+            request.log.info(patch, `${prefix}${summary}`)
+
+            return reply.successResponse(code, {
+              title: 'Update success',
+              description: 'Update success page',
               summary,
               payload
             })
@@ -644,7 +684,7 @@ export const defMicropubPost = <
 
         default: {
           const error_description = `Action '${action}' is not supported by this Micropub server.`
-          request.log.warn({ action, jf2 }, `${PREFIX}${error_description}`)
+          request.log.warn({ action, jf2 }, `${prefix}${error_description}`)
 
           const { code, body } = invalidRequest({
             error_description,
@@ -677,7 +717,7 @@ export const defMicropubPost = <
 
       default: {
         const error_description = `Post type '${post_type}' is not supported by this Micropub server.`
-        request.log.warn({ action, jf2 }, `${PREFIX}${error_description}`)
+        request.log.warn({ action, jf2 }, `${prefix}${error_description}`)
 
         const { code, body } = invalidRequest({
           error_description,
