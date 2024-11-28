@@ -37,10 +37,13 @@
     "script:mf2": "tsm ./scripts/mf2.ts",
     "secure-session-keys": "node scripts/secure-session-keys.js",
     "start": "NODE_ENV=production node ./dist/server.js",
-    "test": "NODE_ENV=test node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info --test-reporter=spec --test-reporter-destination=stdout",
+    "test": "NODE_ENV=test PINO_LOG_LEVEL=warn node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info --test-reporter=spec --test-reporter-destination=stdout",
     "test:ci": "NODE_ENV=test node --test",
-    "test:watch": "NODE_ENV=test node --test --test-reporter=spec --watch",
-    "watch": "find ./src -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run dev"
+    "watch": "find ./src -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run dev",
+    "watch:njk": "find ./src/templates/* -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run compile:njk",
+    "watch:src": "run-p watch:ts watch:njk --print-label",
+    "watch:test": "NODE_ENV=test PINO_LOG_LEVEL=warn node --test --watch",
+    "watch:ts": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.679.0",
@@ -68,12 +71,14 @@
     "fast-safe-stringify": "^2.1.1",
     "form-auto-content": "^3.2.1",
     "gray-matter": "^4.0.3",
+    "html-to-text": "^9.0.5",
     "jose": "^5.9.6",
     "markdown-it": "^14.1.0",
     "mime": "^4.0.4",
     "nanoid": "^5.0.9",
     "nunjucks": "^3.2.4",
     "pino-pretty": "^11.3.0",
+    "sanitize-html": "^2.13.1",
     "seedrandom": "^3.0.5",
     "slugify": "^1.6.6",
     "turndown": "^7.2.0",
@@ -83,11 +88,15 @@
   "devDependencies": {
     "@types/better-queue": "latest",
     "@types/better-sqlite3": "latest",
+    "@types/html-to-text": "latest",
     "@types/markdown-it": "latest",
     "@types/node": "latest",
     "@types/nunjucks": "latest",
+    "@types/sanitize-html": "latest",
     "@types/seedrandom": "latest",
     "@types/turndown": "latest",
+    "npm-run-all": "^4.1.5",
+    "table": "^6.8.2",
     "tsm": "latest",
     "typescript": "^5.6.3"
   }

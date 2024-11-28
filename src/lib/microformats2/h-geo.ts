@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { altitude, latitude, longitude } from './base.js'
+import { latitude, longitude } from './geo.js'
 
 /**
  * microformats2 h-geo.
@@ -10,7 +10,7 @@ import { altitude, latitude, longitude } from './base.js'
  */
 export const h_geo = Type.Object(
   {
-    altitude: Type.Optional(altitude),
+    altitude: Type.Optional(Type.Number()),
     latitude: Type.Optional(latitude),
     longitude: Type.Optional(longitude)
   },

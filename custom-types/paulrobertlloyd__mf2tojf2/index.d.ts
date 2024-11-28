@@ -43,25 +43,29 @@ declare module '@paulrobertlloyd/mf2tojf2' {
   // already exists. Can be used for importing existing content to a site.
 
   export interface Jf2 {
+    access_token?: string
+    action?: string
     author?: string
     'bookmark-of'?: string
     category?: string[]
-    content?: string
+    content?: string | { html: string; text: string }
     date?: string
+    h?: Jf2Type
     'in-reply-to'?: string
     'like-of'?: string
     location?: Location
     'mp-slug'?: string
     'mp-syndicate-to'?: string | string[]
     name?: string
-    photo: Photo[]
+    photo?: Photo[]
     published?: string
     'read-of'?: string
     'repost-of'?: string
     summary?: string
     syndication?: string | string[]
     updated?: string
-    type: Jf2Type
+    type?: Jf2Type
+    url?: string
     visibility?: string
   }
 

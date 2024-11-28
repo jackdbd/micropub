@@ -77,7 +77,7 @@ export function defMicropubResponse<
 
         return this.errorResponse(code, body)
       } else {
-        const message = `received valid JF2 according to schema ${schema_id}`
+        const message = `validated JF2 according to schema ${schema_id}`
         this.request.log.debug(`${PREFIX}${message}`)
       }
     }
@@ -85,7 +85,9 @@ export function defMicropubResponse<
     const result = await store.create(jf2)
 
     if (result.error) {
-      const { code, body } = storeErrorToMicropubError(result.error)
+      const { code, body } = storeErrorToMicropubError(result.error, {
+        include_error_description
+      })
       this.request.log.error(`${PREFIX}${body.error}:${body.error_description}`)
 
       return this.errorResponse(code, body)
@@ -97,7 +99,7 @@ export function defMicropubResponse<
       this.header('Location', published_location)
 
       return this.successResponse(code, {
-        title: `Post of type '${jf2.type}' created`,
+        title: `Post h=${jf2.h} created`,
         summary,
         payload: { location: published_location }
       })

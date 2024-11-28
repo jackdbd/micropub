@@ -1,35 +1,11 @@
-import { Static, Type } from '@sinclair/typebox'
+import { Type } from '@sinclair/typebox'
 
-export const html_and_value = Type.Object({
-  html: Type.String(),
-  value: Type.String()
-})
-
-export const string_or_html_and_value = Type.Union([
-  Type.String(),
-  html_and_value
-])
-export type StringOrHtmlAndValue = Static<typeof string_or_html_and_value>
-
-// full-date according to RFC3339
-// https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
-export const date = Type.String({ format: 'date' })
-
-// time-zone is mandatory
-// https://ajv.js.org/packages/ajv-formats.html#formats
-// https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
-export const date_time = Type.String({ format: 'date-time' })
-export type DateTime = Static<typeof date_time>
-
+// For more information refer to the WGS84 specification and the geo URI scheme.
 export const altitude = Type.Number({
   $id: 'altitude',
   title: 'Altitude',
-  description: `Distance in metres from the nominal sea level along the tangent of the earth’s curve, i.e. the geoid height. For more information refer to the WGS84 specification and the geo URI scheme.`
+  description: `Distance in metres from the nominal sea level along the tangent of the earth’s curve, i.e. the geoid height.`
 })
-
-const category_item = Type.String({ description: 'category/tag' })
-
-export const category = Type.Union([category_item, Type.Array(category_item)])
 
 export const latitude = Type.Number({
   $id: 'latitude',
@@ -76,14 +52,3 @@ export const geo_uri = Type.String({
 //     examples: ['geo:37.786971,-122.399677', 'geo:37.786971,-122.399677;u=35']
 //   }
 // )
-
-export const photo = Type.Object({
-  alt: Type.String({
-    description:
-      'Alternate text for the photo, if the photo cannot be displayed'
-  }),
-  url: Type.String({
-    format: 'uri',
-    description: 'URL of the photo'
-  })
-})

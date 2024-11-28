@@ -17,7 +17,7 @@ export const isBookmark = (jf2: Jf2) => {
 }
 
 export const isCard = (jf2: Jf2) => {
-  if (jf2.type === 'card') {
+  if (jf2.h === 'card') {
     return true
   } else {
     return false
@@ -25,7 +25,7 @@ export const isCard = (jf2: Jf2) => {
 }
 
 export const isCite = (jf2: Jf2) => {
-  if (jf2.type === 'cite') {
+  if (jf2.h === 'cite') {
     return true
   } else {
     return false
@@ -33,7 +33,7 @@ export const isCite = (jf2: Jf2) => {
 }
 
 export const isEntry = (jf2: Jf2) => {
-  if (jf2.type === 'entry') {
+  if (jf2.h === 'entry') {
     return true
   } else {
     return false
@@ -41,7 +41,7 @@ export const isEntry = (jf2: Jf2) => {
 }
 
 export const isEvent = (jf2: Jf2) => {
-  if (jf2.type === 'event') {
+  if (jf2.h === 'event') {
     return true
   } else {
     return false

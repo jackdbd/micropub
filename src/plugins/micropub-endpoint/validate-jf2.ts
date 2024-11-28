@@ -9,6 +9,12 @@ import {
   h_geo,
   h_item
 } from '../../lib/microformats2/index.js'
+import {
+  mp_card,
+  mp_cite,
+  mp_entry,
+  mp_event
+} from '../../lib/micropub/index.js'
 
 /**
  * Compile all schemas and return validate functions.
@@ -19,6 +25,7 @@ import {
 export const defValidateJf2 = (ajv: Ajv) => {
   // const label = 'compile microformats2 schemas'
   // console.time(label)
+
   const validateGeoURI = ajv.compile(geo_uri)
   const validateGeo = ajv.compile(h_geo)
   const validateAdr = ajv.compile(h_adr)
@@ -27,6 +34,12 @@ export const defValidateJf2 = (ajv: Ajv) => {
   const validateEntry = ajv.compile(h_entry)
   const validateEvent = ajv.compile(h_event)
   const validateItem = ajv.compile(h_item)
+
+  const validateMicropubCard = ajv.compile(mp_card)
+  const validateMicropubCite = ajv.compile(mp_cite)
+  const validateMicropubEntry = ajv.compile(mp_entry)
+  const validateMicropubEvent = ajv.compile(mp_event)
+
   // console.timeLog(label)
   // console.timeEnd(label)
 
@@ -38,6 +51,10 @@ export const defValidateJf2 = (ajv: Ajv) => {
     validateEvent,
     validateGeo,
     validateGeoURI,
-    validateItem
+    validateItem,
+    validateMicropubCard,
+    validateMicropubCite,
+    validateMicropubEntry,
+    validateMicropubEvent
   }
 }

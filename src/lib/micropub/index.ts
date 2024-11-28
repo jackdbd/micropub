@@ -15,6 +15,25 @@ export {
   unauthorized
 } from './error-responses.js'
 
+export { mp_card, type MP_card } from './jf2/card.js'
+export { mp_cite, type MP_cite } from './jf2/cite.js'
+export { mp_entry, type MP_entry } from './jf2/entry.js'
+export { mp_event, type MP_event } from './jf2/event.js'
+
+export { jf2ToContentWithFrontmatter } from './jf2-to-content.js'
+export { jf2ToSlug } from './jf2-to-slug.js'
+
+export type {
+  BaseError as BaseMediaStoreError,
+  BaseValue as BaseMediaStoreValue,
+  Delete as MediaStoreDelete,
+  Store as MediaStore,
+  Upload as MediaStoreUpload,
+  UploadConfig as MediaStoreUploadConfig
+} from './media-store.js'
+
+export { normalizeJf2 } from './normalize-jf2.js'
+
 export type {
   Location as PublicationLocation,
   Publication
@@ -26,15 +45,6 @@ export type {
   UndeleteSuccess as UndeleteSuccessStatusCode,
   UpdateSuccess as UpdateSuccessStatusCode
 } from './status-codes.js'
-
-export type {
-  BaseError as BaseMediaStoreError,
-  BaseValue as BaseMediaStoreValue,
-  Delete as MediaStoreDelete,
-  Store as MediaStore,
-  Upload as MediaStoreUpload,
-  UploadConfig as MediaStoreUploadConfig
-} from './media-store.js'
 
 export type {
   BaseError as BaseStoreError,

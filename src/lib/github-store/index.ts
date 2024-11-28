@@ -11,9 +11,8 @@ import {
   BASE_URL as GITHUB_API_BASE_URL,
   REF
 } from '../github-contents-api/defaults.js'
-import { jf2ToMarkdown } from '../jf2-to-markdown.js'
-import { jf2ToSlug } from '../jf2-to-slug.js'
 import { markdownToJf2 } from '../markdown-to-jf2.js'
+import { jf2ToContentWithFrontmatter, jf2ToSlug } from '../micropub/index.js'
 import type {
   BaseStoreError,
   BaseStoreValue,
@@ -22,7 +21,7 @@ import type {
   Store,
   StoreCreate,
   StoreGet,
-  StoreInfo,
+  // StoreInfo,
   StoreUpdate,
   StoreDelete,
   StoreUndelete,
@@ -93,8 +92,12 @@ export const defStore = (
 
   const author = config.author || committer
 
-  const info: StoreInfo = {
-    name: `GitHub repository ${owner}/${repo}`
+  const info = {
+    author,
+    branch,
+    committer,
+    name: `GitHub repository ${owner}/${repo}`,
+    publication
     // const entries = Object.entries(publication.items).map(([key, item]) => {
     //   const loc = item.location
     //   return {
@@ -315,8 +318,8 @@ export const defStore = (
 
   // The GitHub Contents API requires content to be Base64-encoded.
   const jf2ToContent = (jf2: Jf2) => {
-    const md = jf2ToMarkdown(jf2)
-    return utf8ToBase64(md)
+    const content = jf2ToContentWithFrontmatter(jf2)
+    return utf8ToBase64(content)
   }
 
   /**
@@ -375,8 +378,17 @@ export const defStore = (
       }
     }
 
+    // TODO: if the `me` website already has a post with the same slug as the
+    // one suggested suggested with `mp-slug`, we could regenerate a new slug
+    // (maybe with an UUID) and try again. We would need to know the matching
+    // URL => location in store and website. We could put the for loop above in
+    // a function that takes `publication` and outputs `loc`.
+    // We would also need to know whether the content is HTML or plain text, so
+    // we can use the correct file extension when saving the file in the store.
+    // See also: https://indieweb.org/Micropub-extensions#Slug
+
     log.debug(
-      `${log_prefix}trying storing ${jf2.type} as base64-encoded string at ${loc.store}`
+      `${log_prefix}trying storing ${jf2.h} as base64-encoded string at ${loc.store}`
     )
 
     const result = await api.createOrUpdate({
@@ -397,7 +409,7 @@ export const defStore = (
       const error_description = `Cannot create ${loc.store} in repository ${owner}/${repo}. Make sure it doesn't already exist.`
       return { error: { ...result.error, error_description } }
     } else {
-      const summary = `Post ot type '${jf2.type}' created at ${loc.store} in repo ${owner}/${repo} on branch ${branch}. Committed by ${committer.name} (${committer.email}). The post will be published at ${loc.website}.`
+      const summary = `Post ot type '${jf2.h}' created at ${loc.store} in repo ${owner}/${repo} on branch ${branch}. Committed by ${committer.name} (${committer.email}). The post will be published at ${loc.website}.`
       log.debug(`${log_prefix}${summary}`)
       return {
         value: { ...result.value, summary }

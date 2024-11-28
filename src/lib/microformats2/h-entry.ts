@@ -1,10 +1,12 @@
 import { Static, Type } from '@sinclair/typebox'
-import { category, date_time, string_or_html_and_value } from './base.js'
-import { h_adr } from './h-adr.js'
+import { category } from './category.js'
+import { content } from './content.js'
+import { date_time } from './date.js'
 import { h_card } from './h-card.js'
 import { h_cite } from './h-cite.js'
-import { h_geo } from './h-geo.js'
-import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
+import { location } from './location.js'
+import { rsvp } from './rsvp.js'
+import { syndication } from './syndication.js'
 
 /**
  * microformats2 h-entry.
@@ -47,7 +49,9 @@ export const h_entry = Type.Object(
     /**
      * full content of the entry
      */
-    content: Type.Optional(string_or_html_and_value),
+    content: Type.Optional(content),
+
+    h: Type.Optional(Type.Literal('entry')),
 
     /**
      * the URL which the h-entry is considered reply to (i.e. doesn’t make sense
@@ -75,18 +79,7 @@ export const h_entry = Type.Object(
      *
      * https://micropub.spec.indieweb.org/#examples-of-creating-objects
      */
-    location: Type.Optional(
-      Type.Union([
-        Type.String(),
-        Type.Ref(h_adr),
-        Type.Ref(h_card),
-        Type.Ref(h_geo)
-      ])
-    ),
-
-    'mp-slug': Type.Optional(mp_slug),
-
-    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
+    location: Type.Optional(location),
 
     /**
      * entry name/title
@@ -113,28 +106,16 @@ export const h_entry = Type.Object(
      */
     'repost-of': Type.Optional(Type.String({ format: 'uri' })),
 
-    /**
-     * enum, use <data> element or Value Class Pattern
-     * https://microformats.org/wiki/value-class-pattern
-     */
-    rsvp: Type.Optional(
-      Type.Union([
-        Type.Literal('yes'),
-        Type.Literal('no'),
-        Type.Literal('maybe'),
-        Type.Literal('interested')
-      ])
-    ),
+    rsvp: Type.Optional(rsvp),
 
     /**
      * short entry summary
      */
     summary: Type.Optional(Type.String()),
 
-    /**
-     * URL(s) of syndicated copies of this post. The property equivalent of rel-syndication.
-     */
-    syndication: Type.Optional(Type.String()),
+    syndication: Type.Optional(syndication),
+
+    type: Type.Optional(Type.Literal('entry')),
 
     /**
      * when the entry was updated
@@ -160,10 +141,9 @@ export const h_entry = Type.Object(
       { content: 'this is a note' },
       {
         content: {
-          value: 'this is a note',
+          text: 'this is a note',
           html: '<p>This <b>is</b> a note</p>'
         },
-        'mp-slug': 'test-note',
         published: '1985-04-12T23:20:50.52Z'
       },
       {

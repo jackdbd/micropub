@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{base_url}}/micropub
+  url: strong{{base_url}}/micropub
   body: formUrlEncoded
   auth: bearer
 }
@@ -29,9 +29,9 @@ body:form-urlencoded {
   bookmark-of: https://piccalil.li/blog/what-are-design-tokens/
   h: entry
   content: Andy Bell's article on design tokens
-  category[]: design
-  category[]: css
-  mp-syndicate-to[]: {{syndication_uid_mastodon}}
+  category[][0]: design
+  category[][1]: css
+  mp-syndicate-to: {{syndication_uid_mastodon}}
   mp-slug: test-bookmark
   ~name: what-are-design-tokens
 }

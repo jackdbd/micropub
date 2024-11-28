@@ -1,13 +1,17 @@
 meta {
   name: update note (JSON)
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
   url: {{base_url}}/micropub
   body: json
   auth: bearer
+}
+
+headers {
+  Accept: text/html
 }
 
 auth:bearer {

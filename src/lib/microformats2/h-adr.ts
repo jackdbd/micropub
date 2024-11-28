@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
+import { latitude, longitude } from './geo.js'
 import { h_geo } from './h-geo.js'
-import { latitude, longitude } from './base.js'
 
 /**
  * microformats2 h-adr.
@@ -16,9 +16,6 @@ export const h_adr = Type.Object(
      */
     altitude: Type.Optional(Type.Number()),
 
-    /**
-     * should be full name of country, country code ok
-     */
     'country-name': Type.Optional(Type.String()),
 
     /**

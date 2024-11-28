@@ -33,15 +33,13 @@ import {
   noScopeResponse
 } from './decorators/request.js'
 import { defValidateGetRequest } from './hooks.js'
-import {
-  defAuthCallback,
-  defEditor,
-  defMicropubGet,
-  defMicropubPost,
-  defSubmit,
-  postAccepted,
-  postCreated
-} from './routes.js'
+import { postAccepted } from './routes/accepted-get.js'
+import { defAuthCallback } from './routes/auth-callback.js'
+import { postCreated } from './routes/created-get.js'
+import { defEditor } from './routes/editor-get.js'
+import { defMicropubGet } from './routes/micropub-get.js'
+import { defMicropubPost } from './routes/micropub-post.js'
+import { defSubmit } from './routes/submit-post.js'
 import {
   micropub_get_request,
   micropub_post_request,
@@ -147,30 +145,40 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   fastify.decorateRequest('noScopeResponse', noScopeResponse)
   fastify.log.debug(`${prefix_decorators}decorateRequest: noScopeResponse`)
 
-  const { validateCard, validateCite, validateEvent, validateEntry } =
-    defValidateJf2(ajv)
+  // const {
+  //   validateCard,
+  //   validateCite,
+  //   validateEvent,
+  //   validateEntry
+  // } = defValidateJf2(ajv)
+  const {
+    validateMicropubCard,
+    validateMicropubCite,
+    validateMicropubEntry,
+    validateMicropubEvent
+  } = defValidateJf2(ajv)
 
   const micropubResponseCard = defMicropubResponse({
     include_error_description,
-    validate: validateCard,
+    validate: validateMicropubCard,
     store
   })
 
   const micropubResponseCite = defMicropubResponse({
     include_error_description,
-    validate: validateCite,
+    validate: validateMicropubCite,
     store
   })
 
   const micropubResponseEvent = defMicropubResponse({
     include_error_description,
-    validate: validateEvent,
+    validate: validateMicropubEvent,
     store
   })
 
   const micropubResponseEntry = defMicropubResponse({
     include_error_description,
-    validate: validateEntry,
+    validate: validateMicropubEntry,
     store
   })
 

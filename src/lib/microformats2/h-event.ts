@@ -1,9 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
-import { category, date_time, string_or_html_and_value } from './base.js'
+import { content } from './content.js'
+import { category } from './category.js'
+// import { date, date_time } from './date.js'
 import { h_adr } from './h-adr.js'
 import { h_card } from './h-card.js'
 import { h_geo } from './h-geo.js'
-import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
 
 /**
  * microformats2 h-event.
@@ -22,7 +23,7 @@ export const h_event = Type.Object(
     /**
      * full content of the event
      */
-    content: Type.Optional(string_or_html_and_value),
+    content: Type.Optional(content),
 
     description: Type.Optional(
       Type.String({
@@ -35,10 +36,9 @@ export const h_event = Type.Object(
       Type.Integer({ title: 'duration', description: 'duration of the event' })
     ),
 
-    /**
-     * datetime the event ends
-     */
-    end: Type.Optional(date_time),
+    // TODO: be more precise about the format and add links to the specs.
+    // end: Type.Optional(Type.Union([date, date_time])),
+    end: Type.Optional(Type.String()),
 
     /**
      * where the event takes place, optionally embedded h-card, h-adr, or h-geo
@@ -50,18 +50,13 @@ export const h_event = Type.Object(
       )
     ),
 
-    'mp-slug': Type.Optional(mp_slug),
-
-    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
-
     name: Type.Optional(
       Type.String({ title: 'name', description: 'event name (or title)' })
     ),
 
-    /**
-     * datetime the event starts
-     */
-    start: Type.Optional(date_time),
+    // TODO: be more precise about the format and add links to the specs.
+    // start: Type.Optional(Type.Union([date, date_time])),
+    start: Type.Optional(Type.String()),
 
     summary: Type.Optional(
       Type.String({
@@ -69,6 +64,8 @@ export const h_event = Type.Object(
         description: 'short summary of the event'
       })
     ),
+
+    type: Type.Literal('event'),
 
     url: Type.Optional(
       Type.String({

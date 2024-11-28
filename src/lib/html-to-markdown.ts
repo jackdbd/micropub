@@ -1,4 +1,4 @@
-// @ts-ignore-next-line
+import sanitizeHtml from 'sanitize-html'
 import TurndownService from 'turndown'
 
 // https://github.com/mixmark-io/turndown?tab=readme-ov-file#options
@@ -11,5 +11,6 @@ const turndownService = new TurndownService({
 turndownService.keep(['cite', 'del', 'ins'])
 
 export const htmlToMarkdown = (str: string) => {
-  return turndownService.turndown(str) as string
+  const html = sanitizeHtml(str)
+  return turndownService.turndown(html) as string
 }

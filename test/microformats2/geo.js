@@ -1,11 +1,11 @@
 import { describe, it, before } from 'node:test'
 import assert from 'node:assert'
+import { date_time } from '../../dist/lib/microformats2/date.js'
 import {
   altitude,
   latitude,
-  longitude,
-  date_time
-} from '../../dist/lib/microformats2/base.js'
+  longitude
+} from '../../dist/lib/microformats2/geo.js'
 import { defValidateMf2Functions } from './test_utils.js'
 
 const { ajv, validateAltitude, validateGeoURI } = defValidateMf2Functions()

@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
-import { date, date_time, string_or_html_and_value } from './base.js'
-import { mp_slug, mp_syndicate_to } from './micropub-commands.js'
+import { content } from './content.js'
+import { date, date_time } from './date.js'
 
 /**
  * microformats2 h-cite.
@@ -33,11 +33,7 @@ export const h_cite = Type.Object(
      * for when the citation includes the content itself, like when citing short
      * text notes (e.g. tweets).
      */
-    content: Type.Optional(string_or_html_and_value),
-
-    'mp-slug': Type.Optional(mp_slug),
-
-    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
+    content: Type.Optional(content),
 
     /**
      * name of the work
@@ -57,6 +53,8 @@ export const h_cite = Type.Object(
      * date (and optionally time) of publication
      */
     published: Type.Optional(Type.Union([date, date_time])),
+
+    type: Type.Literal('cite'),
 
     /**
      * a URL/URI that uniquely/canonically identifies the cited work, canonical

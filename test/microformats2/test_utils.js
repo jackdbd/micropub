@@ -14,7 +14,7 @@ import {
   altitude,
   latitude,
   longitude
-} from '../../dist/lib/microformats2/base.js'
+} from '../../dist/lib/microformats2/geo.js'
 
 export const defValidateMf2Functions = () => {
   const ajv = addFormats(new Ajv({ allErrors: true }), [

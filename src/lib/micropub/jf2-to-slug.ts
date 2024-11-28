@@ -10,6 +10,18 @@ const slugify_options = {
   remove: /[*+~.·,()'"`´%!?¿:@\/]/g
 }
 
+/**
+ * Creates a slug from a JF2 object.
+ *
+ * The Micropub server MAY or MAY NOT decide to respect the requested slug,
+ * based on whether it would cause conflicts with other URLs on the site.
+ *
+ * Does this imply that this function should check the website, and so be async?
+ * Could the caller fetch the website and see if an URL with the same slug
+ * already exists?
+ *
+ * @see https://indieweb.org/Micropub-extensions#Slug
+ */
 export const jf2ToSlug = (jf2: Jf2) => {
   let str = jf2['mp-slug']
   if (str) {
@@ -38,10 +50,10 @@ export const jf2ToSlug = (jf2: Jf2) => {
       .replaceAll(/\./g, replacement_character)}`
   } else if (jf2.content) {
     if (typeof jf2.content === 'string') {
+      // If the source of the post was written as string, we treat it as plain text.
       str = jf2.content
     } else {
-      // TODO: convert content.html to markdown and then slugify it?
-      str = (jf2.content as any).value as string
+      str = jf2.content.html || jf2.content.text
     }
   } else {
     // If we received a JF2 object that has no mp-slug, no content, no like-of,

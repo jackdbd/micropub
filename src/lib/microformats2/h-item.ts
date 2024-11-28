@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { photo } from './base.js'
+import { photo } from './photo.js'
 
 /**
  * microformats2 h-item.
@@ -10,19 +10,12 @@ import { photo } from './base.js'
  */
 export const h_item = Type.Object(
   {
-    /**
-     * item name
-     */
     name: Type.Optional(Type.String()),
 
-    /**
-     * photo URL
-     */
     photo: Type.Optional(photo),
 
-    /**
-     * permalink URL
-     */
+    type: Type.Literal('item'),
+
     url: Type.Optional(Type.String({ format: 'uri' }))
   },
   {

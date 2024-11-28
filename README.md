@@ -14,6 +14,7 @@ In one terminal, start the web server in watch mode:
 
 ```sh
 npm run watch
+# or just: dev
 ```
 
 In another terminal, make some requests to the `/micropub` endpoint.
@@ -37,6 +38,20 @@ curl "${BASE_URL}/micropub" \
 If you don't want to copy and paste curl commands in the terminal, you can make requests using API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).
 
 Obtain a valid access token using a micropub client, for example [Quill](https://quill.p3k.io/), [Micropublish](https://micropublish.net/) or [Indiekit](https://getindiekit.com/).
+
+## Test
+
+In one terminal, watch TypeScript files and recompile all nunjucks templates:
+
+```sh
+npm run watch:src
+```
+
+In another terminal, watch the tests:
+
+```sh
+npm run watch:test
+```
 
 ### Note
 

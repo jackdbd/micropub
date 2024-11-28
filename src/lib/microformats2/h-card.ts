@@ -1,13 +1,9 @@
-import { Static, Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
+import { content } from './content.js'
+import { latitude, longitude } from './geo.js'
+import { photo } from './photo.js'
 import { h_adr } from './h-adr.js'
 import { h_geo } from './h-geo.js'
-import {
-  altitude,
-  latitude,
-  longitude,
-  photo,
-  string_or_html_and_value
-} from './base.js'
 
 /**
  * microformats2 h-card.
@@ -26,7 +22,7 @@ export const h_card = Type.Object(
     // postal address, optionally embed an h-adr
     adr: Type.Optional(Type.Union([Type.String(), Type.Ref(h_adr)])),
 
-    altitude: Type.Optional(altitude),
+    altitude: Type.Optional(Type.Number()),
 
     anniversary: Type.Optional(Type.String({ format: 'date' })),
 
@@ -36,7 +32,7 @@ export const h_card = Type.Object(
 
     category: Type.Optional(Type.String({ description: 'category/tag' })),
 
-    content: Type.Optional(string_or_html_and_value),
+    content: Type.Optional(content),
 
     'country-name': Type.Optional(Type.String({ description: 'country name' })),
 
@@ -110,7 +106,7 @@ export const h_card = Type.Object(
     // https://github.com/sinclairzx81/typebox#types-recursive
     // org: Type.Optional(Type.Union([Type.String(), Type.Ref(h_card)])),
 
-    photo: Type.Optional(Type.Union([photo, Type.Array(photo)])),
+    photo: Type.Optional(photo),
 
     'postal-code': Type.Optional(
       Type.String({ description: 'postal code, e.g. US ZIP' })
@@ -139,6 +135,8 @@ export const h_card = Type.Object(
     ),
 
     tel: Type.Optional(Type.String()),
+
+    type: Type.Literal('card'),
 
     uid: Type.Optional(
       Type.String({

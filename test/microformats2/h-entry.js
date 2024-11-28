@@ -30,7 +30,7 @@ describe('h_entry', () => {
   it('can be a note that has both plain text and html', () => {
     const valid = validateH_entry({
       content: {
-        value: 'this is a note',
+        text: 'this is a note',
         html: '<p>This <b>is</b> a note</p>'
       },
       published: '1985-04-12T23:20:50.52Z'

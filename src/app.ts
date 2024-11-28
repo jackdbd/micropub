@@ -237,6 +237,8 @@ export function defFastify(config: Config) {
     }
   })
 
+  fastify.log.warn(store.info, `=== Store ${store.info.name}===`)
+
   const mediaStore = defMediaStore({
     account_id: cloudflare_account_id,
     bucket_name: cloudflare_r2_bucket_name,
