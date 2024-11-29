@@ -6,8 +6,9 @@ import { Static, Type } from '@sinclair/typebox'
  * @see https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
  */
 export const date = Type.String({
+  // $id: 'date-rfc-3339',
   format: 'date',
-  description: 'Full-date according to RFC3339'
+  description: 'Date formatted according to RFC3339'
 })
 
 /**
@@ -15,8 +16,14 @@ export const date = Type.String({
  * @see https://ajv.js.org/packages/ajv-formats.html#formats
  */
 export const date_time = Type.String({
+  // $id: 'date-time-rfc-3339',
   format: 'date-time',
-  description: 'Date-time (time-zone is mandatory)'
+  description:
+    'Date-time formatted according to RFC3339 (time-zone is mandatory)'
 })
 
+export const date_or_date_time = Type.Union([date, date_time])
+
 export type DateTime = Static<typeof date_time>
+
+export type DateOrDateTime = Static<typeof date_or_date_time>

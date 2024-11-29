@@ -1,6 +1,6 @@
 import { applyToDefaults } from '@hapi/hoek'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
-import { nowUTC } from '../date.js'
+import { rfc3339 } from '../date.js'
 import { base64ToUtf8, utf8ToBase64 } from '../encoding.js'
 import * as api from '../github-contents-api/index.js'
 import type {
@@ -165,7 +165,7 @@ export const defStore = (
     }
 
     if (patch.add || patch.delete || patch.replace) {
-      jf2 = { ...jf2, updated: nowUTC() }
+      jf2 = { ...jf2, updated: rfc3339() }
     }
 
     const content = jf2ToContent(jf2)

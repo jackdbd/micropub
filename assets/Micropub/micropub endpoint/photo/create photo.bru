@@ -1,0 +1,29 @@
+meta {
+  name: create photo
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: multipartForm
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:multipart-form {
+  content: This is a test photo
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  mp-slug: test-photo
+  category[]: bruno
+  category[]: test
+  published: 2024-11-12T23:20:50.52Z
+  : @file(/home/jack/repos/micropub/assets/photo/866-200x300.jpg)
+}

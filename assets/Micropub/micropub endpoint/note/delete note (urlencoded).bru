@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{base_url}}/micropub
+  url: visibility: visibility || 'public'{{base_url}}/micropub
   body: formUrlEncoded
   auth: bearer
 }

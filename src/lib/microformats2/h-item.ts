@@ -1,22 +1,22 @@
 import { Static, Type } from '@sinclair/typebox'
-import { photo } from './photo.js'
+import { p_name } from './p-name.js'
+import { u_photo } from './u-photo.js'
+import { u_url } from './u-url.js'
 
 /**
  * microformats2 h-item.
  *
- * All properties are optional. See:
- * - https://microformats.org/wiki/h-item
- * - https://indieweb.org/h-item
+ * All properties are optional.
+ *
+ * @see https://microformats.org/wiki/h-item
+ * @see https://indieweb.org/h-item
  */
 export const h_item = Type.Object(
   {
-    name: Type.Optional(Type.String()),
-
-    photo: Type.Optional(photo),
-
+    name: Type.Optional(Type.Ref(p_name)),
+    photo: Type.Optional(Type.Ref(u_photo)),
     type: Type.Literal('item'),
-
-    url: Type.Optional(Type.String({ format: 'uri' }))
+    url: Type.Optional(Type.Ref(u_url))
   },
   {
     $id: 'h-item',
@@ -26,14 +26,11 @@ export const h_item = Type.Object(
     examples: [
       {
         name: 'The Item Name',
-        photo: {
-          alt: 'Alternate text for the photo',
-          url: 'http://example.org/items/1/photo.png'
-        },
+        photo: 'http://example.org/items/1/photo.png',
         url: 'http://example.org/items/1'
       }
     ]
   }
 )
 
-export type H_item = Static<typeof h_item>
+export type H_Item = Static<typeof h_item>

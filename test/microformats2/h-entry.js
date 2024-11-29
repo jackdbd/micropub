@@ -11,6 +11,15 @@ describe('h_entry', () => {
     assert(validateH_entry.errors === null)
   })
 
+  it('can be a bookmark with plain text content', () => {
+    const valid = validateH_entry({
+      'bookmark-of': 'https://mxb.dev/blog/make-free-stuff/',
+      content: 'Nice article!'
+    })
+    assert(valid)
+    assert(validateH_entry.errors === null)
+  })
+
   it('can be a like-of', () => {
     const valid = validateH_entry({
       'like-of': 'http://othersite.example.com/permalink47'
@@ -22,6 +31,16 @@ describe('h_entry', () => {
   it('can be a repost-of', () => {
     const valid = validateH_entry({
       'repost-of': 'https://example.com/post'
+    })
+    assert(valid)
+    assert(validateH_entry.errors === null)
+  })
+
+  it('can be a RSVP', () => {
+    const valid = validateH_entry({
+      'in-reply-to':
+        'https://aaronparecki.com/2014/09/13/7/indieweb-xoxo-breakfast',
+      rsvp: 'maybe'
     })
     assert(valid)
     assert(validateH_entry.errors === null)

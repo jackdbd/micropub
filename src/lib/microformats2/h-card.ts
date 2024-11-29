@@ -1,17 +1,25 @@
 import { type Static, Type } from '@sinclair/typebox'
-import { content } from './content.js'
-import { latitude, longitude } from './geo.js'
-import { photo } from './photo.js'
+import { dt_anniversary } from './dt-anniversary.js'
+import { dt_bday } from './dt-bday.js'
+import { p_altitude } from './p-altitude.js'
+import { p_category } from './p-category.js'
+import { p_content } from './p-content.js'
+import { p_latitude } from './p-latitude.js'
+import { p_longitude } from './p-longitude.js'
+import { p_name } from './p-name.js'
+import { u_photo } from './u-photo.js'
+import { u_uid } from './u-uid.js'
+import { u_url } from './u-url.js'
 import { h_adr } from './h-adr.js'
 import { h_geo } from './h-geo.js'
 
 /**
  * microformats2 h-card.
  *
- * All properties are optional and may be plural. See:
+ * All properties are optional and may be plural.
  *
- * - https://microformats.org/wiki/h-card
- * - https://indieweb.org/h-card
+ * @see https://microformats.org/wiki/h-card
+ * @see https://indieweb.org/h-card
  */
 export const h_card = Type.Object(
   {
@@ -22,17 +30,15 @@ export const h_card = Type.Object(
     // postal address, optionally embed an h-adr
     adr: Type.Optional(Type.Union([Type.String(), Type.Ref(h_adr)])),
 
-    altitude: Type.Optional(Type.Number()),
+    altitude: Type.Optional(p_altitude),
 
-    anniversary: Type.Optional(Type.String({ format: 'date' })),
+    anniversary: Type.Optional(dt_anniversary),
 
-    bday: Type.Optional(
-      Type.String({ format: 'date', description: 'birth date' })
-    ),
+    bday: Type.Optional(dt_bday),
 
-    category: Type.Optional(Type.String({ description: 'category/tag' })),
+    category: Type.Optional(p_category),
 
-    content: Type.Optional(content),
+    content: Type.Optional(p_content),
 
     'country-name': Type.Optional(Type.String({ description: 'country name' })),
 
@@ -76,7 +82,7 @@ export const h_card = Type.Object(
 
     label: Type.Optional(Type.String()),
 
-    latitude: Type.Optional(latitude),
+    latitude: Type.Optional(p_latitude),
 
     locality: Type.Optional(Type.String({ description: 'city/town/village' })),
 
@@ -88,13 +94,9 @@ export const h_card = Type.Object(
       })
     ),
 
-    longitude: Type.Optional(longitude),
+    longitude: Type.Optional(p_longitude),
 
-    name: Type.Optional(
-      Type.String({
-        description: 'The full/formatted name of the person or organization'
-      })
-    ),
+    name: Type.Optional(p_name),
 
     nickname: Type.Optional(
       Type.String({ description: 'nickname/alias/handle' })
@@ -106,7 +108,7 @@ export const h_card = Type.Object(
     // https://github.com/sinclairzx81/typebox#types-recursive
     // org: Type.Optional(Type.Union([Type.String(), Type.Ref(h_card)])),
 
-    photo: Type.Optional(photo),
+    photo: Type.Optional(u_photo),
 
     'postal-code': Type.Optional(
       Type.String({ description: 'postal code, e.g. US ZIP' })
@@ -138,20 +140,9 @@ export const h_card = Type.Object(
 
     type: Type.Literal('card'),
 
-    uid: Type.Optional(
-      Type.String({
-        format: 'uri',
-        description: 'universally unique identifier, preferably canonical URL'
-      })
-    ),
+    uid: Type.Optional(u_uid),
 
-    url: Type.Optional(
-      Type.String({
-        format: 'uri',
-        description:
-          'home page or other URL representing the person or organization'
-      })
-    )
+    url: Type.Optional(Type.Ref(u_url))
   },
   {
     $id: 'h-card',
@@ -161,4 +152,4 @@ export const h_card = Type.Object(
   }
 )
 
-export type H_card = Static<typeof h_card>
+export type H_Card = Static<typeof h_card>

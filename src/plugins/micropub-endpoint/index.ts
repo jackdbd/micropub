@@ -6,7 +6,7 @@ import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 
-import { unixTimestamp } from '../../lib/date.js'
+import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
   defLogIatAndExpClaims,
@@ -90,6 +90,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const ajv = addFormats(new Ajv({ allErrors }), [
     'date',
     'date-time',
+    'duration',
     'email',
     'hostname',
     'ipv4',
@@ -242,7 +243,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     {
       claim: 'exp',
       op: '>',
-      value: unixTimestamp
+      value: unixTimestampInSeconds
     },
     { include_error_description, log_prefix }
   )

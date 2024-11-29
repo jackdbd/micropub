@@ -4,7 +4,7 @@ import Ajv from 'ajv'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import formAutoContent from 'form-auto-content'
 
-import { nowUTC } from '../../../lib/date.js'
+import { rfc3339 } from '../../../lib/date.js'
 import { areSameOrigin } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
 import { normalizeJf2 } from '../../../lib/micropub/index.js'
@@ -251,26 +251,42 @@ export const defMicropubPost = <
         // We could end up with an access_token in the request body. It happed
         // to me when I made a request from Quill. But I don't think it's
         // Quill's fault. I think it's due to how the formbody plugin works.
-        const { access_token: _, action, h, type: _type, ...rest } = value
+        const {
+          access_token: _,
+          action,
+          h,
+          type: _type,
+          visibility,
+          ...rest
+        } = value
         jf2 = {
           ...rest,
           // The default action is to create posts (I couldn't find it in the
           // Micropub specs though).
           action: action || 'create',
-          date: nowUTC(),
+          date: rfc3339(),
           // If no type is specified (using `h`), the default type [h-entry]
           // SHOULD be used.
           // https://micropub.spec.indieweb.org/#create
-          h: h || 'entry'
+          h: h || 'entry',
+          visibility: visibility || 'public'
         }
       }
     } else {
-      const { access_token: _, action, h, type: _type, ...rest } = request_body
+      const {
+        access_token: _,
+        action,
+        h,
+        type: _type,
+        visibility,
+        ...rest
+      } = request_body
       jf2 = {
         ...rest,
         action: action || 'create',
-        date: nowUTC(),
-        h: h || 'entry'
+        date: rfc3339(),
+        h: h || 'entry',
+        visibility: visibility || 'public'
       }
     }
 

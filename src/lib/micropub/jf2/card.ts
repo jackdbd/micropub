@@ -8,13 +8,14 @@ export const mp_card = Type.Object(
 
     h: Type.Literal('card'),
 
-    'mp-slug': Type.Optional(mp_slug),
+    'mp-slug': Type.Optional(Type.Ref(mp_slug)),
+    'mp-syndicate-to': Type.Optional(Type.Ref(mp_syndicate_to)),
 
-    'mp-syndicate-to': Type.Optional(mp_syndicate_to),
-
+    // Since in Micropub we use `h` to indicate the type of the object, we don't
+    // need `type` to be present. But if it is, it must be 'card'.
     type: Type.Optional(Type.Literal('card'))
   },
   { $id: 'micropub-card', title: 'Micropub h=card' }
 )
 
-export type MP_card = Static<typeof mp_card>
+export type MP_Card = Static<typeof mp_card>

@@ -1,16 +1,17 @@
 import { type Static, Type } from '@sinclair/typebox'
 
-const syndication_item = Type.String({
+const u_syndication_item = Type.String({
   description: 'syndication target',
   format: 'uri'
 })
 
-export const syndication = Type.Union(
-  [syndication_item, Type.Array(syndication_item)],
+export const u_syndication = Type.Union(
+  [u_syndication_item, Type.Array(u_syndication_item)],
   {
+    $id: 'u-syndication',
     description:
       'URL(s) of syndicated copies of this post. The property equivalent of rel-syndication.'
   }
 )
 
-export type Syndication = Static<typeof syndication>
+export type U_Syndication = Static<typeof u_syndication>

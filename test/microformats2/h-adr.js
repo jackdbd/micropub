@@ -31,4 +31,24 @@ describe('h_adr', () => {
     assert(valid)
     assert(validateH_adr.errors === null)
   })
+
+  it('can be a geo object', () => {
+    const valid = validateH_adr({
+      geo: {
+        latitude: 64.128288,
+        locality: 'Reykjavík',
+        longitude: -21.827774
+      }
+    })
+    assert(valid)
+    assert(validateH_adr.errors === null)
+  })
+
+  it('can be a geo URI', () => {
+    const valid = validateH_adr({
+      geo: 'geo:37.786971,-122.399677;u=35'
+    })
+    assert(valid)
+    assert(validateH_adr.errors === null)
+  })
 })

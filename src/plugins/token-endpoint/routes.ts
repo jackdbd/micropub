@@ -1,5 +1,5 @@
 import type { RouteHandler } from 'fastify'
-import { unixTimestamp } from '../../lib/date.js'
+import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   invalidRequest,
   invalidToken,
@@ -147,7 +147,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
     const { exp } = verified.payload
     let expires_in: number | undefined
     if (exp) {
-      expires_in = exp - unixTimestamp()
+      expires_in = exp - unixTimestampInSeconds()
     }
 
     return reply.send({

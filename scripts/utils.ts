@@ -6,6 +6,9 @@ export const check = (what: string, value: any, validate: ValidateFunction) => {
   const valid = validate(value)
   console.log(`is '${what}' valid?`, valid)
 
+  // console.log('value after validation (and after defaults when Ajv useDefaults: true)')
+  // console.log(value)
+
   if (validate.errors) {
     validate.errors.forEach((error, i) => {
       console.error(`❌ validation error ${i + 1} in '${what}'`, error)

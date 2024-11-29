@@ -1,13 +1,18 @@
 import { Static, Type } from '@sinclair/typebox'
-import { content } from './content.js'
-import { date, date_time } from './date.js'
+import { dt_accessed } from './dt-accessed.js'
+import { dt_published } from './dt-published.js'
+import { p_author } from './p-author.js'
+import { p_content } from './p-content.js'
+import { p_name } from './p-name.js'
+import { p_publication } from './p-publication.js'
+import { u_uid } from './u-uid.js'
+import { u_url } from './u-url.js'
 
 /**
  * microformats2 h-cite.
  *
- * See:
- * - https://microformats.org/wiki/h-cite
- * - https://indieweb.org/h-cite
+ * @see https://microformats.org/wiki/h-cite
+ * @see https://indieweb.org/h-cite
  */
 export const h_cite = Type.Object(
   {
@@ -17,7 +22,7 @@ export const h_cite = Type.Object(
      * dt-accessed datetimestamped version in particular, e.g. via the Internet
      * Archive.
      */
-    accessed: Type.Optional(date_time),
+    accessed: Type.Optional(Type.Ref(dt_accessed)),
 
     /**
      * author of publication, with optional nested h-card
@@ -27,18 +32,18 @@ export const h_cite = Type.Object(
      * - https://github.com/sinclairzx81/typebox#types-recursive
      * - https://github.com/grantcodes/postr/blob/master/schema/hCite.js
      */
-    author: Type.String(),
+    author: Type.Optional(Type.Ref(p_author)),
 
     /**
      * for when the citation includes the content itself, like when citing short
      * text notes (e.g. tweets).
      */
-    content: Type.Optional(content),
+    content: Type.Optional(Type.Ref(p_content)),
 
     /**
      * name of the work
      */
-    name: Type.String(),
+    name: Type.Optional(Type.Ref(p_name)),
 
     /**
      * for citing articles in publications with more than one author, or perhaps
@@ -47,12 +52,12 @@ export const h_cite = Type.Object(
      * either unknown, ambiguous, unclear, or collaboratively complex enough to be
      * unable to list explicit author(s), e.g. like with many wiki pages.
      */
-    publication: Type.Optional(Type.String()),
+    publication: Type.Optional(Type.Ref(p_publication)),
 
     /**
      * date (and optionally time) of publication
      */
-    published: Type.Optional(Type.Union([date, date_time])),
+    published: Type.Optional(Type.Ref(dt_published)),
 
     type: Type.Literal('cite'),
 
@@ -60,12 +65,12 @@ export const h_cite = Type.Object(
      * a URL/URI that uniquely/canonically identifies the cited work, canonical
      * permalink.
      */
-    uid: Type.Optional(Type.String({ format: 'uri' })),
+    uid: Type.Optional(Type.Ref(u_uid)),
 
     /**
      * a URL to access the cited work
      */
-    url: Type.Optional(Type.String({ format: 'uri' }))
+    url: Type.Optional(Type.Ref(u_url))
   },
   {
     $id: 'h-cite',
@@ -83,4 +88,4 @@ export const h_cite = Type.Object(
   }
 )
 
-export type H_cite = Static<typeof h_cite>
+export type H_Cite = Static<typeof h_cite>

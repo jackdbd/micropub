@@ -1,27 +1,7 @@
-import { Type } from '@sinclair/typebox'
+import { Static, Type } from '@sinclair/typebox'
 
-// For more information refer to the WGS84 specification and the geo URI scheme.
-export const altitude = Type.Number({
-  $id: 'altitude',
-  title: 'Altitude',
-  description: `Distance in metres from the nominal sea level along the tangent of the earth’s curve, i.e. the geoid height.`
-})
-
-export const latitude = Type.Number({
-  $id: 'latitude',
-  minimum: -90,
-  maximum: 90,
-  title: 'Latitude',
-  description: `Coordinate that specifies the north–south position of a point on the surface of the Earth, in decimal degrees.`
-})
-
-export const longitude = Type.Number({
-  $id: 'longitude',
-  minimum: -180,
-  maximum: 180,
-  title: 'Longitude',
-  description: `Coordinate that specifies the east–west position of a point on the surface of the Earth, in decimal degrees.`
-})
+// TODO: or u-geo with a RFC 5870 geo: URL
+// https://microformats.org/wiki/h-adr#Properties
 
 /**
  * A Uniform Resource Identifier (URI) for geographic locations.
@@ -32,8 +12,8 @@ export const longitude = Type.Number({
  * - https://en.wikipedia.org/wiki/Geo_URI_scheme
  * - https://regex101.com/r/k7bl7r/1
  */
-export const geo_uri = Type.String({
-  $id: 'geo-uri',
+export const p_geo = Type.String({
+  $id: 'p-geo',
   pattern: 'geo:-?[0-9]{1,2}.[0-9]*,-?[0-9]{1,3}.?[0-9]*(;u=[0-9]{1,2})?',
   minLength: 8,
   // maxLength: 32,
@@ -52,3 +32,5 @@ export const geo_uri = Type.String({
 //     examples: ['geo:37.786971,-122.399677', 'geo:37.786971,-122.399677;u=35']
 //   }
 // )
+
+export type P_Geo = Static<typeof p_geo>

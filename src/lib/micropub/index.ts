@@ -15,10 +15,26 @@ export {
   unauthorized
 } from './error-responses.js'
 
-export { mp_card, type MP_card } from './jf2/card.js'
-export { mp_cite, type MP_cite } from './jf2/cite.js'
-export { mp_entry, type MP_entry } from './jf2/entry.js'
-export { mp_event, type MP_event } from './jf2/event.js'
+export {
+  date_time,
+  mp_card,
+  type MP_Card,
+  mp_cite,
+  type MP_Cite,
+  mp_entry,
+  type MP_Entry,
+  mp_event,
+  type MP_Event,
+  mp_channel,
+  mp_destination,
+  mp_limit,
+  mp_post_status,
+  mp_slug,
+  mp_syndicate_to,
+  mp_visibility,
+  photo,
+  type Photo
+} from './jf2/index.js'
 
 export { jf2ToContentWithFrontmatter } from './jf2-to-content.js'
 export { jf2ToSlug } from './jf2-to-slug.js'

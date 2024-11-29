@@ -1,6 +1,5 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import slugifyFn from 'slugify'
-// import { nowUTC } from './date.js'
 
 const replacement_character = '-'
 
@@ -28,8 +27,6 @@ export const jf2ToSlug = (jf2: Jf2) => {
     return str.toLowerCase()
   }
 
-  // const yyyy_mm_dd = nowUTC().split('T')[0]
-  // const prefix = `${yyyy_mm_dd}-`
   const prefix = ''
 
   if (jf2.name) {

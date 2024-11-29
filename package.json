@@ -66,6 +66,8 @@
     "better-queue-memory": "^1.0.4",
     "better-sqlite3": "^11.4.0",
     "close-with-grace": "^2.1.0",
+    "dayjs": "^1.11.13",
+    "dayjs-plugin-utc": "^0.1.2",
     "fastify": "^5.0.0",
     "fastify-plugin": "^5.0.0",
     "fast-safe-stringify": "^2.1.1",

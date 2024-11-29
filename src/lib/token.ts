@@ -1,9 +1,9 @@
 import * as jose from 'jose'
-import { unixTimestamp } from './date.js'
+import { unixTimestampInSeconds } from './date.js'
 
 export interface AccessTokenClaims {
-  exp: number // will expire at timestamp
-  iat: number // issued at timestamp
+  exp: number // will expire at (UNIX timestamp in seconds)
+  iat: number // issued at (UNIX timestamp in seconds)
   iss: string // issuer
   me: string
   scope: string // space-separated list of scopes
@@ -68,13 +68,13 @@ export const sign = async ({
 }: SignConfig) => {
   // JWT claims
   // https://www.rfc-editor.org/rfc/rfc7519#section-4
+  // If no argument is passed to setIssuedAt(), then it will use the current
+  // UNIX timestamp (in seconds).
   const jwt_to_sign = new jose.SignJWT(payload)
     .setProtectedHeader({ alg: algorithm })
-    // .setAudience()
     .setExpirationTime(expiration)
     .setIssuedAt()
     .setIssuer(issuer)
-  // .setSubject()
 
   try {
     const jwt = await jwt_to_sign.sign(secret)
@@ -106,7 +106,7 @@ interface ExpiredConfig {
 }
 
 export const isExpired = ({ exp }: ExpiredConfig) => {
-  return exp - unixTimestamp() < 0 ? true : false
+  return exp - unixTimestampInSeconds() < 0 ? true : false
 }
 
 export interface BlacklistedConfig {

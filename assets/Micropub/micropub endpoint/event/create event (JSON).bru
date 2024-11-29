@@ -1,0 +1,51 @@
+meta {
+  name: create event (JSON)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/micropub
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "h": "event",
+    "mp-slug": "test-event",
+    "category": [
+      "bruno",
+      "test"
+    ],
+    "content": {
+      "html": "<p>This is a <strong>test</strong> event</p>"
+    },
+    "photo": {
+      "alt": "View of El Médano in Tenerife. A few kitesurfers are in the water. A few other ones are on the beach, preparing their kites.",
+      "value": "https://content.giacomodebidda.com/media/photos/2024/10/18/el-medano-tenerife-2023.jpg"
+    }
+  }
+}
+
+body:form-urlencoded {
+  h: event
+  content: Test event
+  mp-slug: test-event
+}
+
+body:multipart-form {
+  content: This is a test note
+  location: geo:43.77149,10.33503;u=1074.3455021922316
+  mp-slug: test-note-from-quill
+  category[]: quill
+  category[]: test
+}
