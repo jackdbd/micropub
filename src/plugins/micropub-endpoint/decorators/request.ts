@@ -2,7 +2,7 @@ import type { FastifyRequest } from 'fastify'
 import {
   insufficientScope,
   invalidRequest,
-  type ActionType
+  type StoreAction
 } from '../../../lib/micropub/index.js'
 import { NAME } from '../constants.js'
 
@@ -14,7 +14,7 @@ export interface NoScopeResponseOptions {
 
 export function noScopeResponse(
   this: FastifyRequest,
-  action: ActionType,
+  action: StoreAction,
   options?: NoScopeResponseOptions
 ) {
   const opt = options || ({} as NoScopeResponseOptions)
@@ -37,7 +37,7 @@ export interface NoActionSupportedResponseOptions {
 
 export function noActionSupportedResponse(
   this: FastifyRequest,
-  action: ActionType,
+  action: StoreAction,
   options?: NoActionSupportedResponseOptions
 ) {
   const opt = options || ({} as NoActionSupportedResponseOptions)

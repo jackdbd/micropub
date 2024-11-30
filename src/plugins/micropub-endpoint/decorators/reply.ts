@@ -2,11 +2,7 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { ValidateFunction } from 'ajv'
 import type { FastifyReply } from 'fastify'
 
-import type {
-  BaseStoreError,
-  BaseStoreValue,
-  Store
-} from '../../../lib/micropub/index.js'
+import type { ContentStore } from '../../../lib/micropub/index.js'
 import { invalidRequest } from '../../../lib/micropub/error-responses.js'
 
 import {
@@ -23,19 +19,13 @@ export interface ResponseConfig {
   validate: ValidateFunction
 }
 
-export interface MicropubResponseConfig<
-  StoreError extends BaseStoreError = BaseStoreError,
-  StoreValue extends BaseStoreValue = BaseStoreValue
-> {
+export interface MicropubResponseConfig {
   include_error_description: boolean
   prefix: string
-  store: Store<StoreError, StoreValue>
+  store: ContentStore
 }
 
-export function defMicropubResponse<
-  StoreError extends BaseStoreError = BaseStoreError,
-  StoreValue extends BaseStoreValue = BaseStoreValue
->(config: MicropubResponseConfig<StoreError, StoreValue>) {
+export function defMicropubResponse(config: MicropubResponseConfig) {
   const { include_error_description, prefix, store } = config
 
   return async function micropubResponse(

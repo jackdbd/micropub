@@ -39,7 +39,9 @@ const store = Type.Object({
   get: Type.Any(),
   info: Type.Any(),
   jf2ToContent: Type.Any(),
-  publishedUrlToStoreLocation: Type.Any()
+  publishedUrlToStoreLocation: Type.Any(),
+  undelete: Type.Optional(Type.Any()),
+  update: Type.Any()
 })
 
 export const options = Type.Object(

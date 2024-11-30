@@ -1,4 +1,4 @@
-import type { SyndicateToItem } from './plugins/micropub-endpoint/syndication.js'
+import type { SyndicateToItem } from './lib/micropub/index.js'
 
 // TODO: use a short-lived access token (e.g. 3600 seconds) and a long-lived
 // refresh token.
@@ -43,6 +43,10 @@ const syndicate_to: SyndicateToItem[] = [
       photo:
         'https://indieweb.org/images/thumb/6/67/indiewebcamp-logo-lockup-color%403x.png/800px-indiewebcamp-logo-lockup-color%403x.png'
     }
+  },
+  {
+    uid: 'https://t.me/+rQSrJsu5RtgzNjM0',
+    name: 'Telegram GitHub Group'
   }
 ]
 

@@ -4,24 +4,17 @@ import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-all
 import {
   errorIfMethodNotImplementedInStore,
   invalidRequest,
-  serverError
-} from '../../../lib/micropub/index.js'
-import type {
-  ActionType,
-  BaseMediaStoreError,
-  BaseMediaStoreValue,
-  MediaStore
+  serverError,
+  type MediaStore,
+  type StoreAction
 } from '../../../lib/micropub/index.js'
 import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/routes `
 
-interface Config<
-  E extends BaseMediaStoreError = BaseMediaStoreError,
-  V extends BaseMediaStoreValue = BaseMediaStoreValue
-> {
+interface Config {
   include_error_description: boolean
-  store: MediaStore<E, V>
+  store: MediaStore
 }
 
 /**
@@ -53,7 +46,7 @@ export const defMediaPost = (config: Config) => {
 
   const mediaPost: RouteHandler = async (request, reply) => {
     if (!request.isMultipart()) {
-      const action = (request.body as any).action as ActionType
+      const action = (request.body as any).action as StoreAction
 
       if (action !== 'delete') {
         const { code, body } = invalidRequest({
@@ -82,13 +75,11 @@ export const defMediaPost = (config: Config) => {
       const result = await store.delete!(url)
 
       if (result.error) {
-        const { error_description: original } = result.error
-        const status_code = result.error.status_code || 500
+        const original = result.error.message
         const error_description = `Could not delete ${url} from media store ${store.info.name}: ${original}`
         request.log.error(`${PREFIX}: ${error_description}`)
 
         const { code, body } = serverError({
-          code: status_code,
           error: 'delete_failed',
           error_description,
           include_error_description
@@ -96,16 +87,15 @@ export const defMediaPost = (config: Config) => {
 
         return reply.errorResponse(code, body)
       } else {
-        const code = result.value.status_code || 200
+        const code = 200
         // const url = result.value.url || ''
-        const summary = result.value.summary || `${url} deleted`
-        const payload = result.value.payload
+        const summary = `${url} deleted`
+        // const payload = result.value.payload
 
         return reply.successResponse(code, {
           title: 'Delete success',
           description: 'Delete success page',
-          summary,
-          payload
+          summary
         })
       }
     }
@@ -178,13 +168,11 @@ export const defMediaPost = (config: Config) => {
     const result = await store.upload({ body, contentType, filename })
 
     if (result.error) {
-      const { error_description: original } = result.error
-      const status_code = result.error.status_code || 500
+      const original = result.error.message
       const error_description = `Could not upload file ${filename} to media store ${store.info.name}: ${original}`
       request.log.error(`${PREFIX}: ${error_description}`)
 
       const { code, body } = serverError({
-        code: status_code,
         error: 'upload_failed',
         error_description,
         include_error_description
@@ -193,18 +181,17 @@ export const defMediaPost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    const code = result.value.status_code || 202 // 201
-    const url = result.value.url || ''
-    const summary =
-      result.value.summary || `File uploaded successfully to ${url}`
+    const code = 202 // or 201
+    const url = result.value.url
+    const summary = `File uploaded successfully to ${url}`
 
     reply.header('Location', url)
 
     return reply.successResponse(code, {
       title: 'Upload success',
       description: 'Upload success page',
-      summary,
-      payload: result.value.payload
+      summary
+      // payload: result.value.payload
     })
   }
 

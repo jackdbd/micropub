@@ -13,6 +13,7 @@ import {
   defValidateClaim,
   defValidateAccessTokenNotBlacklisted
 } from '../../lib/fastify-hooks/index.js'
+import type { SyndicateToItem } from '../../lib/micropub/index.js'
 import { validationErrors } from '../../lib/validators.js'
 
 import responseDecorators from '../response-decorators/index.js'
@@ -45,7 +46,6 @@ import {
   options as options_schema,
   type Options
 } from './schemas.js'
-import type { SyndicateToItem } from './syndication.js'
 
 const defaults: Partial<Options> = {
   authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,

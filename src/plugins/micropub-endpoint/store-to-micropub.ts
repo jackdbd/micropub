@@ -1,9 +1,7 @@
 import {
   forbidden,
   invalidRequest,
-  unauthorized,
-  type BaseStoreError,
-  type BaseStoreValue
+  unauthorized
 } from '../../lib/micropub/index.js'
 
 const DEFAULT_INCLUDE_ERROR_DESCRIPTION = false
@@ -15,19 +13,18 @@ interface Options {
   include_error_description?: boolean
 }
 
-export const storeErrorToMicropubError = (
-  err: BaseStoreError = {},
-  options?: Options
-) => {
+export const storeErrorToMicropubError = (err: any, options?: Options) => {
   const opt = options || {}
 
   const include_error_description =
     opt.include_error_description || DEFAULT_INCLUDE_ERROR_DESCRIPTION
 
-  const status_code = err.status_code || DEFAULT_STATUS_CODE_ERROR
-
   const error_description =
-    err.error_description || 'There was an error with the Micropub store.'
+    err.message || 'There was an error with the Micropub store.'
+
+  // I can't rely on a status code being returned by a store. Probably this
+  // switch is not a good idea.
+  const status_code = err.status_code || DEFAULT_STATUS_CODE_ERROR
 
   switch (status_code) {
     case 400: {
@@ -50,7 +47,7 @@ export const storeErrorToMicropubError = (
  * which could be code outside of this Fastify plugin. It's better to normalize
  * it.
  */
-export const storeValueToMicropubValue = (value: BaseStoreValue = {}) => {
+export const storeValueToMicropubValue = (value: any = {}) => {
   const code = value.status_code || DEFAULT_STATUS_CODE_SUCCESS
   const status_text: string = value.status_text || 'Success'
   const summary: string = value.summary || 'Your request succeeded.'

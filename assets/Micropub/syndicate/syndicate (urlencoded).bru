@@ -1,0 +1,23 @@
+meta {
+  name: syndicate (urlencoded)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/syndicate
+  body: formUrlEncoded
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:form-urlencoded {
+  feed: https://www.giacomodebidda.com/feeds/notes.xml
+}

@@ -1,0 +1,25 @@
+meta {
+  name: syndicate (JSON)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/syndicate
+  body: json
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "feed": "https://www.giacomodebidda.com/feeds/notes.xml"
+  }
+}

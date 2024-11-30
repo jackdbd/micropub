@@ -12,21 +12,31 @@ import {
   REF
 } from '../github-contents-api/defaults.js'
 import { markdownToJf2 } from '../markdown-to-jf2.js'
-import { jf2ToContentWithFrontmatter, jf2ToSlug } from '../micropub/index.js'
-import type {
-  BaseStoreError,
-  BaseStoreValue,
-  Publication,
-  PublicationLocation,
-  Store,
-  StoreCreate,
-  StoreGet,
-  // StoreInfo,
-  StoreUpdate,
-  StoreDelete,
-  StoreUndelete,
-  UpdatePatch
+import {
+  jf2ToContentWithFrontmatter,
+  jf2ToSlug,
+  type Publication
 } from '../micropub/index.js'
+import type {
+  BaseValueGet,
+  ContentStore,
+  StoreCreate,
+  StoreDelete,
+  StoreGet,
+  StoreUndelete,
+  StoreUpdate,
+  SyndicatorStore
+} from '../micropub/store/index.js'
+
+// interface ValueDelete extends BaseValueDelete {}
+
+interface ValueGet extends BaseValueGet {
+  sha: string
+}
+
+export interface GitHubStore extends ContentStore, SyndicatorStore {}
+
+// interface ValueUpdate extends BaseValueUpdate {}
 
 interface Log {
   debug: (...args: any) => void
@@ -53,10 +63,6 @@ export interface Config {
   token?: string
 }
 
-export interface GitHubStoreError extends BaseStoreError {}
-
-export interface GitHubStoreValue extends BaseStoreValue {}
-
 const store_defaults: Partial<Config> = {
   branch: REF,
   github_api_base_url: GITHUB_API_BASE_URL,
@@ -67,9 +73,7 @@ const store_defaults: Partial<Config> = {
   token: process.env.GITHUB_TOKEN
 }
 
-export const defStore = (
-  config: Config
-): Store<GitHubStoreError, GitHubStoreValue> => {
+export const defStore = (config: Config): GitHubStore => {
   const store_cfg = applyToDefaults(store_defaults, config) as Required<Config>
 
   const {
@@ -115,10 +119,7 @@ export const defStore = (
     // return xs.join('\n')
   }
 
-  const update: StoreUpdate<GitHubStoreError, GitHubStoreValue> = async (
-    url: string,
-    patch: UpdatePatch
-  ) => {
+  const update: StoreUpdate = async (url, patch) => {
     const loc = publishedUrlToStoreLocation(url)
 
     // should we support updating a deleted post (loc.store_deleted)? Probably not.
@@ -126,18 +127,15 @@ export const defStore = (
     const result_get = await get(loc)
 
     if (result_get.error) {
-      const { status_code, status_text } = result_get.error
+      // const { status_code, status_text } = result_get.error
       const tip = `Make sure the file exists and that you can fetch it from the repository.`
       const error_description = `Cannot update the post published at ${loc.website} because the file ${loc.store} could not be retrieved from repository ${owner}/${repo} (branch ${branch}). ${tip}`
-      return { error: { status_code, status_text, error_description } }
+      // return { error: { status_code, status_text, error_description } }
+      return { error: new Error(error_description) }
     }
 
-    const body = (result_get.value as any).body as GetResponseBody
-    const { content: original, sha } = body
-
-    const md_original = base64ToUtf8(original)
-
-    let jf2 = markdownToJf2(md_original)
+    let jf2 = result_get.value.jf2
+    const sha = result_get.value.sha
 
     const messages: string[] = []
 
@@ -181,7 +179,7 @@ export const defStore = (
     // https://micropub.spec.indieweb.org/#response-0-p-1
 
     if (result.error) {
-      return { error: result.error }
+      return { error: new Error(result.error.error_description) }
     } else {
       const { status_code, status_text } = result.value
       const summary = `Updated ${loc.store} in repository ${owner}/${repo} (branch ${branch}). That post is published at ${loc.website}.`
@@ -190,9 +188,7 @@ export const defStore = (
     }
   }
 
-  const get: StoreGet<GitHubStoreError, GitHubStoreValue> = async (
-    loc: PublicationLocation
-  ) => {
+  const get: StoreGet<ValueGet> = async (loc) => {
     const result = await api.get({
       base_url,
       owner,
@@ -202,15 +198,15 @@ export const defStore = (
     })
 
     if (result.error) {
-      return { error: result.error }
+      return { error: new Error(result.error.error_description) }
     } else {
-      return { value: result.value }
+      const { content: base64, sha } = result.value.body
+      const jf2 = markdownToJf2(base64ToUtf8(base64))
+      return { value: { jf2, sha } }
     }
   }
 
-  const hardDelete: StoreDelete<GitHubStoreError, GitHubStoreValue> = async (
-    url: string
-  ) => {
+  const hardDelete: StoreDelete = async (url) => {
     const loc = publishedUrlToStoreLocation(url)
 
     const result_get = await get(loc)
@@ -221,7 +217,8 @@ export const defStore = (
       // const { error_description: original } = result_get.error
       const tip = `Please make sure the post exists in the repository.`
       const error_description = `Cannot delete post published at ${loc.website} because it could not be retrieved from location ${loc.store} in repository ${owner}/${repo} (branch ${branch}). ${tip}`
-      return { error: { ...result_get.error, error_description } }
+      // return { error: { ...result_get.error, error_description } }
+      return { error: new Error(error_description) }
     }
 
     const body = result_get.value as any
@@ -240,7 +237,8 @@ export const defStore = (
     if (result.error) {
       const tip = `Make sure you have the permissions to delete files from the respository.`
       const error_description = `Cannot delete post published at ${loc.website} because it could not be deleted from location ${loc.store} in repository ${owner}/${repo} (branch ${branch}). ${tip}`
-      return { error: { ...result.error, error_description } }
+      // return { error: { ...result.error, error_description } }
+      return { error: new Error(error_description) }
     } else {
       const summary = `Deleted ${loc.store} in repository ${owner}/${repo} (branch ${branch}). That post was published at ${loc.website}.`
       log.debug(summary)
@@ -248,16 +246,15 @@ export const defStore = (
     }
   }
 
-  const softDelete: StoreDelete<GitHubStoreError, GitHubStoreValue> = async (
-    url: string
-  ) => {
+  const softDelete: StoreDelete = async (url) => {
     const loc = publishedUrlToStoreLocation(url)
 
     if (!loc.store_deleted) {
       const error_description = `cannot soft-delete ${loc.website} because it does not specify a location for when it's deleted`
       log.error(error_description)
       return {
-        error: { status_code: 409, status_text: 'Conflict', error_description }
+        // error: { status_code: 409, status_text: 'Conflict', error_description }
+        error: new Error(error_description)
       }
     }
 
@@ -272,21 +269,20 @@ export const defStore = (
     })
 
     if (result.error) {
-      return { error: result.error }
+      return { error: new Error(result.error.error_description) }
     } else {
       return { value: result.value }
     }
   }
 
-  const undelete: StoreUndelete<GitHubStoreError, GitHubStoreValue> = async (
-    url: string
-  ) => {
+  const undelete: StoreUndelete = async (url) => {
     const loc = publishedUrlToStoreLocation(url)
 
     if (!loc.store_deleted) {
       const error_description = `Cannot undelete post published at ${loc.website} because it does not specify a location for when it's deleted.`
       return {
-        error: { status_code: 409, status_text: 'Conflict', error_description }
+        // error: { status_code: 409, status_text: 'Conflict', error_description }
+        error: new Error(error_description)
       }
     }
 
@@ -303,7 +299,8 @@ export const defStore = (
     if (result.error) {
       const { error_description: original } = result.error
       const error_description = `Cannot undelete post published at ${loc.website}. ${original}`
-      return { error: { ...result.error, error_description } }
+      // return { error: { ...result.error, error_description } }
+      return { error: new Error(error_description) }
     } else {
       return { value: result.value }
     }
@@ -347,9 +344,7 @@ export const defStore = (
     return loc
   }
 
-  const create: StoreCreate<GitHubStoreError, GitHubStoreValue> = async (
-    jf2: Jf2
-  ) => {
+  const create: StoreCreate = async (jf2) => {
     const content = jf2ToContent(jf2)
     const slug = jf2ToSlug(jf2)
     const filename = `${slug}.md`
@@ -401,7 +396,8 @@ export const defStore = (
       // In this case the original error message from the GitHub Contents API is not that useful.
       // const { error_description: original } = result.error
       const error_description = `Cannot create ${loc.store} in repository ${owner}/${repo}. Make sure there isn't already a file at that path.`
-      return { error: { ...result.error, error_description } }
+      // return { error: { ...result.error, error_description } }
+      return { error: new Error(error_description) }
     } else {
       const summary = `Post ot type '${jf2.h}' created at ${loc.store} in repo ${owner}/${repo} on branch ${branch}. Committed by ${committer.name} (${committer.email}). The post will be published at ${loc.website}.`
       log.debug(summary)

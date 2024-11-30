@@ -7,12 +7,15 @@ import { applyToDefaults } from '@hapi/hoek'
 import mime from 'mime'
 import { nanoid } from 'nanoid'
 import type {
-  BaseMediaStoreError,
-  BaseMediaStoreValue,
   MediaStore,
-  MediaStoreDelete,
-  MediaStoreUpload
-} from '../micropub/index.js'
+  StoreDelete,
+  StoreUpload
+} from '../micropub/store/index.js'
+
+// For now, I only implemented the MediaStore interface.
+export interface R2Store extends MediaStore {}
+// TODO: implement the ContentStore and SyndicatorStore interfaces for R2.
+// export interface R2Store extends ContentStore, MediaStore, SyndicatorStore {}
 
 export interface Credentials {
   accessKeyId: string
@@ -47,10 +50,6 @@ export interface Config {
   public_base_url: string
 }
 
-export interface R2StoreError extends BaseMediaStoreError {}
-
-export interface R2StoreValue extends BaseMediaStoreValue {}
-
 const defaults: Partial<Config> = {
   bucket_prefix: 'media/',
   ignore_filename: false
@@ -61,9 +60,7 @@ const defaults: Partial<Config> = {
  *
  * @see https://developers.cloudflare.com/r2/api/s3/api/
  */
-export const defMediaStore = (
-  config: Config
-): MediaStore<R2StoreError, R2StoreValue> => {
+export const defStore = (config: Config): R2Store => {
   const store_cfg = applyToDefaults(defaults, config) as Required<Config>
 
   const {
@@ -87,7 +84,7 @@ export const defMediaStore = (
 
   const public_root_url = `${public_base_url}${bucket_prefix}`
 
-  const upload: MediaStoreUpload<R2StoreError, R2StoreValue> = async (cfg) => {
+  const upload: StoreUpload = async (cfg) => {
     const { body: Body, contentType: ContentType } = cfg
 
     const filename = ignore_filename
@@ -123,19 +120,16 @@ export const defMediaStore = (
       }
     } catch (err: any) {
       // The error from the S3 SDK is not useful at all.
+      const error_description =
+        err.message ||
+        `Failed to upload file ${filename} to Cloudflare R2 bucket ${bucket_name} at ${bucket_path}`
       return {
-        error: {
-          status_code: 500,
-          status_text: 'Internal Server Error',
-          error_description: err.message as string
-        }
+        error: new Error(error_description)
       }
     }
   }
 
-  const hardDelete: MediaStoreDelete<R2StoreError, R2StoreValue> = async (
-    url
-  ) => {
+  const hardDelete: StoreDelete = async (url) => {
     const splits = url.split('/')
     const filename = splits.at(-1)!
 
@@ -168,12 +162,11 @@ export const defMediaStore = (
         }
       }
     } catch (err: any) {
+      const error_description =
+        err.message ||
+        `Failed to hard-delete file hosted on Cloudflare R2 bucket ${bucket_name} at ${bucket_path}`
       return {
-        error: {
-          status_code: 500,
-          status_text: 'Internal Server Error',
-          error_description: err.message as string
-        }
+        error: new Error(error_description)
       }
     }
   }

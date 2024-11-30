@@ -8,11 +8,9 @@ import { hasScope } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
 import { invalidRequest, normalizeJf2 } from '../../../lib/micropub/index.js'
 import type {
-  ActionType,
-  BaseStoreError,
-  BaseStoreValue,
-  Store,
-  UpdatePatch
+  ContentStore,
+  StoreAction,
+  StoreUpdatePatch
 } from '../../../lib/micropub/index.js'
 
 import type { PostRequestBody } from '../request.js'
@@ -28,17 +26,14 @@ interface PostRouteGeneric extends RouteGenericInterface {
   Body: PostRequestBody
 }
 
-export interface MicropubPostConfig<
-  StoreError extends BaseStoreError = BaseStoreError,
-  StoreValue extends BaseStoreValue = BaseStoreValue
-> {
+export interface MicropubPostConfig {
   ajv: Ajv
   include_error_description: boolean
   me: string
   media_endpoint: string
   micropub_endpoint: string
   prefix: string
-  store: Store<StoreError, StoreValue>
+  store: ContentStore
 }
 
 // We should return a Location response header if we can't (or don't want to)
@@ -73,12 +68,7 @@ export interface MicropubPostConfig<
  *
  * @see https://indieweb.org/Micropub#Handling_a_micropub_request
  */
-export const defMicropubPost = <
-  StoreError extends BaseStoreError = BaseStoreError,
-  StoreValue extends BaseStoreValue = BaseStoreValue
->(
-  config: MicropubPostConfig<StoreError, StoreValue>
-) => {
+export const defMicropubPost = (config: MicropubPostConfig) => {
   const {
     ajv,
     include_error_description,
@@ -207,7 +197,7 @@ export const defMicropubPost = <
     // post to change, the server MUST respond with HTTP 201 and include the new
     // URL in the HTTP Location header.
     // https://micropub.spec.indieweb.org/#delete
-    const action = jf2.action as ActionType
+    const action = jf2.action as StoreAction
     const url = jf2.url
 
     if (!store[action]) {
@@ -278,7 +268,7 @@ export const defMicropubPost = <
 
         case 'update': {
           const { action: _action, h: _h, type: _type, ...rest } = jf2
-          const patch = rest as UpdatePatch
+          const patch = rest as StoreUpdatePatch
           const result = await store[action](url, patch)
 
           if (result.error) {

@@ -13,12 +13,10 @@ import type { Environment } from 'nunjucks'
 
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-store/publication.js'
-import { defStore } from './lib/github-store/index.js'
-import { defMediaStore } from './lib/r2-media-store/index.js'
-import type {
-  ActionType as MicropubActionType,
-  ErrorResponseBody
-} from './lib/micropub/index.js'
+import { defStore as defGitHubStore } from './lib/github-store/index.js'
+import { defStore as defR2Store } from './lib/r2-store/index.js'
+import type { StoreAction, ErrorResponseBody } from './lib/micropub/index.js'
+import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token.js'
 
 import youch from './plugins/youch/index.js'
@@ -31,14 +29,15 @@ import type {
   NoScopeResponseOptions
 } from './plugins/micropub-endpoint/decorators/request.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
-import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
+import introspection from './plugins/introspect-endpoint/index.js'
 import responseDecorators from './plugins/response-decorators/index.js'
 import type {
   BaseErrorResponseBody,
   BaseSuccessResponseBody
 } from './plugins/response-decorators/index.js'
-import revocationEndpoint from './plugins/revocation-endpoint/index.js'
-import userinfoEndpoint from './plugins/userinfo-endpoint/index.js'
+import revocation from './plugins/revocation-endpoint/index.js'
+import syndicate from './plugins/syndicate-endpoint/index.js'
+import userinfo from './plugins/userinfo-endpoint/index.js'
 import tokenEndpoint from './plugins/token-endpoint/index.js'
 
 import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
@@ -53,12 +52,12 @@ const PREFIX = `${NAME} `
 declare module 'fastify' {
   interface FastifyRequest {
     noScopeResponse: (
-      action: MicropubActionType,
+      action: StoreAction,
       options?: NoScopeResponseOptions
     ) => { code: number; body: ErrorResponseBody }
 
     noActionSupportedResponse: (
-      action: MicropubActionType,
+      action: StoreAction,
       options?: NoActionSupportedResponseOptions
     ) => { code: number; body: ErrorResponseBody }
   }
@@ -198,13 +197,13 @@ export function defFastify(config: Config) {
     issuer
   })
 
-  fastify.register(introspectionEndpoint, {
+  fastify.register(introspection, {
     clientId: client_id,
     me,
     include_error_description
   })
-  fastify.register(revocationEndpoint, { include_error_description })
-  fastify.register(userinfoEndpoint, { include_error_description })
+  fastify.register(revocation, { include_error_description })
+  fastify.register(userinfo, { include_error_description })
 
   fastify.register(indieauth, {
     // authorizationCallbackRoute: '/auth/callback',
@@ -218,7 +217,7 @@ export function defFastify(config: Config) {
 
   const publication = defDefaultPublication({ domain, subdomain: 'www' })
 
-  const store = defStore({
+  const store = defGitHubStore({
     // This doesn't work. It errors with: this[writeSym] is not a function
     // log: { debug: fastify.log.debug, error: fastify.log.error },
     log: {
@@ -229,7 +228,6 @@ export function defFastify(config: Config) {
         return fastify.log.error(`@jackdbd/github-store ${message}`)
       }
     },
-    // log: console,
     owner: github_owner,
     publication,
     repo: github_repo,
@@ -243,7 +241,7 @@ export function defFastify(config: Config) {
 
   // fastify.log.warn(store.info, `=== Store ${store.info.name} ===`)
 
-  const mediaStore = defMediaStore({
+  const mediaStore = defR2Store({
     account_id: cloudflare_account_id,
     bucket_name: cloudflare_r2_bucket_name,
     credentials: {
@@ -275,6 +273,21 @@ export function defFastify(config: Config) {
     submitEndpoint: submit_endpoint,
     syndicateTo: syndicate_to,
     tokenEndpoint: token_endpoint
+  })
+
+  const { uid } = syndicate_to.filter((d) => d.uid.includes('t.me'))[0]!
+
+  const telegram_syndicator = defSyndicator({
+    chat_id: telegram_chat_id,
+    token: telegram_token,
+    uid
+  })
+
+  fastify.register(syndicate, {
+    includeErrorDescription: include_error_description,
+    me,
+    store,
+    syndicators: { [uid]: telegram_syndicator }
   })
 
   fastify.register(view, {

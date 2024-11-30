@@ -19,9 +19,9 @@ export interface BaseErrorResponseBody {
 export function errorResponse<
   B extends BaseErrorResponseBody = BaseErrorResponseBody
 >(this: FastifyReply, code: number, body: B) {
-  const { error_description } = body
   const title = body.title || 'Error'
   const description = body.description || 'Error page'
+  const error_description = body.error_description || undefined
 
   // TODO: handle i18n here?
   let error: string
@@ -77,6 +77,6 @@ export function errorResponse<
     })
   } else {
     this.header('Content-Type', APPLICATION_JSON)
-    return this.send(body)
+    return this.send({ error, error_description })
   }
 }

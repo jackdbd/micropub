@@ -17,12 +17,12 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     items: Mf2Item[]
   }
 
-  export interface Photo {
-    alt: string
-    url: string
-  }
-
-  // TODO: define location type
+  export type Photo =
+    | string
+    | {
+        alt: string
+        value: string
+      }
 
   /**
    * A `location` can be:
@@ -34,7 +34,13 @@ declare module '@paulrobertlloyd/mf2tojf2' {
    *
    * @see https://micropub.spec.indieweb.org/#examples-of-creating-objects
    */
-  export type Location = string
+  export type Location =
+    | string
+    | {
+        altitude?: string
+        latitude?: string
+        longitude?: string
+      }
 
   // mp-syndicate-to - This property is giving a command to the Micropub endpoint,
   // rather than just creating data, so it uses the mp- prefix.
@@ -45,6 +51,7 @@ declare module '@paulrobertlloyd/mf2tojf2' {
   export interface Jf2 {
     access_token?: string
     action?: string
+    audio?: string | string[]
     author?: string
     'bookmark-of'?: string
     category?: string[]
@@ -54,10 +61,13 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     'in-reply-to'?: string
     'like-of'?: string
     location?: Location
+    'mp-channel'?: string
+    'mp-destination'?: string
+    'mp-limit'?: string
     'mp-slug'?: string
     'mp-syndicate-to'?: string | string[]
     name?: string
-    photo?: Photo[]
+    photo?: Photo | Photo[]
     published?: string
     'read-of'?: string
     'repost-of'?: string
@@ -66,6 +76,7 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     updated?: string
     type?: Jf2Type
     url?: string
+    video?: string | string[]
     visibility?: string
   }
 

@@ -3,6 +3,7 @@ import { FastifyRequest } from 'fastify'
 import formAutoContent from 'form-auto-content'
 import { areSameOrigin } from '../../../lib/fastify-request-predicates/index.js'
 import { PostRequestBody } from '../request.js'
+import { isAudio, isVideo } from '../../../lib/mime-types.js'
 
 interface Config {
   media_endpoint: string
@@ -122,6 +123,16 @@ export const defMultipartRequestBody = (config: Config) => {
         request.log.debug(
           `${prefix}file location got from media endpoint: ${location}`
         )
+
+        if (location) {
+          if (isAudio(mimetype)) {
+            data['audio'] = location
+          } else if (isVideo(mimetype)) {
+            data['video'] = location
+          } else {
+            data['photo'] = location
+          }
+        }
 
         // I could create a photos array:
         // 1. collect the photo alt text when part.type === 'field'. Maybe use

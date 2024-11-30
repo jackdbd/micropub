@@ -1,7 +1,7 @@
 meta {
-  name: create note with one photo (multipart)
+  name: create note with one audio (multipart)
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
@@ -32,12 +32,12 @@ body:form-urlencoded {
 }
 
 body:multipart-form {
-  content: This is a test note with a photo
-  mp-slug: test-note-one-photo
+  content: This is a test note with an audio file
+  mp-slug: test-note-one-audio
   category[][0]: bruno
   category[][1]: test
   author: Giacomo Debidda
   mp-syndicate-to[][0]: https://fosstodon.org/@jackdbd
   mp-syndicate-to[][1]: {{syndicate_to_telegram}}
-  : @file(/home/jack/repos/micropub/assets/photo/866-200x300.jpg)
+  : @file(/home/jack/repos/micropub/assets/audio/example_700KB.mp3)
 }

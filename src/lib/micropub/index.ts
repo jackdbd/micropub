@@ -1,5 +1,3 @@
-export type { ActionType, UpdatePatch } from './actions.js'
-
 export type {
   ClientErrorResponse,
   ClientErrorType,
@@ -39,15 +37,6 @@ export {
 export { jf2ToContentWithFrontmatter } from './jf2-to-content.js'
 export { jf2ToSlug } from './jf2-to-slug.js'
 
-export type {
-  BaseError as BaseMediaStoreError,
-  BaseValue as BaseMediaStoreValue,
-  Delete as MediaStoreDelete,
-  Store as MediaStore,
-  Upload as MediaStoreUpload,
-  UploadConfig as MediaStoreUploadConfig
-} from './media-store.js'
-
 export { normalizeJf2 } from './normalize-jf2.js'
 
 export type {
@@ -62,17 +51,24 @@ export type {
   UpdateSuccess as UpdateSuccessStatusCode
 } from './status-codes.js'
 
+export { errorIfMethodNotImplementedInStore } from './store/index.js'
 export type {
-  BaseError as BaseStoreError,
-  BaseValue as BaseStoreValue,
-  Jf2ToContent as StoreJf2ToContent,
-  Store,
-  Create as StoreCreate,
-  Get as StoreGet,
+  BaseValueGet as StoreBaseValueGet,
+  BaseValueUpdate as StoreBaseValueUpdate,
+  ContentStore,
   Info as StoreInfo,
-  Update as StoreUpdate,
-  Delete as StoreDelete,
-  Undelete as StoreUndelete
-} from './store.js'
+  Jf2ToContent as StoreJf2ToContent,
+  MediaStore,
+  StoreAction,
+  StoreCreate,
+  StoreDelete,
+  StoreUndelete,
+  StoreUpdate,
+  StoreUpdatePatch,
+  StoreUpload,
+  SyndicatorStore
+} from './store/index.js'
 
-export { errorIfMethodNotImplementedInStore } from './store-utils.js'
+export type { Syndicator } from './syndicator.js'
+
+export type { SyndicateToItem } from './syndicate-to.js'

@@ -1,15 +1,8 @@
 import type { RouteHandler } from 'fastify'
-import type {
-  BaseMediaStoreError,
-  BaseMediaStoreValue,
-  MediaStore
-} from '../../../lib/micropub/index.js'
+import type { MediaStore } from '../../../lib/micropub/index.js'
 
-interface Config<
-  E extends BaseMediaStoreError = BaseMediaStoreError,
-  V extends BaseMediaStoreValue = BaseMediaStoreValue
-> {
-  store: MediaStore<E, V>
+interface Config {
+  store: MediaStore
 }
 
 export const defMediaGet = (config: Config) => {

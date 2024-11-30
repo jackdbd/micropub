@@ -1,7 +1,7 @@
 meta {
-  name: update note (JSON)
+  name: update note El Medano (JSON)
   type: http
-  seq: 8
+  seq: 9
 }
 
 post {
@@ -21,21 +21,11 @@ auth:bearer {
 body:json {
   {
     "action": "update",
-    "url": "{{test_note_url}}",
+    "url": "{{note_el_medano_url}}",
     "replace": {
-      "category": [
-        "bruno",
-        "micropub",
-        "test"
-      ],
       "content": {
-        "html": "<p>This is a <strong>test note</strong>.</p>"
-      },
-      "mp-syndicate-to": [
-        "https://fosstodon.org/@jackdbd",
-        "{{syndicate_to_telegram}}",
-        "https://news.indieweb.org/en"
-      ]
+        "html": "<p>This is a <strong>sample</strong> note from <a href='https://github.com/usebruno/bruno'>Bruno</a>.</p>"
+      }
     }
   }
 }

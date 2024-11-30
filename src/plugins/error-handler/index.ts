@@ -1,4 +1,3 @@
-// import { requestContext } from '@fastify/request-context'
 import { send } from '@jackdbd/notifications/telegram'
 import { errorText } from '@jackdbd/telegram-text-messages/error'
 import Fastify from 'fastify'

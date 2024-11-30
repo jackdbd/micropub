@@ -5,7 +5,7 @@ import { hasScope } from '../../lib/fastify-request-predicates/index.js'
 import {
   insufficientScope,
   invalidRequest,
-  type ActionType
+  type StoreAction
 } from '../../lib/micropub/index.js'
 
 import { NAME } from './constants.js'
@@ -62,9 +62,9 @@ export const defEnsureRequestHasScope = (config: {
     reply,
     done
   ) => {
-    let action: ActionType = 'create'
+    let action: StoreAction = 'create'
     if (request.body && (request.body as any).action) {
-      action = (request.body as any).action as ActionType
+      action = (request.body as any).action as StoreAction
     }
 
     if (!hasScope(request, action)) {
