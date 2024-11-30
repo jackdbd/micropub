@@ -1,11 +1,12 @@
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
 
-import type { ActionType } from '../../lib/micropub/index.js'
+import { hasScope } from '../../lib/fastify-request-predicates/index.js'
 import {
   insufficientScope,
-  invalidRequest
-} from '../../lib/micropub/error-responses.js'
+  invalidRequest,
+  type ActionType
+} from '../../lib/micropub/index.js'
 
 import { NAME } from './constants.js'
 import { micropub_get_request } from './schemas.js'
@@ -66,7 +67,7 @@ export const defEnsureRequestHasScope = (config: {
       action = (request.body as any).action as ActionType
     }
 
-    if (!request.hasScope(action)) {
+    if (!hasScope(request, action)) {
       const error_description = `action '${action}' not allowed, since access token has no scope '${action}'`
       request.log.warn(`${PREFIX}${error_description}`)
 

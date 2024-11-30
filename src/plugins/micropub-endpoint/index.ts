@@ -28,7 +28,6 @@ import {
 } from './constants.js'
 import { defMicropubResponse } from './decorators/reply.js'
 import {
-  hasScope,
   noActionSupportedResponse,
   noScopeResponse
 } from './decorators/request.js'
@@ -47,7 +46,6 @@ import {
   type Options
 } from './schemas.js'
 import type { SyndicateToItem } from './syndication.js'
-import { defValidateJf2 } from './validate-jf2.js'
 
 const defaults: Partial<Options> = {
   authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
@@ -114,6 +112,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   // === PLUGINS ============================================================ //
   const prefix_plugins = `${NAME}/plugins `
+
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
   fastify.log.debug(`${prefix_plugins}registered Fastify plugin: formbody`)
@@ -132,8 +131,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   // === DECORATORS ========================================================= //
   const prefix_decorators = `${NAME}/decorators `
-  fastify.decorateRequest('hasScope', hasScope)
-  fastify.log.debug(`${prefix_decorators}decorateRequest: hasScope`)
 
   fastify.decorateRequest(
     'noActionSupportedResponse',
@@ -146,76 +143,17 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   fastify.decorateRequest('noScopeResponse', noScopeResponse)
   fastify.log.debug(`${prefix_decorators}decorateRequest: noScopeResponse`)
 
-  // const {
-  //   validateCard,
-  //   validateCite,
-  //   validateEvent,
-  //   validateEntry
-  // } = defValidateJf2(ajv)
-  const {
-    validateMicropubCard,
-    validateMicropubCite,
-    validateMicropubEntry,
-    validateMicropubEvent
-  } = defValidateJf2(ajv)
-
-  const micropubResponseCard = defMicropubResponse({
+  const micropubResponse = defMicropubResponse({
     include_error_description,
-    validate: validateMicropubCard,
-    store
-  })
-
-  const micropubResponseCite = defMicropubResponse({
-    include_error_description,
-    validate: validateMicropubCite,
-    store
-  })
-
-  const micropubResponseEvent = defMicropubResponse({
-    include_error_description,
-    validate: validateMicropubEvent,
-    store
-  })
-
-  const micropubResponseEntry = defMicropubResponse({
-    include_error_description,
-    validate: validateMicropubEntry,
+    prefix: `${NAME}/decorators/micropub-response `,
     store
   })
 
   const dependencies = ['errorResponse']
-
-  fastify.decorateReply(
-    'micropubResponseCard',
-    micropubResponseCard,
-    dependencies
-  )
-  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseCard`)
-
-  fastify.decorateReply(
-    'micropubResponseCite',
-    micropubResponseCite,
-    dependencies
-  )
-  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseCite`)
-
-  fastify.decorateReply(
-    'micropubResponseEvent',
-    micropubResponseEvent,
-    dependencies
-  )
-  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseEvent`)
-
-  fastify.decorateReply(
-    'micropubResponseEntry',
-    micropubResponseEntry,
-    dependencies
-  )
-  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponseEntry`)
+  fastify.decorateReply('micropubResponse', micropubResponse, dependencies)
+  fastify.log.debug(`${prefix_decorators}decorateReply: micropubResponse`)
 
   // === HOOKS ============================================================== //
-  const redirect_uri = `${base_url}${auth_callback}`
-
   const log_prefix = `${NAME}/hooks `
 
   fastify.addHook('onRoute', (routeOptions) => {
@@ -266,7 +204,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       client_id,
       include_error_description,
       prefix: `${NAME}/routes `,
-      redirect_uri,
+      redirect_uri: `${base_url}${auth_callback}`,
       token_endpoint
     })
   )

@@ -2,12 +2,11 @@ import { requestContext } from '@fastify/request-context'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import Ajv from 'ajv'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import formAutoContent from 'form-auto-content'
 
 import { rfc3339 } from '../../../lib/date.js'
-import { areSameOrigin } from '../../../lib/fastify-request-predicates/index.js'
+import { hasScope } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
-import { normalizeJf2 } from '../../../lib/micropub/index.js'
+import { invalidRequest, normalizeJf2 } from '../../../lib/micropub/index.js'
 import type {
   ActionType,
   BaseStoreError,
@@ -15,13 +14,15 @@ import type {
   Store,
   UpdatePatch
 } from '../../../lib/micropub/index.js'
-import { invalidRequest } from '../../../lib/micropub/error-responses.js'
 
 import type { PostRequestBody } from '../request.js'
 import {
   storeErrorToMicropubError,
   storeValueToMicropubValue
 } from '../store-to-micropub.js'
+import { defValidateJf2 } from '../validate-jf2.js'
+
+import { defMultipartRequestBody } from './micropub-post-multipart.js'
 
 interface PostRouteGeneric extends RouteGenericInterface {
   Body: PostRequestBody
@@ -79,138 +80,39 @@ export const defMicropubPost = <
   config: MicropubPostConfig<StoreError, StoreValue>
 ) => {
   const {
+    ajv,
     include_error_description,
+    // me,
     media_endpoint,
     micropub_endpoint,
     prefix,
     store
   } = config
 
+  const {
+    validateMicropubCard,
+    validateMicropubCite,
+    validateMicropubEntry,
+    validateMicropubEvent
+  } = defValidateJf2(ajv)
+
+  const multipartRequestBody = defMultipartRequestBody({
+    media_endpoint,
+    micropub_endpoint,
+    prefix: `${prefix}multipart `
+  })
+
   const micropubPost: RouteHandler<PostRouteGeneric> = async (
     request,
     reply
   ) => {
+    request.log.warn(
+      request.body,
+      `=== REQUEST BODY (content-type ${request.headers['content-type']}) ===`
+    )
     let request_body: PostRequestBody
     if (request.isMultipart()) {
-      const parts = request.parts()
-      const data: Record<string, any> = {}
-      for await (const part of parts) {
-        if (part.type === 'field') {
-          const key = part.fieldname
-
-          if (key.includes('[]')) {
-            const k = key.split('[]')[0]
-            if (data[k]) {
-              data[k].push(part.value)
-            } else {
-              data[k] = [part.value]
-            }
-            request.log.debug(
-              `${prefix}collected array value ${part.value} in form field ${k}`
-            )
-          } else {
-            data[key] = part.value
-            request.log.debug(
-              `${prefix}collected value ${part.value} in form field ${key}`
-            )
-          }
-        } else if (part.type === 'file') {
-          request.log.debug(
-            `${prefix}received file ${part.filename}. Passing the request to the /media endpoint`
-          )
-
-          // let response: LightMyRequestResponse | Response
-          let location: string | undefined = undefined
-          if (areSameOrigin(micropub_endpoint, media_endpoint)) {
-            request.log.debug(
-              `${prefix}make request to LOCAL media endpoint ${media_endpoint} (inject)`
-            )
-
-            // I find this quite clanky to use...
-            const form = formAutoContent(
-              {
-                file: {
-                  value: part.file,
-                  options: {
-                    filename: part.filename,
-                    contentType: part.mimetype
-                  }
-                }
-              },
-              { forceMultiPart: true }
-            )
-
-            const response = await request.server.inject({
-              url: media_endpoint,
-              method: 'POST',
-              headers: {
-                ...form.headers,
-                authorization: request.headers.authorization
-              },
-              payload: form.payload
-            })
-
-            if (response.headers.location) {
-              location = response.headers.location.toString()
-            }
-          } else {
-            request.log.debug(
-              `${prefix}make request to REMOTE media endpoint ${media_endpoint} (fetch)`
-            )
-
-            const form = formAutoContent(
-              {
-                file: {
-                  value: part.file,
-                  options: {
-                    filename: part.filename,
-                    contentType: part.mimetype
-                  }
-                }
-              },
-              { forceMultiPart: true }
-            )
-
-            // I am afraid this fetch is not correct
-            const response = await fetch(media_endpoint, {
-              method: 'POST',
-              headers: {
-                ...form.headers,
-                Authorization: request.headers.authorization!
-                // 'Content-Disposition': `form-data; name="${part.fieldname}"; filename="${part.filename}"`,
-                // 'Content-Type': 'multipart/form-data'
-              },
-              body: await part.toBuffer()
-            })
-
-            location = response.headers.get('location') || undefined
-          }
-
-          request.log.debug(
-            `${prefix}file location got from media endpoint: ${location}`
-          )
-
-          // I could create a photos array:
-          // 1. collect the photo alt text when part.type === 'field'. Maybe use
-          // a field like mp-photo-alt-text? It should match the number of photo
-          // files. E.g. set two mp-photo-alt-text[] for two photo files.
-          // 2. make a request to the /media endpoint and use
-          // response.header.location as the photo url
-          // 3. push photo {alt, url} to the photos array
-          // 4. set `photos` as `photo` in the `request body`
-          // It seems that Quill takes a similar approach.
-          // https://github.com/aaronpk/Quill/blob/8ecaed3d2f5a19bf1a5c4cb077658e1bd3bc8438/views/new-post.php#L448
-
-          // data.photo = response.headers.location
-
-          // data.photo = {
-          //   alt: 'TODO: where to get the alternate text?',
-          //   url: location
-          // }
-        }
-      }
-      request_body = data as PostRequestBody
-      // request.log.warn(data, '=== DATA ===')
+      request_body = await multipartRequestBody(request)
     } else {
       request_body = request.body
     }
@@ -232,6 +134,8 @@ export const defMicropubPost = <
     }
 
     // The request body sent by a Micropub client could be a JF2 or a MF2.
+    // TODO: add some references to this statement (e.g. cite a few Micropub
+    // clients, add links to documentation).
 
     let jf2: Jf2
     if (request_body.items) {
@@ -313,7 +217,7 @@ export const defMicropubPost = <
       return reply.errorResponse(code, body)
     }
 
-    if (!request.hasScope(action)) {
+    if (!hasScope(request, action)) {
       const { code, body } = request.noScopeResponse(action, {
         include_error_description
       })
@@ -429,19 +333,19 @@ export const defMicropubPost = <
 
     switch (jf2.h) {
       case 'card': {
-        return reply.micropubResponseCard(jf2)
+        return reply.micropubResponse(jf2, { validate: validateMicropubCard })
       }
 
       case 'cite': {
-        return reply.micropubResponseCite(jf2)
-      }
-
-      case 'event': {
-        return reply.micropubResponseEvent(jf2)
+        return reply.micropubResponse(jf2, { validate: validateMicropubCite })
       }
 
       case 'entry': {
-        return reply.micropubResponseEntry(jf2)
+        return reply.micropubResponse(jf2, { validate: validateMicropubEntry })
+      }
+
+      case 'event': {
+        return reply.micropubResponse(jf2, { validate: validateMicropubEvent })
       }
 
       default: {

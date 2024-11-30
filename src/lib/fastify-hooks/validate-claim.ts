@@ -36,7 +36,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     let given
     if (typeof assertion.value === 'function') {
       request.log.debug(
-        `${log_prefix}the value provided for validating the claim '${key}' is a function. Invoking it now and test its return value against the actual token claim...`
+        `${log_prefix}the value provided for validating the claim '${key}' is a function. Invoking it now and test its return value against the actual claim ${key}=${actual}`
       )
       given = assertion.value()
     } else {

@@ -21,7 +21,8 @@ import {
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
-import { defMediaGet, defMediaPost } from './routes.js'
+import { defMediaGet } from './routes/media-get.js'
+import { defMediaPost } from './routes/media-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const PREFIX = `${NAME} `

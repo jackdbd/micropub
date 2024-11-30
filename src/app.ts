@@ -26,10 +26,11 @@ import errorHandler from './plugins/error-handler/index.js'
 import indieauth from './plugins/indieauth/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
-import {
+import type {
   NoActionSupportedResponseOptions,
   NoScopeResponseOptions
 } from './plugins/micropub-endpoint/decorators/request.js'
+import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
 import introspectionEndpoint from './plugins/introspect-endpoint/index.js'
 import responseDecorators from './plugins/response-decorators/index.js'
 import type {
@@ -51,8 +52,6 @@ const PREFIX = `${NAME} `
 
 declare module 'fastify' {
   interface FastifyRequest {
-    hasScope(scope: string): boolean
-
     noScopeResponse: (
       action: MicropubActionType,
       options?: NoScopeResponseOptions
@@ -76,10 +75,7 @@ declare module 'fastify' {
       body: B
     ): void
 
-    micropubResponseCard(jf2: any): Promise<void>
-    micropubResponseCite(jf2: any): Promise<void>
-    micropubResponseEntry(jf2: any): Promise<void>
-    micropubResponseEvent(jf2: any): Promise<void>
+    micropubResponse(jf2: Jf2, config: ResponseConfig): Promise<void>
   }
 }
 
@@ -223,9 +219,17 @@ export function defFastify(config: Config) {
   const publication = defDefaultPublication({ domain, subdomain: 'www' })
 
   const store = defStore({
-    // I tried to pass fastify.log here, but it errors with: this[writeSym] is not a function
-    // log: fastify.log,
-    log: console,
+    // This doesn't work. It errors with: this[writeSym] is not a function
+    // log: { debug: fastify.log.debug, error: fastify.log.error },
+    log: {
+      debug: (message: string) => {
+        return fastify.log.debug(`@jackdbd/github-store ${message}`)
+      },
+      error: (message: string) => {
+        return fastify.log.error(`@jackdbd/github-store ${message}`)
+      }
+    },
+    // log: console,
     owner: github_owner,
     publication,
     repo: github_repo,
@@ -237,7 +241,7 @@ export function defFastify(config: Config) {
     }
   })
 
-  fastify.log.warn(store.info, `=== Store ${store.info.name}===`)
+  // fastify.log.warn(store.info, `=== Store ${store.info.name} ===`)
 
   const mediaStore = defMediaStore({
     account_id: cloudflare_account_id,

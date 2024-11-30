@@ -8,20 +8,6 @@ import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/decorators/request `
 
-export function hasScope(this: FastifyRequest, scope: string) {
-  const claims = this.requestContext.get('access_token_claims')
-
-  if (!claims) {
-    return false
-  }
-
-  const scopes = claims.scope.split(' ')
-
-  const boolean = scopes.includes(scope) ? true : false
-  this.log.debug(`${PREFIX}does access token have scope '${scope}'? ${boolean}`)
-  return boolean
-}
-
 export interface NoScopeResponseOptions {
   include_error_description?: boolean
 }
@@ -54,7 +40,7 @@ export function noActionSupportedResponse(
   action: ActionType,
   options?: NoActionSupportedResponseOptions
 ) {
-  const opt = options || ({} as NoScopeResponseOptions)
+  const opt = options || ({} as NoActionSupportedResponseOptions)
   const include_error_description = opt.include_error_description || false
 
   const error_description = `Action '${action}' is not supported by this Micropub server.`

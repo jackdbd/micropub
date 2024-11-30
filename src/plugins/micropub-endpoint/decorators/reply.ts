@@ -9,35 +9,41 @@ import type {
 } from '../../../lib/micropub/index.js'
 import { invalidRequest } from '../../../lib/micropub/error-responses.js'
 
-import { NAME } from '../constants.js'
 import {
   storeErrorToMicropubError,
   storeValueToMicropubValue
 } from '../store-to-micropub.js'
-
-const PREFIX = `${NAME}/decorators/reply `
 
 // TODO: consider accepting a default published location as a parameter, then use
 // the result of store.create() to overwrite it? Or maybe not set the Location
 // header at all?
 const DEFAULT_PUBLISHED_LOCATION = 'https://giacomodebidda.com/'
 
+export interface ResponseConfig {
+  validate: ValidateFunction
+}
+
 export interface MicropubResponseConfig<
   StoreError extends BaseStoreError = BaseStoreError,
   StoreValue extends BaseStoreValue = BaseStoreValue
 > {
   include_error_description: boolean
+  prefix: string
   store: Store<StoreError, StoreValue>
-  validate?: ValidateFunction
 }
 
 export function defMicropubResponse<
   StoreError extends BaseStoreError = BaseStoreError,
   StoreValue extends BaseStoreValue = BaseStoreValue
 >(config: MicropubResponseConfig<StoreError, StoreValue>) {
-  const { include_error_description, store, validate } = config
+  const { include_error_description, prefix, store } = config
 
-  return async function micropubResponse(this: FastifyReply, jf2: Jf2) {
+  return async function micropubResponse(
+    this: FastifyReply,
+    jf2: Jf2,
+    cfg: ResponseConfig
+  ) {
+    const { validate } = cfg
     // Either passing base_url to the nunjucks template or not is fine. But if we
     // do pass it, we need to make sure to specify 'https' when we're not on
     // localhost, otherwise we will have mixed content errors.
@@ -57,9 +63,6 @@ export function defMicropubResponse<
           schema_id = `'${validate.schema.title}' (ID: ${validate.schema.$id})`
         }
       }
-      this.request.log.debug(
-        `${PREFIX}validate JF2 against schema ${schema_id}`
-      )
 
       const valid = validate(jf2)
 
@@ -67,7 +70,7 @@ export function defMicropubResponse<
         const error_description = `Received invalid JF2 according to schema ${schema_id}`
         this.request.log.warn(
           { jf2, errors: validate.errors || [] },
-          `${PREFIX}${error_description}`
+          `${prefix}${error_description}`
         )
 
         const { code, body } = invalidRequest({
@@ -78,7 +81,7 @@ export function defMicropubResponse<
         return this.errorResponse(code, body)
       } else {
         const message = `validated JF2 according to schema ${schema_id}`
-        this.request.log.debug(`${PREFIX}${message}`)
+        this.request.log.debug(`${prefix}${message}`)
       }
     }
 
@@ -88,12 +91,14 @@ export function defMicropubResponse<
       const { code, body } = storeErrorToMicropubError(result.error, {
         include_error_description
       })
-      this.request.log.error(`${PREFIX}${body.error}:${body.error_description}`)
+      this.request.log.error(
+        `${prefix}${body.error}: ${body.error_description}`
+      )
 
       return this.errorResponse(code, body)
     } else {
       const { code, summary } = storeValueToMicropubValue(result.value)
-      this.request.log.debug(`${PREFIX}${summary}`)
+      this.request.log.debug(`${prefix}${summary}`)
 
       const published_location = DEFAULT_PUBLISHED_LOCATION
       this.header('Location', published_location)

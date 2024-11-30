@@ -1,22 +1,22 @@
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
 import type { RouteHandler } from 'fastify'
-import { defErrorIfActionNotAllowed } from '../../lib/error-if-action-not-allowed.js'
-import { errorIfMethodNotImplementedInStore } from '../../lib/micropub/index.js'
+import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
+import {
+  errorIfMethodNotImplementedInStore,
+  invalidRequest,
+  serverError
+} from '../../../lib/micropub/index.js'
 import type {
   ActionType,
   BaseMediaStoreError,
   BaseMediaStoreValue,
   MediaStore
-} from '../../lib/micropub/index.js'
-import {
-  invalidRequest,
-  serverError
-} from '../../lib/micropub/error-responses.js'
-import { NAME } from './constants.js'
+} from '../../../lib/micropub/index.js'
+import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/routes `
 
-export interface MediaPostConfig<
+interface Config<
   E extends BaseMediaStoreError = BaseMediaStoreError,
   V extends BaseMediaStoreValue = BaseMediaStoreValue
 > {
@@ -43,7 +43,7 @@ export interface MediaPostConfig<
  * @see https://www.w3.org/TR/micropub/#response-3
  * @see https://micropub.spec.indieweb.org/#uploading-files
  */
-export const defMediaPost = (config: MediaPostConfig) => {
+export const defMediaPost = (config: Config) => {
   const { include_error_description, store } = config
 
   const errorIfActionNotAllowed = defErrorIfActionNotAllowed({
@@ -209,30 +209,4 @@ export const defMediaPost = (config: MediaPostConfig) => {
   }
 
   return mediaPost
-}
-
-export interface MediaGetConfig<
-  E extends BaseMediaStoreError = BaseMediaStoreError,
-  V extends BaseMediaStoreValue = BaseMediaStoreValue
-> {
-  store: MediaStore<E, V>
-}
-
-export const defMediaGet = (config: MediaGetConfig) => {
-  const { store } = config
-
-  const mediaGet: RouteHandler = async (_request, reply) => {
-    // store capabilities
-    const supports_delete = store.delete ? true : false
-    const capabilities = { supports_upload: true, supports_delete }
-
-    return reply.successResponse(200, {
-      title: 'Media endpoint configuration',
-      description: 'Configuration page for the media endpoint.',
-      summary: 'Configuration for the Micropub media endpoint.',
-      payload: { info: store.info, capabilities }
-    })
-  }
-
-  return mediaGet
 }

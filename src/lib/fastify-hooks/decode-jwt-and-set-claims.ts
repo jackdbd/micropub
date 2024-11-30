@@ -93,10 +93,10 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       return reply.errorResponse(code, body)
     }
 
-    request.log.warn(claims, '=== JWT claims ===')
+    // request.log.warn(claims, '=== JWT claims ===')
     request.requestContext.set('access_token_claims', claims)
     request.log.debug(
-      `${log_prefix}stored access token claims in request context key 'access_token_claims'}`
+      `${log_prefix}stored access token claims in request context key 'access_token_claims'`
     )
 
     return done()

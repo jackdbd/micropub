@@ -30,8 +30,6 @@ import type {
 
 interface Log {
   debug: (...args: any) => void
-  info: (...args: any) => void
-  warn: (...args: any) => void
   error: (...args: any) => void
 }
 
@@ -48,7 +46,6 @@ export interface Config {
   committer: AuthorOrCommitter
   github_api_base_url?: string
   log?: Log
-  log_prefix?: string
   owner: string
   publication: Publication
   repo: string
@@ -65,11 +62,8 @@ const store_defaults: Partial<Config> = {
   github_api_base_url: GITHUB_API_BASE_URL,
   log: {
     debug: console.debug,
-    info: console.info,
-    warn: console.warn,
     error: console.error
   },
-  log_prefix: 'github-store ',
   token: process.env.GITHUB_TOKEN
 }
 
@@ -83,7 +77,6 @@ export const defStore = (
     committer,
     github_api_base_url: base_url,
     log,
-    log_prefix,
     owner,
     publication,
     repo,
@@ -250,7 +243,7 @@ export const defStore = (
       return { error: { ...result.error, error_description } }
     } else {
       const summary = `Deleted ${loc.store} in repository ${owner}/${repo} (branch ${branch}). That post was published at ${loc.website}.`
-      log.debug(`${log_prefix}${summary}`)
+      log.debug(summary)
       return { value: { ...result.value, summary } }
     }
   }
@@ -262,7 +255,7 @@ export const defStore = (
 
     if (!loc.store_deleted) {
       const error_description = `cannot soft-delete ${loc.website} because it does not specify a location for when it's deleted`
-      log.error(`${log_prefix}${error_description}`)
+      log.error(error_description)
       return {
         error: { status_code: 409, status_text: 'Conflict', error_description }
       }
@@ -332,11 +325,12 @@ export const defStore = (
     const loc = publication.default.location
 
     const keys = Object.keys(publication.items)
-    log.debug(`${log_prefix}supported publications: ${keys.join(', ')}`)
+    log.debug(`supported publications: ${keys.join(', ')}`)
+
     for (const [key, item] of Object.entries(publication.items)) {
       const { location, predicate } = item
       if (predicate.website(url)) {
-        log.debug(`${log_prefix}predicate matched: ${key}`)
+        log.debug(`matched predicate: ${key}`)
         loc.store = `${location.store}${slug}.md`
         loc.website = `${location.website}${slug}/`
 
@@ -366,12 +360,12 @@ export const defStore = (
     }
 
     const keys = Object.keys(publication.items)
+    log.debug(`supported publications: ${keys.join(', ')}`)
 
-    log.debug(`${log_prefix}supported publications: ${keys.join(', ')}`)
     for (const [key, item] of Object.entries(publication.items)) {
       const { location, predicate } = item
       if (predicate.store(jf2)) {
-        log.debug(`${log_prefix}predicate matched: ${key}`)
+        log.debug(`matched predicate: ${key}`)
         loc.store = `${location.store}${filename}`
         loc.website = `${location.website}${slug}/`
         break
@@ -388,7 +382,7 @@ export const defStore = (
     // See also: https://indieweb.org/Micropub-extensions#Slug
 
     log.debug(
-      `${log_prefix}trying storing ${jf2.h} as base64-encoded string at ${loc.store}`
+      `trying to store ${jf2.h} as base64-encoded string at ${loc.store}`
     )
 
     const result = await api.createOrUpdate({
@@ -406,11 +400,11 @@ export const defStore = (
     if (result.error) {
       // In this case the original error message from the GitHub Contents API is not that useful.
       // const { error_description: original } = result.error
-      const error_description = `Cannot create ${loc.store} in repository ${owner}/${repo}. Make sure it doesn't already exist.`
+      const error_description = `Cannot create ${loc.store} in repository ${owner}/${repo}. Make sure there isn't already a file at that path.`
       return { error: { ...result.error, error_description } }
     } else {
       const summary = `Post ot type '${jf2.h}' created at ${loc.store} in repo ${owner}/${repo} on branch ${branch}. Committed by ${committer.name} (${committer.email}). The post will be published at ${loc.website}.`
-      log.debug(`${log_prefix}${summary}`)
+      log.debug(summary)
       return {
         value: { ...result.value, summary }
       }
