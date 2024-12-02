@@ -12,15 +12,13 @@ export interface BaseSuccessResponseBody {
 export function successResponse<
   B extends BaseSuccessResponseBody = BaseSuccessResponseBody
 >(this: FastifyReply, code: number, body: B) {
-  const { summary, payload } = body
+  const { payload, summary } = body
   const title = body.title || 'Success'
   const description = body.description || 'Success page'
 
-  this.code(code)
-
   if (clientAcceptsHtml(this.request)) {
     this.header('Content-Type', TEXT_HTML)
-    return this.view('success.njk', {
+    return this.code(code).view('success.njk', {
       title,
       description,
       summary,
@@ -28,6 +26,10 @@ export function successResponse<
     })
   } else {
     this.header('Content-Type', APPLICATION_JSON)
-    return this.send({ summary, payload })
+    if (payload) {
+      return this.code(code).send(payload)
+    } else {
+      return this.code(204).send()
+    }
   }
 }
