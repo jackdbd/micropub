@@ -9,6 +9,13 @@ const slugify_options = {
   remove: /[*+~.·,()'"`´%!?¿:@\/]/g
 }
 
+const sanitize = (str: string) => {
+  return str
+    .replace(/^https?:\/\//, '')
+    .replaceAll(/\//g, replacement_character)
+    .replaceAll(/\./g, replacement_character)
+}
+
 /**
  * Creates a slug from a JF2 object.
  *
@@ -27,24 +34,18 @@ export const jf2ToSlug = (jf2: Jf2) => {
     return str.toLowerCase()
   }
 
-  const prefix = ''
-
   if (jf2.name) {
     str = jf2.name
   } else if (jf2.summary) {
     str = jf2.summary
   } else if (jf2['bookmark-of']) {
-    str = `${prefix}${jf2['bookmark-of']
-      .replace(/^https?:\/\//, '')
-      .replaceAll(/\./g, replacement_character)}`
+    str = sanitize(jf2['bookmark-of'])
+  } else if (jf2['in-reply-to']) {
+    str = sanitize(jf2['in-reply-to'])
   } else if (jf2['like-of']) {
-    str = `${prefix}${jf2['like-of']
-      .replace(/^https?:\/\//, '')
-      .replaceAll(/\./g, replacement_character)}`
+    str = sanitize(jf2['like-of'])
   } else if (jf2['repost-of']) {
-    str = `${prefix}${jf2['repost-of']
-      .replace(/^https?:\/\//, '')
-      .replaceAll(/\./g, replacement_character)}`
+    str = sanitize(jf2['repost-of'])
   } else if (jf2.content) {
     if (typeof jf2.content === 'string') {
       // If the source of the post was written as string, we treat it as plain text.
