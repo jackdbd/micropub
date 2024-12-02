@@ -53,8 +53,8 @@ import {
  * precise order.
  */
 export const defValidateJf2 = (ajv: Ajv) => {
-  const label = '=== Compile schemas for microformats2 JF2 and Micropub JF2 ==='
-  console.time(label)
+  // const label = '=== Compile schemas for microformats2 JF2 and Micropub JF2 ==='
+  // console.time(label)
 
   ajv.compile(dt_accessed)
   ajv.compile(dt_duration)
@@ -103,8 +103,8 @@ export const defValidateJf2 = (ajv: Ajv) => {
   const validateMicropubEntry = ajv.compile(mp_entry)
   const validateMicropubEvent = ajv.compile(mp_event)
 
-  console.timeLog(label)
-  console.timeEnd(label)
+  // console.timeLog(label)
+  // console.timeEnd(label)
 
   return {
     validateAdr,

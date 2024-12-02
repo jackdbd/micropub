@@ -121,6 +121,9 @@ in {
       fly secrets set TELEGRAM_CHAT_ID="${telegram.chat_id}"
       fly secrets set TELEGRAM_TOKEN="${telegram.token}"
     '';
+    prod.exec = ''
+      npm run build && npm run start
+    '';
     versions.exec = ''
       echo "=== Versions ==="
       dive --version

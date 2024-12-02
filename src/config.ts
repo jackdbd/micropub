@@ -146,6 +146,15 @@ export const defConfig = () => {
     return { error: new Error('GITHUB_TOKEN not set') }
   }
 
+  // const include_error_description = process.env.INCLUDE_ERROR_DESCRIPTION
+  //   ? true
+  //   : false
+
+  const include_error_description = true
+
+  const report_all_ajv_errors =
+    process.env.NODE_ENV === 'development' ? true : false
+
   const secure_session_key_one_buf = process.env.SECURE_SESSION_KEY_ONE
   if (!secure_session_key_one_buf) {
     return { error: new Error('SECURE_SESSION_KEY_ONE not set') }
@@ -155,10 +164,6 @@ export const defConfig = () => {
   if (!secure_session_key_two_buf) {
     return { error: new Error('SECURE_SESSION_KEY_TWO not set') }
   }
-
-  const include_error_description = process.env.INCLUDE_ERROR_DESCRIPTION
-    ? true
-    : false
 
   const telegram_chat_id = process.env.TELEGRAM_CHAT_ID
   if (!telegram_chat_id) {
@@ -191,8 +196,7 @@ export const defConfig = () => {
     me,
     multipart_form_data_max_file_size,
     port,
-    report_all_ajv_errors:
-      process.env.NODE_ENV === 'development' ? true : false,
+    report_all_ajv_errors,
     secure_session_expiration: 60 * 60, // in seconds
     secure_session_key_one_buf,
     secure_session_key_two_buf,

@@ -130,7 +130,19 @@ export function defFastify(config: Config) {
     use_secure_flag_for_session_cookie
   } = config
 
-  const fastify = Fastify({ logger: { level: log_level } })
+  const fastify = Fastify({
+    logger: {
+      // https://getpino.io/#/docs/help?id=level-string
+      formatters: {
+        level: (label) => {
+          return {
+            level: label
+          }
+        }
+      },
+      level: log_level
+    }
+  })
 
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
