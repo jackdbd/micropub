@@ -1,9 +1,4 @@
 {
-  "level": "warn",
-  "time": 1733130461100,
-  "pid": 321,
-  "hostname": "1781909b4d7428",
-  "reqId": "req-1",
   "h": "entry",
   "name": "Inline caches in JavaScript engines",
   "content": "Detailed guide from the V8 team.",

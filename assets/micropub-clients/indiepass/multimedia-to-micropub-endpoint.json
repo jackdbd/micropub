@@ -1,0 +1,51 @@
+{
+  "level": "warn",
+  "time": 1733141169565,
+  "pid": 321,
+  "hostname": "1781909b4d7428",
+  "reqId": "req-7",
+  "jf2": {
+    "content": "Multimedia post from IndiePass",
+    "category": ["indiepass", "multimedia"],
+    "published": "2024-12-02T13:04:00+0100",
+    "post-status": "published",
+    "mp-photo-alt": ["surfskate comparison ", "Waikiki "],
+    "audio": [
+      "https://content.giacomodebidda.com/media/1733141167230.aac",
+      "https://content.giacomodebidda.com/media/1733141167698.aac"
+    ],
+    "video": ["https://content.giacomodebidda.com/media/1733141167216.mp4"],
+    "photo": [
+      "https://content.giacomodebidda.com/media/1733141167132.jpg",
+      "https://content.giacomodebidda.com/media/1733141167189.jpg"
+    ],
+    "action": "create",
+    "date": "2024-12-02T12:06:09+00:00",
+    "h": "entry",
+    "visibility": "public"
+  },
+  "errors": [
+    {
+      "instancePath": "/photo",
+      "schemaPath": "u-photo/type",
+      "keyword": "type",
+      "params": { "type": "string" },
+      "message": "must be string"
+    },
+    {
+      "instancePath": "/photo",
+      "schemaPath": "#/anyOf/1/type",
+      "keyword": "type",
+      "params": { "type": "object" },
+      "message": "must be object"
+    },
+    {
+      "instancePath": "/photo",
+      "schemaPath": "#/anyOf",
+      "keyword": "anyOf",
+      "params": {},
+      "message": "must match a schema in anyOf"
+    }
+  ],
+  "msg": "@jackdbd/fastify-micropub-endpoint/decorators/micropub-response Received invalid JF2 according to schema 'Micropub h=entry' (ID: micropub-entry)"
+}

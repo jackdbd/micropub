@@ -7,7 +7,7 @@ type Entry = [string, Value]
 type Acc = Record<string, Value>
 
 export const normalizeJf2 = (input: Jf2): Jf2 => {
-  const output = Object.entries(input).reduce((acc, entry) => {
+  const tmp = Object.entries(input).reduce((acc, entry) => {
     const [key, value] = entry as Entry
 
     if (key.includes('[]')) {
@@ -32,6 +32,16 @@ export const normalizeJf2 = (input: Jf2): Jf2 => {
         }
       }
 
+      return acc
+    } else {
+      return { ...acc, [key]: value }
+    }
+  }, {} as Acc)
+
+  const output = Object.entries(tmp).reduce((acc, entry) => {
+    const [key, value] = entry as Entry
+
+    if (Array.isArray(value) && value.length === 0) {
       return acc
     } else {
       return { ...acc, [key]: value }

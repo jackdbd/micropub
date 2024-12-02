@@ -28,6 +28,7 @@ import {
   h_item
 } from '../../lib/microformats2/index.js'
 import {
+  audio,
   date_time,
   mp_card,
   mp_cite,
@@ -38,7 +39,8 @@ import {
   mp_slug,
   mp_syndicate_to,
   mp_visibility,
-  photo
+  photo,
+  video
 } from '../../lib/micropub/index.js'
 import {
   access_token,
@@ -95,7 +97,9 @@ export const defValidateJf2 = (ajv: Ajv) => {
   ajv.compile(mp_slug)
   ajv.compile(mp_syndicate_to)
   ajv.compile(mp_visibility)
+  ajv.compile(audio)
   ajv.compile(photo)
+  ajv.compile(video)
   ajv.compile(date_time)
 
   const validateMicropubCard = ajv.compile(mp_card)

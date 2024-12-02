@@ -1,7 +1,7 @@
 meta {
-  name: create note with one video (multipart)
+  name: create multimedia note (multipart)
   type: http
-  seq: 5
+  seq: 6
 }
 
 post {
@@ -32,12 +32,17 @@ body:form-urlencoded {
 }
 
 body:multipart-form {
-  content: This is a test note with a video file
-  mp-slug: test-note-one-video
+  content: This is a test note with 2 audio files, 2 photo files and 2 video files
+  mp-slug: test-note-multimedia
   category[][0]: bruno
   category[][1]: test
   author: Giacomo Debidda
   mp-syndicate-to[][0]: https://fosstodon.org/@jackdbd
   mp-syndicate-to[][1]: {{syndicate_to_telegram}}
-  : @file(/home/jack/repos/micropub/assets/video/file_example_WEBM_480_900KB.webm)
+  video[][0]: @file(/home/jack/repos/micropub/assets/video/file_example_WEBM_480_900KB.webm)
+  video[][1]: @file(/home/jack/Downloads/file_example_MP4_480_1_5MG.mp4)
+  photo[][0]: @file(/home/jack/Pictures/hain-tool.png)
+  photo[][1]: @file(/home/jack/Pictures/hulk.png)
+  audio[][0]: @file(/home/jack/repos/micropub/assets/audio/example_700KB.mp3)
+  audio[][1]: @file(/home/jack/Downloads/file_example_OOG_2MG.ogg)
 }

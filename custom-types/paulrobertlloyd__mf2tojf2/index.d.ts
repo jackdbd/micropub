@@ -64,6 +64,9 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     'mp-channel'?: string
     'mp-destination'?: string
     'mp-limit'?: string
+    // IndiePass send this when making a multipart request to the Micropub
+    // endpoint that includes one or more photo with alternate text.
+    'mp-photo-alt'?: string | string[]
     'mp-slug'?: string
     'mp-syndicate-to'?: string | string[]
     name?: string

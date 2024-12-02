@@ -24,7 +24,9 @@ export const photo_url_and_alt_text = Type.Object(
   }
 )
 
-export const photo = Type.Union([Type.Ref(u_photo), photo_url_and_alt_text], {
+const photo_item = Type.Union([Type.Ref(u_photo), photo_url_and_alt_text])
+
+export const photo = Type.Union([photo_item, Type.Array(photo_item)], {
   $id: 'micropub-photo',
   title: 'Micropub photo'
 })

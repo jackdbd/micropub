@@ -14,6 +14,8 @@ export {
 } from './error-responses.js'
 
 export {
+  audio,
+  type Audio,
   date_time,
   mp_card,
   type MP_Card,
@@ -31,7 +33,9 @@ export {
   mp_syndicate_to,
   mp_visibility,
   photo,
-  type Photo
+  type Photo,
+  video,
+  type Video
 } from './jf2/index.js'
 
 export { jf2ToContentWithFrontmatter } from './jf2-to-content.js'

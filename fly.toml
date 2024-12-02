@@ -19,7 +19,7 @@ kill_timeout = 180
   GITHUB_OWNER= "jackdbd"
   GITHUB_REPO = "giacomodebidda-content"
   NODE_ENV = "production"
-  PINO_LOG_LEVEL = "info"
+  PINO_LOG_LEVEL = "debug"
 
 [http_service]
   internal_port = 3000

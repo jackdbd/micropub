@@ -100,6 +100,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       request.body,
       `=== REQUEST BODY (content-type ${request.headers['content-type']}) ===`
     )
+    request.log.warn(
+      request.headers,
+      `=== REQUEST HEADERS (content-type ${request.headers['content-type']}) ===`
+    )
 
     let request_body: PostRequestBody
     if (request.isMultipart()) {
@@ -186,7 +190,9 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     }
 
     // If the Micropub client sent us a urlencoded request, we need to normalize
-    // fields like syndicate-to[][0], syndicate-to[][1] into actual arrays.
+    // fields like syndicate-to[][0], syndicate-to[][1] into actual JS arrays.
+    // Same thing if we uploaded more than one file to the Media endpoint. In
+    // that case we might have audio[], video[], and photo[] fields.
     jf2 = normalizeJf2(jf2)
 
     // We store the jf2 object in the request context, so if there is a server

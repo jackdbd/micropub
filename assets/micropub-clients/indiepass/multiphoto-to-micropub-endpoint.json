@@ -1,0 +1,68 @@
+[
+  {
+    "level": "warn",
+    "time": 1733137501526,
+    "pid": 322,
+    "hostname": "1781909b4d7428",
+    "reqId": "req-h",
+    "msg": "=== REQUEST BODY (content-type multipart/form-data;boundary=7b61659b-87f7-474d-93cb-e148395bba21) ==="
+  },
+  {
+    "level": "info",
+    "time": 1733137501837,
+    "pid": 322,
+    "hostname": "1781909b4d7428",
+    "reqId": "req-i",
+    "req": {
+      "method": "POST",
+      "url": "/media",
+      "host": "micropub.fly.dev:443",
+      "remoteAddress": "127.0.0.1"
+    },
+    "msg": "incoming request"
+  },
+  {
+    "level": "info",
+    "time": 1733137502266,
+    "pid": 322,
+    "hostname": "1781909b4d7428",
+    "reqId": "req-i",
+    "res": { "statusCode": 202 },
+    "responseTime": 429.28340300000855,
+    "msg": "request completed"
+  },
+  {
+    "level": "info",
+    "time": 1733137502268,
+    "pid": 322,
+    "hostname": "1781909b4d7428",
+    "reqId": "req-j",
+    "req": {
+      "method": "POST",
+      "url": "/media",
+      "host": "micropub.fly.dev:443",
+      "remoteAddress": "127.0.0.1"
+    },
+    "msg": "incoming request"
+  },
+  {
+    "level": "info",
+    "time": 1733137502441,
+    "pid": 322,
+    "hostname": "1781909b4d7428",
+    "reqId": "req-j",
+    "res": { "statusCode": 202 },
+    "responseTime": 172.3536740000127,
+    "msg": "request completed"
+  },
+  {
+    "level": "info",
+    "time": 1733137503618,
+    "pid": 322,
+    "hostname": "1781909b4d7428",
+    "reqId": "req-h",
+    "res": { "statusCode": 201 },
+    "responseTime": 2096.1074280000175,
+    "msg": "request completed"
+  }
+]

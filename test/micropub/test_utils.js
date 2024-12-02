@@ -2,6 +2,7 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import * as mf2 from '../../dist/lib/microformats2/index.js'
 import {
+  audio,
   date_time,
   mp_card,
   mp_cite,
@@ -12,7 +13,8 @@ import {
   mp_slug,
   mp_syndicate_to,
   mp_visibility,
-  photo
+  photo,
+  video
 } from '../../dist/lib/micropub/index.js'
 import {
   access_token,
@@ -77,7 +79,9 @@ export const defValidateMf2Functions = () => {
   ajv.compile(mp_slug)
   ajv.compile(mp_syndicate_to)
   ajv.compile(mp_visibility)
+  ajv.compile(audio)
   ajv.compile(photo)
+  ajv.compile(video)
   ajv.compile(date_time)
 
   const validateMicropubCard = ajv.compile(mp_card)

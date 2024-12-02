@@ -10,7 +10,9 @@ import {
   mp_syndicate_to,
   mp_visibility
 } from './micropub-reserved-properties.js'
+import { audio } from './audio.js'
 import { photo } from './photo.js'
+import { video } from './video.js'
 
 export const mp_entry = Type.Object(
   {
@@ -19,6 +21,8 @@ export const mp_entry = Type.Object(
     access_token: Type.Optional(Type.Ref(access_token)),
 
     action: Type.Optional(Type.Ref(action, { default: 'create' })),
+
+    audio: Type.Optional(Type.Ref(audio)),
 
     h: Type.Optional(Type.Literal('entry', { default: 'entry' })),
 
@@ -39,6 +43,8 @@ export const mp_entry = Type.Object(
     type: Type.Optional(Type.Literal('entry')),
 
     updated: Type.Optional(Type.Ref(date_time)),
+
+    video: Type.Optional(Type.Ref(video)),
 
     visibility: Type.Optional(Type.Ref(mp_visibility, { default: 'public' }))
   },
