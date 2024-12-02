@@ -1,11 +1,10 @@
 {
+  "rsvp": "maybe",
   "h": "entry",
-  "name": "Horus Rising",
-  "content": "The first book in the Horus Heresy series.",
-  "read-of": "https://wh40k.lexicanum.com/wiki/Horus_Rising_(Novel)",
-  "read-status": "reading",
+  "content": "I don't know if I can make it this time.",
+  "in-reply-to": "https://fosdem.org/2025/",
   "category[]": ["test", "indiepass"],
-  "published": "2024-12-02T18:22:00+0100",
+  "published": "2024-12-02T18:59:00+0100",
   "post-status": "published",
   "mp-syndicate-to[]": "https://t.me/+rQSrJsu5RtgzNjM0",
   "msg": "=== REQUEST BODY (content-type application/x-www-form-urlencoded; charset=UTF-8) ==="

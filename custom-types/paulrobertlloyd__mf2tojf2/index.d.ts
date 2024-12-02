@@ -42,6 +42,10 @@ declare module '@paulrobertlloyd/mf2tojf2' {
         longitude?: string
       }
 
+  export type ReadStatus = 'to-read' | 'reading' | 'finished'
+
+  export type RSVP = 'yes' | 'no' | 'maybe' | 'interested'
+
   // mp-syndicate-to - This property is giving a command to the Micropub endpoint,
   // rather than just creating data, so it uses the mp- prefix.
 
@@ -75,7 +79,9 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     'post-status'?: string
     published?: string
     'read-of'?: string
+    'read-status'?: ReadStatus
     'repost-of'?: string
+    rsvp?: RSVP
     summary?: string
     syndication?: string | string[]
     updated?: string

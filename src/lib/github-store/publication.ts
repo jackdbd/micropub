@@ -104,15 +104,15 @@ export const defDefaultPublication = (config: Config): Publication => {
           store_deleted: 'deleted/reposts/',
           website: `${base_url}/reposts/`
         }
+      },
+      rsvp: {
+        predicate: { store: spred.isRsvp, website: wpred.isRsvp },
+        location: {
+          store: `rsvp/`,
+          store_deleted: 'deleted/rsvp/',
+          website: `${base_url}/rsvp/`
+        }
       }
-      // rsvp: {
-      //   predicate: { store: spred.isRsvp, website: wpred.isRsvp },
-      //   location: {
-      //     store: `rsvp/`,
-      //     store_deleted: 'rsvp/likes/',
-      //     website: `${base_url}/rsvp/`
-      //   }
-      // }
     }
   }
 }

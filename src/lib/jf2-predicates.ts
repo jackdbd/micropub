@@ -24,6 +24,9 @@ export const isCard = (jf2: Jf2) => {
   }
 }
 
+/**
+ * @see https://indieweb.org/checkin
+ */
 export const isCheckin = (jf2: Jf2) => {
   if (isEntry(jf2) && jf2['checkin']) {
     return true
@@ -84,7 +87,7 @@ export const isNote = (jf2: Jf2) => {
 
   // note is a very generic type. We can disambiguate it by checking if JF2 is
   // NOT one of the more specific types.
-  if (isRead(jf2) || isReply(jf2) || isRepost(jf2)) {
+  if (isRead(jf2) || isReply(jf2) || isRepost(jf2) || isRsvp(jf2)) {
     return false
   }
 
@@ -99,22 +102,51 @@ export const isNote = (jf2: Jf2) => {
   return false
 }
 
+/**
+ * @see https://indieweb.org/read
+ */
 export const isRead = (jf2: Jf2) => {
-  if (isEntry(jf2) && jf2['read-of']) {
-    return true
-  } else {
+  if (!isEntry(jf2)) {
     return false
+  }
+
+  if (!jf2['read-of']) {
+    return false
+  }
+
+  switch (jf2['read-status']) {
+    case 'to-read':
+    case 'reading':
+    case 'finished': {
+      return true
+    }
+    default: {
+      return false
+    }
   }
 }
 
 export const isReply = (jf2: Jf2) => {
-  if (isEntry(jf2) && jf2['in-reply-to']) {
-    return true
-  } else {
+  if (!isEntry(jf2)) {
     return false
   }
+
+  if (!jf2['in-reply-to']) {
+    return false
+  }
+
+  // reply is quite a generic type. We can disambiguate it from a RSVP by
+  // checking that first.
+  if (isRsvp(jf2)) {
+    return false
+  }
+
+  return true
 }
 
+/**
+ * @see https://indieweb.org/repost
+ */
 export const isRepost = (jf2: Jf2) => {
   if (isEntry(jf2) && jf2['repost-of']) {
     return true
@@ -126,6 +158,25 @@ export const isRepost = (jf2: Jf2) => {
 /**
  * @see https://indieweb.org/rsvp
  */
-export const isRsvp = (_jf2: Jf2) => {
-  throw new Error(`TODO: implement isRsvp predicate`)
+export const isRsvp = (jf2: Jf2) => {
+  if (!isEntry(jf2)) {
+    return false
+  }
+
+  // rsvp is a subtype of reply
+  if (!jf2['in-reply-to']) {
+    return false
+  }
+
+  switch (jf2['rsvp']) {
+    case 'yes':
+    case 'no':
+    case 'maybe':
+    case 'interested': {
+      return true
+    }
+    default: {
+      return false
+    }
+  }
 }
