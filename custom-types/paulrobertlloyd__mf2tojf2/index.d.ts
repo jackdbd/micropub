@@ -55,6 +55,7 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     author?: string
     'bookmark-of'?: string
     category?: string[]
+    checkin?: string
     content?: string | { html: string; text: string }
     date?: string
     h?: Jf2Type

@@ -11,6 +11,8 @@ export const isBookmark = (url: string) => is({ url, key: 'bookmarks' })
 
 export const isCard = (url: string) => is({ url, key: 'cards' })
 
+export const isCheckin = (url: string) => is({ url, key: 'check-ins' })
+
 export const isCite = (url: string) => is({ url, key: 'cites' })
 
 export const isEvent = (url: string) => is({ url, key: 'events' })
@@ -18,6 +20,8 @@ export const isEvent = (url: string) => is({ url, key: 'events' })
 export const isLike = (url: string) => is({ url, key: 'likes' })
 
 export const isNote = (url: string) => is({ url, key: 'notes' })
+
+export const isRead = (url: string) => is({ url, key: 'reads' })
 
 export const isReply = (url: string) => is({ url, key: 'replies' })
 

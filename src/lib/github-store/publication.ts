@@ -41,6 +41,14 @@ export const defDefaultPublication = (config: Config): Publication => {
           website: `${base_url}/cards/`
         }
       },
+      checkin: {
+        predicate: { store: spred.isCheckin, website: wpred.isCheckin },
+        location: {
+          store: `check-ins/`,
+          store_deleted: 'deleted/check-ins/',
+          website: `${base_url}/check-ins/`
+        }
+      },
       event: {
         predicate: { store: spred.isEvent, website: wpred.isEvent },
         location: {
@@ -49,6 +57,14 @@ export const defDefaultPublication = (config: Config): Publication => {
           website: `${base_url}/events/`
         }
       },
+      // issue: {
+      //   predicate: { store: spred.isIssue, website: wpred.isIssue },
+      //   location: {
+      //     store: `issues/`,
+      //     store_deleted: 'deleted/issues/',
+      //     website: `${base_url}/issues/`
+      //   }
+      // },
       like: {
         predicate: { store: spred.isLike, website: wpred.isLike },
         location: {
@@ -63,6 +79,14 @@ export const defDefaultPublication = (config: Config): Publication => {
           store: `notes/`,
           store_deleted: 'deleted/notes/',
           website: `${base_url}/notes/`
+        }
+      },
+      read: {
+        predicate: { store: spred.isRead, website: wpred.isRead },
+        location: {
+          store: `reads/`,
+          store_deleted: 'deleted/reads/',
+          website: `${base_url}/reads/`
         }
       },
       reply: {
@@ -80,15 +104,15 @@ export const defDefaultPublication = (config: Config): Publication => {
           store_deleted: 'deleted/reposts/',
           website: `${base_url}/reposts/`
         }
-      },
-      rsvp: {
-        predicate: { store: spred.isRsvp, website: wpred.isRsvp },
-        location: {
-          store: `rsvp/`,
-          store_deleted: 'rsvp/likes/',
-          website: `${base_url}/rsvp/`
-        }
       }
+      // rsvp: {
+      //   predicate: { store: spred.isRsvp, website: wpred.isRsvp },
+      //   location: {
+      //     store: `rsvp/`,
+      //     store_deleted: 'rsvp/likes/',
+      //     website: `${base_url}/rsvp/`
+      //   }
+      // }
     }
   }
 }
