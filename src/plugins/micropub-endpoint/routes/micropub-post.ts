@@ -100,6 +100,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       request.body,
       `=== REQUEST BODY (content-type ${request.headers['content-type']}) ===`
     )
+
     let request_body: PostRequestBody
     if (request.isMultipart()) {
       request_body = await multipartRequestBody(request)

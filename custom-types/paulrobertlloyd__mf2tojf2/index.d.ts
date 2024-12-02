@@ -68,6 +68,7 @@ declare module '@paulrobertlloyd/mf2tojf2' {
     'mp-syndicate-to'?: string | string[]
     name?: string
     photo?: Photo | Photo[]
+    'post-status'?: string
     published?: string
     'read-of'?: string
     'repost-of'?: string

@@ -1,0 +1,15 @@
+{
+  "level": "warn",
+  "time": 1733130461100,
+  "pid": 321,
+  "hostname": "1781909b4d7428",
+  "reqId": "req-1",
+  "h": "entry",
+  "name": "Inline caches in JavaScript engines",
+  "content": "Detailed guide from the V8 team.",
+  "bookmark-of": "https://mathiasbynens.be/notes/shapes-ics",
+  "category[]": ["test", "indiepass", "V8", "JavaScript"],
+  "published": "2024-12-03T09:14:00+0100",
+  "post-status": "published",
+  "msg": "=== REQUEST BODY (content-type application/x-www-form-urlencoded; charset=UTF-8) ==="
+}

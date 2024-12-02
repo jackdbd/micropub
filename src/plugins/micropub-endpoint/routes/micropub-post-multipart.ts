@@ -2,14 +2,17 @@ import assert from 'node:assert'
 import { FastifyRequest } from 'fastify'
 import formAutoContent from 'form-auto-content'
 import { areSameOrigin } from '../../../lib/fastify-request-predicates/index.js'
-import { PostRequestBody } from '../request.js'
 import { isAudio, isVideo } from '../../../lib/mime-types.js'
+import type { PostRequestBody } from '../request.js'
 
 interface Config {
   media_endpoint: string
   micropub_endpoint: string
   prefix: string
 }
+
+type Value = number | string | any[]
+type Data = Record<string, Value>
 
 /**
  * Creates a function that parses a multipart request, collects all `field`
@@ -21,7 +24,7 @@ export const defMultipartRequestBody = (config: Config) => {
   const multipartRequestBody = async (request: FastifyRequest) => {
     assert.ok(request.headers['content-type']!.includes('multipart/form-data'))
 
-    const data: Record<string, any> = {}
+    const data: Data = {}
 
     for await (const part of request.parts()) {
       if (part.type === 'field') {
@@ -29,14 +32,25 @@ export const defMultipartRequestBody = (config: Config) => {
 
         if (fieldname.includes('[]')) {
           const k = fieldname.split('[]')[0]
+
           if (data[k]) {
-            data[k].push(value)
+            assert.ok(Array.isArray(data[k]))
+            request.log.debug(`${prefix}update ${k} array`)
+            if (Array.isArray(value)) {
+              data[k].push(...value)
+            } else {
+              data[k].push(value)
+            }
           } else {
-            data[k] = [value]
+            request.log.debug(`${prefix}set ${k} array`)
+            if (Array.isArray(value)) {
+              data[k] = value
+            } else {
+              data[k] = [value]
+            }
           }
-          request.log.debug(`${prefix}collected ${k}[]=${value}`)
         } else {
-          data[fieldname] = value
+          data[fieldname] = value as Value
           request.log.debug(`${prefix}collected ${fieldname}=${value}`)
         }
       } else if (part.type === 'file') {
@@ -154,7 +168,7 @@ export const defMultipartRequestBody = (config: Config) => {
       }
     }
 
-    return data as PostRequestBody
+    return data as any as PostRequestBody
   }
 
   return multipartRequestBody

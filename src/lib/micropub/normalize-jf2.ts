@@ -1,19 +1,42 @@
-import { Jf2 } from '@paulrobertlloyd/mf2tojf2'
+import assert from 'node:assert'
+import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 
-export const normalizeJf2 = (input: Jf2) => {
-  const output: Jf2 = Object.entries(input).reduce((acc: any, [key, value]) => {
+// type Value = number | string | Photo | number[] | string[] | Photo[]
+type Value = number | string | any[]
+type Entry = [string, Value]
+type Acc = Record<string, Value>
+
+export const normalizeJf2 = (input: Jf2): Jf2 => {
+  const output = Object.entries(input).reduce((acc, entry) => {
+    const [key, value] = entry as Entry
+
     if (key.includes('[]')) {
+      // console.log('=== entry ===', entry)
       const k = key.split('[]').at(0)!
+
       if (acc[k]) {
-        acc[k].push(value)
+        assert.ok(Array.isArray(acc[k]))
+        // console.log(`update ${k} array`)
+        if (Array.isArray(value)) {
+          acc[k].push(...value)
+        } else {
+          acc[k].push(value)
+        }
       } else {
-        acc[k] = [value]
+        if (Array.isArray(value)) {
+          // console.log(`set ${k}=${JSON.stringify(value)}`)
+          acc[k] = value
+        } else {
+          // console.log(`set ${k} array`)
+          acc[k] = [value]
+        }
       }
+
       return acc
     } else {
       return { ...acc, [key]: value }
     }
-  }, {})
+  }, {} as Acc)
 
-  return output
+  return output satisfies Jf2
 }
