@@ -34,6 +34,18 @@ describe('normalizeJf2', () => {
     assert.strictEqual(output.photo[1].value, 'http://example.com/photo1.jpg')
   })
 
+  it('returns `photo: <URL>` if photo[] is an array of one URL', () => {
+    const input = {
+      h: 'entry',
+      content: 'A note with a single photo.',
+      'photo[]': ['http://example.com/photo0.jpg']
+    }
+
+    const output = normalizeJf2(input)
+
+    assert.strictEqual(output.photo, 'http://example.com/photo0.jpg')
+  })
+
   it('can process audio[], photo[], video[]', () => {
     const input = {
       h: 'entry',

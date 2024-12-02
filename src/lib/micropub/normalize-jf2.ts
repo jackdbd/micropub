@@ -41,8 +41,14 @@ export const normalizeJf2 = (input: Jf2): Jf2 => {
   const output = Object.entries(tmp).reduce((acc, entry) => {
     const [key, value] = entry as Entry
 
-    if (Array.isArray(value) && value.length === 0) {
-      return acc
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return acc
+      } else if (value.length === 1) {
+        return { ...acc, [key]: value[0] }
+      } else {
+        return { ...acc, [key]: value }
+      }
     } else {
       return { ...acc, [key]: value }
     }
