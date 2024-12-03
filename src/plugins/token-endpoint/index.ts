@@ -47,10 +47,10 @@ const fastifyIndieAuthTokenEndpoint: FastifyPluginCallback<PluginOptions> = (
   // === PLUGINS ============================================================ //
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
-  fastify.log.debug(`${PREFIX}registered Fastify plugin: formbody`)
+  fastify.log.debug(`${PREFIX}registered plugin: formbody`)
 
   fastify.register(responseDecorators)
-  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
+  fastify.log.debug(`${PREFIX}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 

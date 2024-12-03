@@ -11,7 +11,7 @@ post {
 }
 
 headers {
-  Accept: text/html
+  ~Accept: text/html
 }
 
 auth:bearer {
@@ -23,12 +23,12 @@ body:form-urlencoded {
   location: geo:43.77149,10.33503;u=1074.3455021922316
   category[][0]: bruno
   category[][1]: test
-  author: Giacomo Debidda
   visibility: public
   mp-slug: test-note
   mp-syndicate-to[]: https://www.linkedin.com/in/giacomodebidda/
   mp-syndicate-to[]: https://fosstodon.org/@jackdbd
   h: entry
+  ~author: Giacomo Debidda
 }
 
 body:multipart-form {

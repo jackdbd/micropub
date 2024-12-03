@@ -4,36 +4,33 @@ import { applyToDefaults } from '@hapi/hoek'
 import responseDecorators from '../response-decorators/index.js'
 import { defValidateAuthorizationHeader } from '../../lib/fastify-hooks/index.js'
 import { revocation } from './routes.js'
+import { DEFAULT_INCLUDE_ERROR_DESCRIPTION, NAME } from './constants.js'
 
-const NAME = '@jackdbd/fastify-indieauth-revocation-endpoint'
+const PREFIX = `${NAME} `
 
 export interface PluginOptions extends FastifyPluginOptions {
   include_error_description: boolean
 }
 
-const defaultOptions: Partial<PluginOptions> = {
-  include_error_description: false
+const defaults: Partial<PluginOptions> = {
+  include_error_description: DEFAULT_INCLUDE_ERROR_DESCRIPTION
 }
 
 const fastifyIndieAuthRevocationEndpoint: FastifyPluginCallback<
   PluginOptions
 > = (fastify, options, done) => {
-  const config = applyToDefaults(
-    defaultOptions,
-    options
-  ) as Required<PluginOptions>
-  fastify.log.debug(config, `${NAME} configuration`)
+  const config = applyToDefaults(defaults, options) as Required<PluginOptions>
 
   const { include_error_description } = config
 
   const validateAuthorizationHeader = defValidateAuthorizationHeader({
     include_error_description,
-    log_prefix: `${NAME} `
+    log_prefix: PREFIX
   })
 
   // === PLUGINS ============================================================ //
   fastify.register(responseDecorators)
-  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
+  fastify.log.debug(`${PREFIX}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 

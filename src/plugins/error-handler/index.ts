@@ -1,3 +1,4 @@
+import { requestContext } from '@fastify/request-context'
 import { send } from '@jackdbd/notifications/telegram'
 import { errorText } from '@jackdbd/telegram-text-messages/error'
 import Fastify from 'fastify'
@@ -22,18 +23,20 @@ const errorHandler: FastifyPluginCallback<PluginOptions> = (
   fastify.setErrorHandler(async function (error, request, reply) {
     const status = error.statusCode || request.raw.statusCode || 500
 
-    // const error_details = requestContext.get('error_details')
-    // console.log('=== error_details ===', error_details)
+    const access_token_claims = requestContext.get('access_token_claims')
+    const jf2 = requestContext.get('jf2')
 
-    request.log.error(error.message)
+    const error_title = error.name || 'Error'
 
     const obj = {
+      access_token_claims,
       error_message: error.message,
-      request: {
-        url: request.url,
-        method: request.method,
-        host: request.host
-      }
+      error_validation: error.validation,
+      error_validationContext: error.validationContext,
+      jf2,
+      request_host: request.host,
+      request_method: request.method,
+      request_url: request.url
     }
 
     if (options.telegram) {
@@ -41,7 +44,7 @@ const errorHandler: FastifyPluginCallback<PluginOptions> = (
         app_name: 'Micropub',
         app_version: '0.0.1',
         error_message: JSON.stringify(obj, null, 2),
-        error_title: 'Error',
+        error_title,
         links: [
           {
             href: 'https://fly.io/apps/micropub/monitoring',

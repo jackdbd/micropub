@@ -1,7 +1,13 @@
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
-import { NAME } from './constants.js'
+import {
+  DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
+  DEFAULT_AUTHORIZATION_ENDPOINT,
+  DEFAULT_CODE_CHALLENGE_METHOD,
+  DEFAULT_CODE_VERIFIER_LENGTH,
+  NAME
+} from './constants.js'
 import { defLogin, logout } from './routes.js'
 
 const PREFIX = `${NAME} `
@@ -16,11 +22,11 @@ export interface PluginOptions extends FastifyPluginOptions {
   me: string
 }
 
-const defaultOptions: Partial<PluginOptions> = {
-  authorizationCallbackRoute: '/auth/callback',
-  authorizationEndpoint: 'https://indieauth.com/auth',
-  codeChallengeMethod: 'S256',
-  codeVerifierLength: 128
+const defaults: Partial<PluginOptions> = {
+  authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
+  authorizationEndpoint: DEFAULT_AUTHORIZATION_ENDPOINT,
+  codeChallengeMethod: DEFAULT_CODE_CHALLENGE_METHOD,
+  codeVerifierLength: DEFAULT_CODE_VERIFIER_LENGTH
 }
 
 const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
@@ -28,11 +34,7 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
   options,
   done
 ) => {
-  const config = applyToDefaults(
-    defaultOptions,
-    options
-  ) as Required<PluginOptions>
-  fastify.log.debug(config, `${PREFIX}configuration`)
+  const config = applyToDefaults(defaults, options) as Required<PluginOptions>
 
   const {
     authorizationCallbackRoute: auth_callback,
@@ -43,9 +45,6 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
     me
   } = config
 
-  const redirect_uri = `${base_url}${auth_callback}`
-
-  // authorization_endpoint: 'https://indielogin.com/auth',
   // client ID and redirect URI of the GitHub OAuth app used to authenticate users
   // The client must be registered in the IndieLogin database. We need ask Aaron Parecki for this registration.
   // See here:
@@ -76,7 +75,7 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
       len: config.codeVerifierLength,
       me,
       prefix: PREFIX,
-      redirect_uri
+      redirect_uri: `${base_url}${auth_callback}`
     })
   )
 
@@ -87,5 +86,6 @@ const fastifyIndieAuth: FastifyPluginCallback<PluginOptions> = (
 
 export default fp(fastifyIndieAuth, {
   fastify: '5.x',
-  name: NAME
+  name: NAME,
+  encapsulate: true
 })

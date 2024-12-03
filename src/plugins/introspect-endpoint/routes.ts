@@ -59,6 +59,7 @@ export const defIntrospect = (config: IntrospectConfig) => {
       })
     }
 
+    request.log.warn(`TODO: query token store to see if JWT is blacklisted`)
     const blacklisted = await isBlacklisted({ jwt: token })
     // Should I tell the client that the token has expired or has been
     // blacklisted? Probably not.

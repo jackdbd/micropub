@@ -115,7 +115,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
-  fastify.log.debug(`${prefix_plugins}registered Fastify plugin: formbody`)
+  fastify.log.debug(`${prefix_plugins}registered plugin: formbody`)
 
   // Parse multipart/form-data requests
   // https://github.com/fastify/fastify-multipart

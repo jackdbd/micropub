@@ -81,10 +81,7 @@ declare module 'fastify' {
 declare module '@fastify/request-context' {
   interface RequestContextData {
     access_token_claims?: AccessTokenClaims
-    action?: string
-    error_details?: string[]
     jf2?: Jf2
-    user: { id: string }
   }
 }
 
@@ -148,9 +145,9 @@ export function defFastify(config: Config) {
   fastify.register(sensible)
 
   fastify.register(fastifyRequestContext, {
-    defaultStoreValues: {
-      user: { id: 'system' }
-    }
+    // defaultStoreValues: {
+    //   user: { id: 'system' }
+    // }
   })
 
   const sessionName = 'session'
@@ -328,11 +325,11 @@ export function defFastify(config: Config) {
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
-  fastify.addHook('onRoute', (routeOptions) => {
-    fastify.log.debug(
-      `${PREFIX}registered route ${routeOptions.method} ${routeOptions.url}`
-    )
-  })
+  // fastify.addHook('onRoute', (routeOptions) => {
+  //   fastify.log.debug(
+  //     `${PREFIX}registered route ${routeOptions.method} ${routeOptions.url}`
+  //   )
+  // })
 
   // === ROUTES ============================================================= //
   fastify.get('/', async (_request, reply) => {

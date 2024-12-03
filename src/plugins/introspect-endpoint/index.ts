@@ -6,6 +6,8 @@ import responseDecorators from '../response-decorators/index.js'
 import { NAME } from './constants.js'
 import { defIntrospect } from './routes.js'
 
+const PREFIX = `${NAME} `
+
 export interface PluginOptions extends FastifyPluginOptions {
   clientId: string
   include_error_description: boolean
@@ -22,18 +24,17 @@ const fastifyIndieAuthIntrospectionEndpoint: FastifyPluginCallback<
     defaultOptions,
     options
   ) as Required<PluginOptions>
-  fastify.log.debug(config, `${NAME} configuration`)
 
   const { clientId: client_id, include_error_description } = config
 
   const validateAuthorizationHeader = defValidateAuthorizationHeader({
     include_error_description,
-    log_prefix: `${NAME} `
+    log_prefix: PREFIX
   })
 
   // === PLUGINS ============================================================ //
   fastify.register(responseDecorators)
-  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
+  fastify.log.debug(`${PREFIX}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 

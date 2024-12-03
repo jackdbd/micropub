@@ -3,6 +3,7 @@ import { applyToDefaults } from '@hapi/hoek'
 import type { FastifyPluginOptions, FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import Youch from 'youch'
+import { APPLICATION_JSON, TEXT_HTML } from '../../lib/content-type.js'
 import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 
 const NAME = '@jackdbd/fastify-youch'
@@ -93,7 +94,6 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
   done
 ) => {
   const config = applyToDefaults(defaultOptions, options)
-  fastify.log.debug(config, `${NAME} configuration`)
 
   fastify.setErrorHandler(function (error, request, reply) {
     const youch = new Youch(error, request.raw, {
@@ -101,19 +101,10 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
       postLines: config.postLines
     })
 
-    console.log('=== error.validation and error.validationContext ===')
-    console.log({
-      validation: error.validation,
-      validationContext: error.validationContext
-    })
-
-    console.log('=== request context ===')
-    const action = requestContext.get('action')
-    const error_details = requestContext.get('error_details')
+    const access_token_claims = requestContext.get('access_token_claims')
     const jf2 = requestContext.get('jf2')
-    console.log({ action, error_details, jf2 })
 
-    // Maybe allow to customise these as plugin options
+    // Maybe allow to customise this CSS with as an option for this plugin.
     const sharedStyle = `vertical-align: middle; margin-right: 0.25rem; color: var(--primary-color);`
     const redditStyle = `--primary-color: #FF5700;`
     const githubStyle = `--primary-color: #24292f;`
@@ -137,7 +128,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
       }
     ]
 
-    // TODO: add optional call to ChatGPT API, GitHub Copilot, etc.
+    // TODO: add link to send the error to ChatGPT, GitHub Copilot, etc.
     for (const m of xs) {
       youch.addLink((data: Data) => {
         return anchor({ ...m, data })
@@ -152,18 +143,23 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
     const status = error.statusCode || request.raw.statusCode || 500
 
     if (clientAcceptsHtml(request)) {
-      youch
+      return youch
         .toHTML()
         .then((html) => {
-          reply.code(status).type('text/html; charset=utf-8').send(html)
+          reply.code(status).type(TEXT_HTML).send(html)
         })
         .catch((err) => {
           reply.code(status).send(err)
         })
     } else {
-      reply
-        .code(status)
-        .send({ error: error.name, error_description: error.message })
+      return reply.code(status).type(APPLICATION_JSON).send({
+        error: error.name,
+        error_description: error.message,
+        error_validation: error.validation,
+        error_validationContext: error.validationContext,
+        access_token_claims,
+        jf2
+      })
       // Uncomment this if you want to see the stack trace. It might be useful
       // to see the stack trace in graphical API clients like Postman or Bruno.
       // youch

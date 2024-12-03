@@ -96,14 +96,14 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     request,
     reply
   ) => {
-    request.log.warn(
-      request.body,
-      `=== REQUEST BODY (content-type ${request.headers['content-type']}) ===`
-    )
-    request.log.warn(
-      request.headers,
-      `=== REQUEST HEADERS (content-type ${request.headers['content-type']}) ===`
-    )
+    // request.log.warn(
+    //   request.body,
+    //   `=== REQUEST BODY (content-type ${request.headers['content-type']}) ===`
+    // )
+    // request.log.warn(
+    //   request.headers,
+    //   `=== REQUEST HEADERS (content-type ${request.headers['content-type']}) ===`
+    // )
 
     let request_body: PostRequestBody
     if (request.isMultipart()) {
