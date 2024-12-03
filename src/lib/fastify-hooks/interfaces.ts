@@ -5,7 +5,7 @@ export type Operation = '==' | '!=' | '<' | '<=' | '>' | '>='
 export interface Assertion {
   claim: string
   op?: Operation
-  value: ClaimValue
+  value?: ClaimValue
 }
 
 export type Claims = Record<string, ClaimValue>

@@ -1,21 +1,27 @@
 meta {
-  name: revoke token
+  name: revoke token (JSON)
   type: http
   seq: 1
 }
 
 post {
-  url: {{base_url}}/revocation
-  body: formUrlEncoded
+  url: JSON{{base_url}}/revocation
+  body: json
   auth: bearer
 }
 
 headers {
-  Accept: application/json
+  Accept: text/html
 }
 
 auth:bearer {
   token: {{access_token}}
+}
+
+body:json {
+  {
+    "token": "{{access_token}}"
+  }
 }
 
 body:form-urlencoded {

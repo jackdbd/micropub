@@ -1,5 +1,5 @@
 import Ajv from 'ajv'
-import type { onRequestHookHandler } from 'fastify'
+import type { preHandlerHookHandler } from 'fastify'
 
 import { hasScope } from '../../lib/fastify-request-predicates/index.js'
 import {
@@ -26,7 +26,7 @@ export const defValidateGetRequest = (config: ValidateGetConfig) => {
   const { ajv, include_error_description } = config
   const validate = ajv.compile(micropub_get_request)
 
-  const validateGetRequest: onRequestHookHandler = (request, reply, done) => {
+  const validateGetRequest: preHandlerHookHandler = (request, reply, done) => {
     request.log.debug(`${PREFIX}validating incoming GET request`)
 
     const valid = validate(request)
@@ -57,7 +57,7 @@ export const defEnsureRequestHasScope = (config: {
 }) => {
   const { include_error_description } = config
 
-  const ensureRequestHasScope: onRequestHookHandler = (
+  const ensureRequestHasScope: preHandlerHookHandler = (
     request,
     reply,
     done

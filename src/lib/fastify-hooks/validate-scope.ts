@@ -1,4 +1,4 @@
-import type { onRequestHookHandler } from 'fastify'
+import type { preHandlerHookHandler } from 'fastify'
 import { defErrorIfActionNotAllowed } from '../error-if-action-not-allowed.js'
 
 export interface Options {
@@ -24,7 +24,7 @@ export const defValidateScope = (options?: Options) => {
     log_prefix
   })
 
-  const validateScope: onRequestHookHandler = (request, reply, done) => {
+  const validateScope: preHandlerHookHandler = (request, reply, done) => {
     // If this hook has no scope to check, then it's basically a NOP.
     if (!scope) {
       return done()

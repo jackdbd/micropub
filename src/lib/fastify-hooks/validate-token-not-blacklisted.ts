@@ -1,4 +1,4 @@
-import type { onRequestHookHandler } from 'fastify'
+import type { preHandlerHookHandler } from 'fastify'
 import { isBlacklisted } from '../token.js'
 import { invalidToken } from '../micropub/error-responses.js'
 
@@ -29,7 +29,7 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
   const include_error_description = opt.include_error_description || false
   const log_prefix = opt.log_prefix
 
-  const validateAccessTokenNotBlacklisted: onRequestHookHandler = async (
+  const validateAccessTokenNotBlacklisted: preHandlerHookHandler = async (
     request,
     reply
   ) => {

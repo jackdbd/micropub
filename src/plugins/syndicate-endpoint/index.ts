@@ -86,6 +86,11 @@ const fastifySyndicator: FastifyPluginCallback<PluginOptions> = (
     { include_error_description, log_prefix }
   )
 
+  const validateClaimJti = defValidateClaim(
+    { claim: 'jti' },
+    { include_error_description, log_prefix }
+  )
+
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
@@ -96,11 +101,12 @@ const fastifySyndicator: FastifyPluginCallback<PluginOptions> = (
   fastify.post(
     '/syndicate',
     {
-      onRequest: [
+      preHandler: [
         decodeJwtAndSetClaims,
         logIatAndExpClaims,
-        validateClaimMe,
         validateClaimExp,
+        validateClaimMe,
+        validateClaimJti,
         validateAccessTokenNotBlacklisted
       ]
       // schema: syndicator_post_request

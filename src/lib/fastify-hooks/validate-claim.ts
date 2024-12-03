@@ -1,4 +1,4 @@
-import type { onRequestHookHandler } from 'fastify'
+import type { preHandlerHookHandler } from 'fastify'
 import { forbidden, unauthorized } from '../micropub/error-responses.js'
 import type { Assertion, Claims } from './interfaces.js'
 
@@ -12,7 +12,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
   const include_error_description = opt.include_error_description || false
   const log_prefix = opt.log_prefix || ''
 
-  const validateClaim: onRequestHookHandler = (request, reply, done) => {
+  const validateClaim: preHandlerHookHandler = (request, reply, done) => {
     const claims = request.requestContext.get('access_token_claims') as
       | Claims
       | undefined
@@ -29,8 +29,25 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       return reply.errorResponse(code, body)
     }
 
-    const op = assertion.op || '=='
     const key = assertion.claim
+
+    if (!assertion.op && !assertion.value) {
+      if (!claims[key]) {
+        const error_description = `request context has no claim '${key}'`
+        request.log.warn(`${log_prefix}${error_description}`)
+
+        const { code, body } = unauthorized({
+          error_description,
+          include_error_description
+        })
+
+        return reply.errorResponse(code, body)
+      } else {
+        return done()
+      }
+    }
+
+    const op = assertion.op || '=='
     const actual = claims[key]
 
     let given

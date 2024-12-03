@@ -196,7 +196,7 @@ export function defFastify(config: Config) {
   const micropub_endpoint = `${base_url}/micropub`
   const media_endpoint = `${base_url}/media`
   const submit_endpoint = `${base_url}/submit`
-  let media_content_base_url = 'https://content.giacomodebidda.com/'
+  const media_content_base_url = 'https://content.giacomodebidda.com/'
 
   fastify.register(responseDecorators)
 
@@ -208,11 +208,19 @@ export function defFastify(config: Config) {
 
   fastify.register(introspection, {
     clientId: client_id,
-    me,
-    include_error_description
+    includeErrorDescription: include_error_description,
+    me
   })
-  fastify.register(revocation, { include_error_description })
-  fastify.register(userinfo, { include_error_description })
+
+  fastify.register(revocation, {
+    includeErrorDescription: include_error_description,
+    me
+  })
+
+  fastify.register(userinfo, {
+    includeErrorDescription: include_error_description,
+    me
+  })
 
   fastify.register(indieauth, {
     // authorizationCallbackRoute: '/auth/callback',

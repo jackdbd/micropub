@@ -1,4 +1,4 @@
-import type { onRequestHookHandler } from 'fastify'
+import type { preHandlerHookHandler } from 'fastify'
 import { unauthorized } from '../micropub/error-responses.js'
 import { decode, type AccessTokenClaims } from '../token.js'
 
@@ -16,7 +16,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
   const log_prefix = opt.log_prefix || ''
   const key_in_header = opt.key_in_header || 'Bearer'
 
-  const decodeJwtAndSetClaims: onRequestHookHandler = (
+  const decodeJwtAndSetClaims: preHandlerHookHandler = (
     request,
     reply,
     done

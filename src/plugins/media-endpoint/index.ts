@@ -106,6 +106,11 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     { include_error_description, log_prefix }
   )
 
+  const validateClaimJti = defValidateClaim(
+    { claim: 'jti' },
+    { include_error_description, log_prefix }
+  )
+
   const validateScopeMedia = defValidateScope({
     scope: 'media',
     include_error_description,
@@ -124,11 +129,12 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/media',
     {
-      onRequest: [
+      preHandler: [
         decodeJwtAndSetClaims,
         logIatAndExpClaims,
-        validateClaimMe,
         validateClaimExp,
+        validateClaimMe,
+        validateClaimJti,
         validateScopeMedia,
         validateAccessTokenNotBlacklisted
       ]

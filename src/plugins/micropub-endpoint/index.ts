@@ -186,6 +186,11 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     { include_error_description, log_prefix }
   )
 
+  const validateClaimJti = defValidateClaim(
+    { claim: 'jti' },
+    { include_error_description, log_prefix }
+  )
+
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
@@ -216,18 +221,19 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   fastify.get(
     '/micropub',
-    { onRequest: [validateGetRequest], schema: micropub_get_request },
+    { preHandler: [validateGetRequest], schema: micropub_get_request },
     defMicropubGet({ media_endpoint, syndicate_to })
   )
 
   fastify.post(
     '/micropub',
     {
-      onRequest: [
+      preHandler: [
         decodeJwtAndSetClaims,
         logIatAndExpClaims,
-        validateClaimMe,
         validateClaimExp,
+        validateClaimMe,
+        validateClaimJti,
         validateAccessTokenNotBlacklisted
       ],
       schema: micropub_post_request
