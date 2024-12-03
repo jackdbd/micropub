@@ -1,12 +1,43 @@
 import * as jose from 'jose'
+import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from './date.js'
 
+/**
+ * Claims in an access token.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc7519#section-4
+ */
 export interface AccessTokenClaims {
-  exp: number // will expire at (UNIX timestamp in seconds)
-  iat: number // issued at (UNIX timestamp in seconds)
-  iss: string // issuer
+  /**
+   * (Expiration Time): Indicates the UNIX timestamp (in seconds) at which the
+   * access token expires.
+   */
+  exp: number
+
+  /**
+   * (Issued At): Specifies the UNIX timestamp (in seconds) at which the access
+   * token was issued.
+   */
+  iat: number
+
+  /**
+   * (Issuer): Specifies the issuer of the access token, typically the
+   * authorization server.
+   */
+  iss: string
+
+  /**
+   * (JWT ID): A unique identifier for the access token. Useful for revoking the
+   * token.
+   */
+  jti: string
+
   me: string
-  scope: string // space-separated list of scopes
+
+  /**
+   * Space-separated list of permissions granted to the access token.
+   */
+  scope: string
 }
 
 interface SecretConfig {
@@ -31,19 +62,13 @@ export interface VerifyConfig {
   secret: Secret
 }
 
-export const verify = async ({
-  expiration,
-  issuer,
-  jwt,
-  secret
-}: VerifyConfig) => {
+export const verify = async (config: VerifyConfig) => {
+  const { expiration, issuer, jwt, secret } = config
   try {
     const result = await jose.jwtVerify(jwt, secret, {
-      //   audience: '',
       issuer,
       maxTokenAge: expiration,
-      requiredClaims: ['exp', 'iat', 'iss', 'me', 'scope']
-      //   subject: ''
+      requiredClaims: ['exp', 'iat', 'iss', 'jti', 'me', 'scope']
     })
     return { value: result }
   } catch (err) {
@@ -59,20 +84,15 @@ export interface SignConfig {
   secret: Secret
 }
 
-export const sign = async ({
-  algorithm,
-  expiration,
-  issuer,
-  payload,
-  secret
-}: SignConfig) => {
-  // JWT claims
-  // https://www.rfc-editor.org/rfc/rfc7519#section-4
+export const sign = async (config: SignConfig) => {
+  const { algorithm, expiration, issuer, payload, secret } = config
+
   // If no argument is passed to setIssuedAt(), then it will use the current
   // UNIX timestamp (in seconds).
   const jwt_to_sign = new jose.SignJWT(payload)
     .setProtectedHeader({ alg: algorithm })
     .setExpirationTime(expiration)
+    .setJti(nanoid())
     .setIssuedAt()
     .setIssuer(issuer)
 
