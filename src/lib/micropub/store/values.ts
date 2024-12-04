@@ -8,6 +8,16 @@ export interface BaseValueGet {
   jf2: Jf2
 }
 
+export interface BaseValueInit {}
+
+export interface BaseValueIssue {}
+
+export interface BaseValueRevoke {}
+
+export interface BaseValueRevokeAll {}
+
+export interface BaseValueSetSecret {}
+
 export interface BaseValueSyndicate {
   /**
    * The URL of the syndicated post (e.g. a URL on a social network).

@@ -6,6 +6,11 @@ import type {
   BaseValueCreate,
   BaseValueDelete,
   BaseValueGet,
+  BaseValueInit,
+  BaseValueIssue,
+  BaseValueRevoke,
+  BaseValueRevokeAll,
+  BaseValueSetSecret,
   BaseValueUndelete,
   BaseValueUpdate,
   BaseValueUpload
@@ -79,3 +84,45 @@ export type Upload<
   V extends BaseValueUpload = BaseValueUpload,
   E extends Error = Error
 > = (config: UploadConfig) => Promise<Result<E, V>>
+
+export interface IssueConfig {
+  algorithm?: string
+  expiration?: string
+  issuer?: string
+  payload: any
+}
+
+export type Issue<
+  V extends BaseValueIssue = BaseValueIssue,
+  E extends Error = Error
+> = (config: IssueConfig) => Promise<Result<E, V>>
+
+export interface RevokeConfig {
+  expiration?: string
+  issuer?: string
+  jwt: string
+}
+
+export type Revoke<
+  V extends BaseValueRevoke = BaseValueRevoke,
+  E extends Error = Error
+> = (config: RevokeConfig) => Promise<Result<E, V>>
+
+export type RevokeAll<
+  V extends BaseValueRevokeAll = BaseValueRevokeAll,
+  E extends Error = Error
+> = () => Promise<Result<E, V>>
+
+export interface SetSecretConfig {
+  algorithm?: string
+}
+
+export type SetSecret<
+  V extends BaseValueSetSecret = BaseValueSetSecret,
+  E extends Error = Error
+> = (config: SetSecretConfig) => Promise<Result<E, V>>
+
+export type Init<
+  V extends BaseValueInit = BaseValueInit,
+  E extends Error = Error
+> = () => Promise<Result<E, V>>

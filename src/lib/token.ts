@@ -44,7 +44,7 @@ interface SecretConfig {
   alg: string
 }
 
-type Secret = jose.KeyLike | Uint8Array
+export type Secret = jose.KeyLike | Uint8Array
 
 export const secret = async ({ alg }: SecretConfig) => {
   try {
@@ -145,12 +145,22 @@ export interface RevokeConfig {
   jwt: string
 }
 
-export const revoke = async ({ jwt }: RevokeConfig) => {
+export const revoke = async (config: RevokeConfig) => {
+  const { jwt } = config
+
+  const { error, value: claims } = await safeDecode(jwt)
+
+  if (error) {
+    return { error }
+  }
+
+  const jti = claims.jti
+
   console.log(
     `TODO: tell the token database (maybe D1?) that this JWT is revoked (i.e. blacklisted)`,
     jwt
   )
 
   // return { error: new Error('some database error') }
-  return { value: { message: `token revoked` } }
+  return { value: { message: `token ${jti} revoked` } }
 }

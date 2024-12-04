@@ -60,6 +60,7 @@
     "@jackdbd/telegram-text-messages": "^1.2.0",
     "@paulrobertlloyd/mf2tojf2": "^2.3.0",
     "@sinclair/typebox": "^0.33.17",
+    "@thi.ng/atom": "^5.3.13",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "better-queue": "^3.8.12",

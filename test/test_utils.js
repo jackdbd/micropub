@@ -4,9 +4,9 @@ import { secret, sign } from '../dist/lib/token.js'
 
 const __filename = fileURLToPath(import.meta.url)
 
-export const issueJWT = async (payload) => {
-  const algorithm = 'HS256'
-  const expiration = '1 hour'
+export const issueJWT = async (payload = {}) => {
+  const algorithm = payload.algorithm || 'HS256'
+  const expiration = payload.expiration || '1 hour'
   const issuer = __filename
 
   const { value: key } = await secret({ alg: algorithm })

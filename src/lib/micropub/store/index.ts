@@ -8,7 +8,13 @@ export type {
   Delete as StoreDelete,
   Get as StoreGet,
   Info,
+  Init as StoreInit,
+  Issue as StoreIssue,
   Jf2ToContent,
+  Revoke as StoreRevoke,
+  RevokeAll as StoreRevokeAll,
+  RevokeConfig as StoreRevokeConfig,
+  SetSecret as StoreSetSecret,
   Undelete as StoreUndelete,
   Update as StoreUpdate,
   Upload as StoreUpload,
@@ -17,12 +23,19 @@ export type {
 
 export { errorIfMethodNotImplementedInStore } from './errors.js'
 
-export type { ContentStore, MediaStore, SyndicatorStore } from './interface.js'
+export type {
+  ContentStore,
+  MediaStore,
+  SyndicatorStore,
+  TokenStore
+} from './interface.js'
 
 export type {
   BaseValueCreate,
   BaseValueDelete,
   BaseValueGet,
+  BaseValueInit,
+  BaseValueRevoke,
   BaseValueUndelete,
   BaseValueUpdate,
   BaseValueUpload

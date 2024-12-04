@@ -3,8 +3,13 @@ import type {
   Delete,
   Get,
   Info,
+  Init,
+  Issue,
   Jf2ToContent,
   PublishedUrlToStoreLocation,
+  Revoke,
+  RevokeAll,
+  SetSecret,
   Undelete,
   Update,
   Upload
@@ -13,6 +18,11 @@ import type {
   BaseValueCreate,
   BaseValueDelete,
   BaseValueGet,
+  BaseValueInit,
+  BaseValueIssue,
+  BaseValueRevoke,
+  BaseValueRevokeAll,
+  BaseValueSetSecret,
   BaseValueUndelete,
   BaseValueUpdate,
   BaseValueUpload
@@ -57,4 +67,23 @@ export interface SyndicatorStore<
   info: Info
   publishedUrlToStoreLocation: PublishedUrlToStoreLocation
   update: Update<VUpdate, E>
+}
+
+export interface TokenStore<
+  E extends Error = Error,
+  VInit extends BaseValueInit = BaseValueInit,
+  VIssue extends BaseValueIssue = BaseValueIssue,
+  VRevoke extends BaseValueRevoke = BaseValueRevoke,
+  VRevokeAll extends BaseValueRevokeAll = BaseValueRevokeAll,
+  VSetSecret extends BaseValueSetSecret = BaseValueSetSecret
+> {
+  blacklist: () => Promise<Set<string>>
+  cleanup?: () => Promise<void>
+  info: Info
+  init: Init<VInit, E>
+  issue: Issue<VIssue, E>
+  issuelist: () => Promise<Set<string>>
+  revoke: Revoke<VRevoke, E>
+  revokeAll: RevokeAll<VRevokeAll, E>
+  setSecret: SetSecret<VSetSecret, E>
 }
