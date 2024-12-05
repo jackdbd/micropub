@@ -32,6 +32,8 @@ in {
     GITHUB_REPO = "giacomodebidda-content";
     GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
     INCLUDE_ERROR_DESCRIPTION = true;
+    JWKS = builtins.readFile /home/jack/repos/micropub/secrets/jwks-private.json;
+
     # Since the fly CLI uses the LOG_LEVEL environment variable, I use a
     # different environment variable for pino.
     # https://betterstack.com/community/guides/logging/how-to-install-setup-and-use-pino-to-log-node-js-applications/
@@ -112,6 +114,9 @@ in {
     '';
     fly-secrets-set-github.exec = ''
       fly secrets set GITHUB_TOKEN="${config.env.GITHUB_TOKEN}"
+    '';
+    fly-secrets-set-jwks.exec = ''
+      fly secrets set JWKS="${config.env.JWKS}"
     '';
     fly-secrets-set-secure-session-keys.exec = ''
       fly secrets set SECURE_SESSION_KEY_ONE="${micropub.session_key_one}"
