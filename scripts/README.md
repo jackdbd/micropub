@@ -28,3 +28,9 @@ Verify a JWT using the public JWKS.
 ```sh
 npx tsm ./scripts/verify-jwt.ts
 ```
+
+Generate JSON schemas from TypeBox schemas, then generate HTML pages from those JSON schemas using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans).
+
+```sh
+npx tsm ./scripts/schemas-to-html.ts
+```

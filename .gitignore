@@ -21,5 +21,10 @@ devenv.local.nix
 # test coverage
 lcov.info
 
+# Both JSON schemas and their HTML representation are generated using a script,
+# so I don't think it makes much sense to track them in the repository.
+assets/json-schemas/
+assets/schemas-docs/
+
 secrets/*
 !secrets/README.md

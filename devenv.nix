@@ -53,6 +53,7 @@ in {
     dive # tool for exploring each layer in a docker image
     entr # run arbitrary commands when files change
     git
+    json-schema-for-humans # generate HTML documentation from a JSON schema
     nodejs
   ];
 
