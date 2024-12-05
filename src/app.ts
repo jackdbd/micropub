@@ -11,13 +11,14 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
+import { defStore as defAtomStore } from './lib/atom-store/index.js'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-store/publication.js'
 import { defStore as defGitHubStore } from './lib/github-store/index.js'
 import { defStore as defR2Store } from './lib/r2-store/index.js'
 import type { StoreAction, ErrorResponseBody } from './lib/micropub/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
-import type { AccessTokenClaims } from './lib/token.js'
+import type { AccessTokenClaims } from './lib/token/claims.js'
 
 import youch from './plugins/youch/index.js'
 import errorHandler from './plugins/error-handler/index.js'
@@ -99,7 +100,7 @@ declare module '@fastify/secure-session' {
 /**
  * Instantiates the Fastify app.
  */
-export function defFastify(config: Config) {
+export async function defFastify(config: Config) {
   const {
     access_token_expiration,
     base_url,
@@ -111,6 +112,8 @@ export function defFastify(config: Config) {
     github_repo,
     github_token,
     include_error_description,
+    jwks,
+    jwks_url,
     log_level,
     me,
     multipart_form_data_max_file_size: multipartFormDataMaxFileSize,
@@ -201,9 +204,12 @@ export function defFastify(config: Config) {
   fastify.register(responseDecorators)
 
   fastify.register(tokenEndpoint, {
+    // authorizationEndpoint,
     expiration: access_token_expiration,
     includeErrorDescription: include_error_description,
-    issuer
+    issuer,
+    jwks,
+    jwks_url
   })
 
   fastify.register(introspection, {
@@ -212,9 +218,25 @@ export function defFastify(config: Config) {
     me
   })
 
+  const token_store = await defAtomStore({
+    expiration: access_token_expiration,
+    issuer,
+    jwks,
+    jwks_url,
+    log: {
+      debug: (message: string) => {
+        return fastify.log.debug(`@jackdbd/atom-store ${message}`)
+      },
+      error: (message: string) => {
+        return fastify.log.error(`@jackdbd/atom-store ${message}`)
+      }
+    }
+  })
+
   fastify.register(revocation, {
     includeErrorDescription: include_error_description,
-    me
+    me,
+    store: token_store
   })
 
   fastify.register(userinfo, {

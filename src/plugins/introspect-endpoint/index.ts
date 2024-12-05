@@ -3,8 +3,8 @@ import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
 import { defValidateAuthorizationHeader } from '../../lib/fastify-hooks/index.js'
 import responseDecorators from '../response-decorators/index.js'
+import { defIntrospect } from './routes/introspect-post.js'
 import { DEFAULT_INCLUDE_ERROR_DESCRIPTION, NAME } from './constants.js'
-import { defIntrospect } from './routes.js'
 
 const PREFIX = `${NAME} `
 
@@ -54,7 +54,7 @@ const fastifyIndieAuthIntrospectionEndpoint: FastifyPluginCallback<
   // https://www.rfc-editor.org/rfc/rfc7662
   fastify.post(
     '/introspect',
-    { preHandler: [validateAuthorizationHeader] },
+    { onRequest: [validateAuthorizationHeader] },
     defIntrospect({ client_id, include_error_description })
   )
 

@@ -1,6 +1,6 @@
 import type { preHandlerHookHandler } from 'fastify'
-import { isBlacklisted } from '../token.js'
 import { invalidToken } from '../micropub/error-responses.js'
+import { isBlacklisted } from '../token/utils.js'
 
 const authorizationHeaderToToken = (auth?: string) => {
   if (!auth) {

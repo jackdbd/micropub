@@ -129,15 +129,15 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/media',
     {
-      preHandler: [
+      onRequest: [
         decodeJwtAndSetClaims,
         logIatAndExpClaims,
         validateClaimExp,
         validateClaimMe,
         validateClaimJti,
-        validateScopeMedia,
-        validateAccessTokenNotBlacklisted
-      ]
+        validateScopeMedia
+      ],
+      preHandler: [validateAccessTokenNotBlacklisted]
     },
     defMediaPost({ store, include_error_description })
   )

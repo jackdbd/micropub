@@ -1,28 +1,30 @@
 import type {
+  Blacklist,
+  Cleanup,
   Create,
   Delete,
   Get,
   Info,
-  Init,
   Issue,
+  Issuelist,
   Jf2ToContent,
   PublishedUrlToStoreLocation,
+  Reset,
   Revoke,
   RevokeAll,
-  SetSecret,
   Undelete,
   Update,
   Upload
 } from './api.js'
 import type {
+  BaseValueCleanup,
   BaseValueCreate,
   BaseValueDelete,
   BaseValueGet,
-  BaseValueInit,
   BaseValueIssue,
+  BaseValueReset,
   BaseValueRevoke,
   BaseValueRevokeAll,
-  BaseValueSetSecret,
   BaseValueUndelete,
   BaseValueUpdate,
   BaseValueUpload
@@ -71,19 +73,18 @@ export interface SyndicatorStore<
 
 export interface TokenStore<
   E extends Error = Error,
-  VInit extends BaseValueInit = BaseValueInit,
+  VCleanup extends BaseValueCleanup = BaseValueCleanup,
   VIssue extends BaseValueIssue = BaseValueIssue,
+  VReset extends BaseValueReset = BaseValueReset,
   VRevoke extends BaseValueRevoke = BaseValueRevoke,
-  VRevokeAll extends BaseValueRevokeAll = BaseValueRevokeAll,
-  VSetSecret extends BaseValueSetSecret = BaseValueSetSecret
+  VRevokeAll extends BaseValueRevokeAll = BaseValueRevokeAll
 > {
-  blacklist: () => Promise<Set<string>>
-  cleanup?: () => Promise<void>
+  blacklist: Blacklist
+  cleanup?: Cleanup<VCleanup, E>
   info: Info
-  init: Init<VInit, E>
   issue: Issue<VIssue, E>
-  issuelist: () => Promise<Set<string>>
+  issuelist: Issuelist
+  reset: Reset<VReset, E>
   revoke: Revoke<VRevoke, E>
   revokeAll: RevokeAll<VRevokeAll, E>
-  setSecret: SetSecret<VSetSecret, E>
 }

@@ -1,21 +1,24 @@
+import formbody from '@fastify/formbody'
 import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
 import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
+import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
   defValidateAccessTokenNotBlacklisted,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
+import type { TokenStore } from '../../lib/micropub/store/index.js'
 import responseDecorators from '../response-decorators/index.js'
-import { revocation } from './routes.js'
 import { DEFAULT_INCLUDE_ERROR_DESCRIPTION, NAME } from './constants.js'
-import { unixTimestampInSeconds } from '../../lib/date.js'
+import { defRevocationPost } from './routes/revocation-post.js'
 
 const PREFIX = `${NAME} `
 
 export interface PluginOptions extends FastifyPluginOptions {
   includeErrorDescription: boolean
   me: string
+  store: TokenStore
 }
 
 const defaults: Partial<PluginOptions> = {
@@ -27,9 +30,18 @@ const fastifyIndieAuthRevocationEndpoint: FastifyPluginCallback<
 > = (fastify, options, done) => {
   const config = applyToDefaults(defaults, options) as Required<PluginOptions>
 
-  const { includeErrorDescription: include_error_description, me } = config
+  const {
+    includeErrorDescription: include_error_description,
+    me,
+    store
+  } = config
 
   // === PLUGINS ============================================================ //
+  fastify.register(formbody)
+  fastify.log.debug(
+    `${PREFIX}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+  )
+
   fastify.register(responseDecorators)
   fastify.log.debug(`${PREFIX}registered plugin: responseDecorators`)
 
@@ -76,19 +88,26 @@ const fastifyIndieAuthRevocationEndpoint: FastifyPluginCallback<
 
   // === ROUTES ============================================================= //
   // https://indieauth.spec.indieweb.org/#x7-token-revocation
+  // The token to be revoked is NOT NECESSARILY the same token found in the
+  // Authorization header is the access token to be revoked.
   fastify.post(
     '/revocation',
     {
-      preHandler: [
+      onRequest: [
         decodeJwtAndSetClaims,
         validateClaimExp,
         validateClaimMe,
-        validateClaimJti,
-        validateAccessTokenNotBlacklisted
-      ]
+        validateClaimJti
+      ],
+      preHandler: [validateAccessTokenNotBlacklisted]
       // schema: revocation_post_request
     },
-    revocation
+    defRevocationPost({
+      include_error_description,
+      me,
+      prefix: `${NAME}/routes `,
+      store
+    })
   )
 
   done()

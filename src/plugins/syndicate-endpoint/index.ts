@@ -101,14 +101,14 @@ const fastifySyndicator: FastifyPluginCallback<PluginOptions> = (
   fastify.post(
     '/syndicate',
     {
-      preHandler: [
+      onRequest: [
         decodeJwtAndSetClaims,
         logIatAndExpClaims,
         validateClaimExp,
         validateClaimMe,
-        validateClaimJti,
-        validateAccessTokenNotBlacklisted
-      ]
+        validateClaimJti
+      ],
+      preHandler: [validateAccessTokenNotBlacklisted]
       // schema: syndicator_post_request
     },
     defSyndicatePost({

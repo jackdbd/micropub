@@ -3,63 +3,69 @@ import { describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { unixTimestampInSeconds } from '../dist/lib/date.js'
 import {
-  decode,
   isExpired,
+  randomKid,
   safeDecode,
-  secret,
   sign,
   verify
-} from '../dist/lib/token.js'
+} from '../dist/lib/token/index.js'
 import { issueJWT } from './test_utils.js'
+import {
+  DEFAULT_EXPIRATION,
+  DEFAULT_ISSUER,
+  JWKS as jwks,
+  JWKS_URL as jwks_url
+} from './test_utils.js'
+import { nanoid } from 'nanoid'
 
-const __filename = fileURLToPath(import.meta.url)
-
-describe('decode', () => {
-  it('returns a decoded JWT with the expected claims, if the token was signed with a valid secret', async () => {
-    const algorithm = 'HS256'
-    const expiration = '1 hour'
-    const issuer = __filename
-    const payload = { foo: 'bar' }
-    const { value } = await secret({ alg: algorithm })
-
-    const { error, value: jwt } = await sign({
-      algorithm,
-      expiration,
-      issuer,
-      payload,
-      secret: value
-    })
-
-    assert.ok(!error)
-    assert.ok(jwt)
-
-    const decoded = decode({ jwt })
-
-    assert.strictEqual(decoded.foo, 'bar')
-    assert.strictEqual(decoded.iss, issuer)
-    assert.ok(decoded.exp !== undefined)
-    assert.ok(decoded.iat !== undefined)
-  })
-
-  it('throws when trying to decode an invalid JWT', () => {
-    assert.throws(() => {
-      decode({ jwt: 'foo' })
-    })
-  })
-})
+// const __filename = fileURLToPath(import.meta.url)
 
 describe('safeDecode', () => {
   it('does not throw when trying to decode an invalid JWT', () => {
     assert.doesNotThrow(async () => {
-      await safeDecode({ jwt: 'foo' })
+      await safeDecode('foo')
     })
   })
 
   it('returns an error when trying to decode an invalid JWT', async () => {
-    const { error, value } = await safeDecode({ jwt: 'foo' })
+    const { error, value } = await safeDecode('foo')
 
     assert.ok(error)
     assert.ok(!value)
+  })
+
+  it('returns the expected claims, if the JWT was signed with a valid secret', async () => {
+    const expiration = DEFAULT_EXPIRATION
+    const issuer = DEFAULT_ISSUER
+    const payload = { abc: nanoid(), xyz: nanoid() }
+
+    const { error: kid_error, value: kid } = randomKid(jwks.keys)
+    assert.ok(!kid_error)
+    assert.ok(kid)
+
+    const { error: sign_error, value: jwt } = await sign({
+      expiration,
+      issuer,
+      jwks,
+      kid,
+      payload
+    })
+
+    assert.ok(!sign_error)
+    assert.ok(jwt)
+
+    const { error: decode_error, value: claims } = await safeDecode(jwt)
+    assert.ok(!decode_error)
+    assert.ok(claims)
+
+    assert.strictEqual(claims.iss, issuer)
+    assert.ok(claims.exp !== undefined)
+    assert.ok(claims.iat !== undefined)
+    assert.ok(claims.jti !== undefined)
+
+    Object.entries(payload).forEach(([key, value]) => {
+      assert.strictEqual(claims[key], value)
+    })
   })
 })
 
@@ -79,36 +85,17 @@ describe('isExpired', () => {
   })
 })
 
-describe('secret', () => {
-  it('returns an error when the algorithm is not supported', async () => {
-    const { error, value } = await secret({ alg: 'foo' })
-
-    assert.ok(error)
-    assert.ok(!value)
-  })
-
-  it('returns a value when the algorithm is supported', async () => {
-    const { error, value } = await secret({ alg: 'HS256' })
-
-    assert.ok(!error)
-    assert.ok(value)
-  })
-})
-
 describe('sign', () => {
   it('can issue a JWT', async () => {
-    const algorithm = 'HS256'
-    const expiration = '1 hour'
-    const issuer = __filename
-    const payload = { foo: 'bar' }
-    const { value } = await secret({ alg: algorithm })
+    const { error: kid_error, value: kid } = randomKid(jwks.keys)
+    assert.ok(!kid_error)
 
     const { error, value: jwt } = await sign({
-      algorithm,
-      expiration,
-      issuer,
-      payload,
-      secret: value
+      expiration: '1 hour',
+      issuer: DEFAULT_ISSUER,
+      jwks,
+      kid,
+      payload: { foo: 'bar' }
     })
 
     assert.ok(!error)
@@ -118,14 +105,16 @@ describe('sign', () => {
 
 describe('verify', () => {
   it('does not throw when trying to verify an invalid JWT', async () => {
-    const algorithm = 'HS256'
-    const expiration = '1 hour'
-    const issuer = __filename
-
-    const { value: key } = await secret({ alg: algorithm })
+    const expiration = DEFAULT_EXPIRATION
+    const issuer = DEFAULT_ISSUER
 
     assert.doesNotThrow(async () => {
-      await verify({ expiration, issuer, jwt: 'foo', secret: key })
+      await verify({
+        issuer,
+        jwks_url,
+        jwt: 'foo',
+        max_token_age: expiration
+      })
     })
   })
 
@@ -134,9 +123,14 @@ describe('verify', () => {
       me: 'https://example.com'
     }
 
-    const { expiration, issuer, jwt, secret } = await issueJWT(payload)
+    const { expiration, issuer, jwt } = await issueJWT(payload)
 
-    const { error, value } = await verify({ expiration, issuer, jwt, secret })
+    const { error, value } = await verify({
+      issuer,
+      jwks_url,
+      jwt,
+      max_token_age: expiration
+    })
 
     assert.ok(error)
     assert.ok(!value)
@@ -148,19 +142,17 @@ describe('verify', () => {
       scope: 'create update delete'
     }
 
-    const { expiration, issuer, jwt, secret } = await issueJWT(payload)
+    const { expiration, issuer, jwt } = await issueJWT(payload)
 
-    const { error, value } = await verify({
-      expiration,
+    const { error, value: claims } = await verify({
       issuer,
+      jwks_url,
       jwt,
-      secret
+      max_token_age: expiration
     })
 
     assert.ok(!error)
-    assert.ok(value)
-
-    const claims = value.payload
+    assert.ok(claims)
 
     assert.ok(claims.exp)
     assert.ok(claims.iat <= unixTimestampInSeconds())

@@ -96,15 +96,15 @@ const fastifyIndieAuthUserinfoEndpoint: FastifyPluginCallback<PluginOptions> = (
   fastify.get(
     '/userinfo',
     {
-      preHandler: [
+      onRequest: [
         decodeJwtAndSetClaims,
         validateClaimExp,
         validateClaimMe,
         validateClaimJti,
-        validateAccessTokenNotBlacklisted,
         validateScopeEmail,
         validateScopeProfile
-      ]
+      ],
+      preHandler: [validateAccessTokenNotBlacklisted]
       // schema: userinfo_get_request
     },
     userinfo

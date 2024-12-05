@@ -1,5 +1,9 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 
+export interface BaseValueBlacklist {}
+
+export interface BaseValueCleanup {}
+
 export interface BaseValueCreate {}
 
 export interface BaseValueDelete {}
@@ -8,15 +12,15 @@ export interface BaseValueGet {
   jf2: Jf2
 }
 
-export interface BaseValueInit {}
-
 export interface BaseValueIssue {}
+
+export interface BaseValueIssuelist {}
+
+export interface BaseValueReset {}
 
 export interface BaseValueRevoke {}
 
 export interface BaseValueRevokeAll {}
-
-export interface BaseValueSetSecret {}
 
 export interface BaseValueSyndicate {
   /**

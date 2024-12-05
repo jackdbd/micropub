@@ -1,7 +1,8 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import { invalidRequest, invalidToken } from '../../lib/micropub/index.js'
-import { isExpired, isBlacklisted, safeDecode } from '../../lib/token.js'
-import { NAME } from './constants.js'
+import { invalidRequest, invalidToken } from '../../../lib/micropub/index.js'
+import { safeDecode } from '../../../lib/token/decode.js'
+import { isExpired, isBlacklisted } from '../../../lib/token/utils.js'
+import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/routes `
 

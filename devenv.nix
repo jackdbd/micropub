@@ -105,6 +105,12 @@ in {
     container-scan.exec = ''
       trivy image --severity MEDIUM,HIGH,CRITICAL -f table micropub:latest
     '';
+    debug.exec = ''
+      npm run build
+      NODE_OPTIONS='--inspect' node dist/server.js
+      # Then attach to the running Node.js server using the configuration that
+      # has "request": "attach" in launch.json
+    '';
     dev.exec = ''
       npm run watch
     '';

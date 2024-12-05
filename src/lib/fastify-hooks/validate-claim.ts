@@ -1,4 +1,4 @@
-import type { preHandlerHookHandler } from 'fastify'
+import type { onRequestHookHandler } from 'fastify'
 import { forbidden, unauthorized } from '../micropub/error-responses.js'
 import type { Assertion, Claims } from './interfaces.js'
 
@@ -12,7 +12,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
   const include_error_description = opt.include_error_description || false
   const log_prefix = opt.log_prefix || ''
 
-  const validateClaim: preHandlerHookHandler = (request, reply, done) => {
+  const validateClaim: onRequestHookHandler = (request, reply, done) => {
     const claims = request.requestContext.get('access_token_claims') as
       | Claims
       | undefined
@@ -53,12 +53,15 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     let given
     if (typeof assertion.value === 'function') {
       request.log.debug(
-        `${log_prefix}the value provided for validating the claim '${key}' is a function. Invoking it now and test its return value against the actual claim ${key}=${actual}`
+        `${log_prefix}the value provided for validating claim '${key}' is a function. Invoking it now.`
       )
       given = assertion.value()
     } else {
       given = assertion.value
     }
+    request.log.debug(
+      `${log_prefix}validating claim '${key}': ${actual} ${op} ${given}`
+    )
 
     // I think HTTP 403 Forbidden is the right status code to use here.
     // https://micropub.spec.indieweb.org/#error-response

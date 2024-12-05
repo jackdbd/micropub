@@ -1,7 +1,12 @@
-import type { ContentStore, MediaStore, SyndicatorStore } from './interface.js'
+import type {
+  ContentStore,
+  MediaStore,
+  SyndicatorStore,
+  TokenStore
+} from './interface.js'
 
 export const errorIfMethodNotImplementedInStore = (
-  store: ContentStore | MediaStore | SyndicatorStore,
+  store: ContentStore | MediaStore | SyndicatorStore | TokenStore,
   method: string
 ) => {
   if (!(store as any)[method]) {

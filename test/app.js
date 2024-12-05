@@ -1,21 +1,11 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
-import { defFastify } from '../dist/app.js'
-import { defConfig } from '../dist/config.js'
-
-const defTestApp = () => {
-  const { error, value: config } = defConfig()
-  if (error) {
-    console.error(error)
-  }
-  assert.ok(!error)
-  return defFastify(config)
-}
+import { defTestApp } from './test_utils.js'
 
 describe('app', () => {
   let app
-  before(() => {
-    app = defTestApp()
+  before(async () => {
+    app = await defTestApp()
   })
 
   after(() => {

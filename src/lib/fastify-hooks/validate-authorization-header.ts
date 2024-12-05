@@ -1,4 +1,4 @@
-import type { preHandlerHookHandler } from 'fastify'
+import type { onRequestHookHandler } from 'fastify'
 import { unauthorized } from '../micropub/error-responses.js'
 
 export interface Options {
@@ -11,7 +11,7 @@ export const defValidateAuthorizationHeader = (options?: Options) => {
   const include_error_description = opt.include_error_description || false
   const log_prefix = opt.log_prefix || ''
 
-  const validateAuthorizationHeader: preHandlerHookHandler = (
+  const validateAuthorizationHeader: onRequestHookHandler = (
     request,
     reply,
     done

@@ -1,17 +1,19 @@
 import { defAtom } from '@thi.ng/atom'
 import { applyToDefaults } from '@hapi/hoek'
+import type { JWK } from 'jose'
 import type {
-  Init,
+  Blacklist,
   Issue,
+  Issuelist,
+  Reset,
   Revoke,
-  RevokeAll,
-  SetSecret
+  RevokeAll
 } from '../micropub/store/api.js'
 import type { TokenStore } from '../micropub/store/index.js'
-import { secret as defSecret, sign, verify, type Secret } from '../token.js'
+import { randomKid, sign } from '../token/sign-jwt.js'
+import { verify } from '../token/verify-jwt.js'
 import {
   DEFAULT_STORE_NAME,
-  DEFAULT_TOKEN_ALGORITHM,
   DEFAULT_TOKEN_BLACKLIST,
   DEFAULT_TOKEN_EXPIRATION,
   DEFAULT_TOKEN_ISSUELIST,
@@ -26,25 +28,22 @@ interface Log {
 }
 
 interface Options {
-  algorithm?: string
   blacklist?: string[]
   expiration?: string
   issuelist?: string[]
   issuer?: string
+  jwks: { keys: JWK[] }
+  jwks_url: URL
   log?: Log
   name?: string
+  prefix?: string
 }
 
 const defaults: Partial<Options> = {
-  algorithm: DEFAULT_TOKEN_ALGORITHM,
   blacklist: DEFAULT_TOKEN_BLACKLIST,
   expiration: DEFAULT_TOKEN_EXPIRATION,
   issuelist: DEFAULT_TOKEN_ISSUELIST,
   issuer: DEFAULT_TOKEN_ISSUER,
-  //   log: {
-  //     debug: console.debug,
-  //     error: console.error
-  //   },
   log: {
     debug: (..._args: any) => {},
     error: (..._args: any) => {}
@@ -52,68 +51,36 @@ const defaults: Partial<Options> = {
   name: DEFAULT_STORE_NAME
 }
 
-export const defStore = (options?: Options): AtomStore => {
+export const defStore = async (options?: Options): Promise<AtomStore> => {
   const opt = options || {}
   const store_cfg = applyToDefaults(defaults, opt) as Required<Options>
 
-  const { log, name } = store_cfg
+  const { expiration, issuer, jwks, jwks_url, log, name } = store_cfg
+
+  const prefix = store_cfg.prefix ? store_cfg.prefix : `[${store_cfg.name}] `
 
   const a = defAtom({
     blacklist: new Set(store_cfg.blacklist),
-    issuelist: new Set(store_cfg.issuelist),
-    secret: undefined as Secret | undefined
+    issuelist: new Set(store_cfg.issuelist)
   })
 
-  const setSecret: SetSecret = async (cfg = {}) => {
-    const alg = cfg.algorithm || store_cfg.algorithm
-
-    const { error, value } = await defSecret({ alg })
-
-    if (error) {
-      return { error: new Error(`Could not set secret: ${error.message}`) }
-    }
-
-    a.resetIn(['secret'], value)
-
-    return { value: { message: `Generated secret using algorithm ${alg}` } }
+  const blacklist: Blacklist = async () => {
+    return { value: a.deref().blacklist }
   }
 
-  const init: Init = async () => {
-    log.debug(`Initialize store ${name}`)
+  const issue: Issue = async (payload) => {
+    const { error: kid_error, value: kid } = randomKid(jwks.keys)
 
-    const { error: secret_error } = await setSecret({
-      algorithm: store_cfg.algorithm
-    })
-
-    if (secret_error) {
-      log.error(`Could not set secret: ${secret_error.message}`)
-      return { error: secret_error }
+    if (kid_error) {
+      return { error: kid_error }
     }
-
-    return { value: { message: `Store ${name} initialized` } }
-  }
-
-  const issue: Issue = async (cfg) => {
-    const algorithm = cfg.algorithm || store_cfg.algorithm
-    const expiration = cfg.expiration || store_cfg.expiration
-    const issuer = cfg.issuer || store_cfg.issuer
-
-    let secret = a.deref().secret
-
-    if (!secret) {
-      return {
-        error: new Error(`Store ${name} has no secret. Set a secret first.`)
-      }
-    }
-
-    const payload = cfg.payload
 
     const { error: sign_error, value: jwt } = await sign({
-      algorithm,
       expiration,
       issuer,
-      payload,
-      secret
+      jwks,
+      kid,
+      payload
     })
 
     if (sign_error) {
@@ -122,20 +89,22 @@ export const defStore = (options?: Options): AtomStore => {
 
     // We need to decode the token we have just issued because we need to store
     // its jti claim in the issuelist.
-    const { error: verify_error, value: decoded } = await verify({
-      expiration,
+    const { error: verify_error, value: claims } = await verify({
       issuer,
+      jwks_url,
       jwt,
-      secret
+      max_token_age: expiration
     })
 
     if (verify_error) {
       return { error: verify_error }
     }
 
-    const jti = decoded.payload.jti
+    const { jti } = claims
     if (!jti) {
-      return { error: new Error(`Token has no jti claim`) }
+      // This should never happen, since we are required the jti claim in the
+      // verify function. But better safe than sorry.
+      return { error: new Error(`token was verified but it has no jti claim`) }
     }
 
     a.swapIn(['issuelist'], (issuelist) => {
@@ -144,37 +113,50 @@ export const defStore = (options?: Options): AtomStore => {
     })
 
     return {
-      value: { message: `Issued token ${jti}`, jwt, claims: decoded.payload }
+      value: { message: `Issued token ${jti}`, jwt, claims }
     }
   }
 
-  const revoke: Revoke = async (cfg) => {
-    const expiration = cfg.expiration || store_cfg.expiration
-    const issuer = cfg.issuer || store_cfg.issuer
+  const issuelist: Issuelist = async () => {
+    return { value: a.deref().issuelist }
+  }
 
-    let secret = a.deref().secret
+  const reset: Reset = async () => {
+    log.debug(`${prefix}reset`)
 
-    if (!secret) {
-      return {
-        error: new Error(`Store ${name} has no secret. Set a secret first.`)
-      }
+    a.reset({
+      blacklist: new Set(store_cfg.blacklist),
+      issuelist: new Set(store_cfg.issuelist)
+    })
+
+    return { value: { message: `Store ${name} has been reset` } }
+  }
+
+  const revoke: Revoke = async (jwt) => {
+    const expiration = store_cfg.expiration
+    const issuer = store_cfg.issuer
+    log.debug(
+      `${prefix}revoke token (issuer: ${issuer}, expiration: ${expiration})`
+    )
+
+    const { error: verify_error, value: claims } = await verify({
+      issuer,
+      jwks_url,
+      jwt,
+      max_token_age: expiration
+    })
+
+    if (verify_error) {
+      log.error(`${prefix}cannot verify secret: ${verify_error.message}`)
+      return { error: verify_error }
     }
 
-    const jwt = cfg.jwt
-
-    const { error, value } = await verify({ expiration, issuer, jwt, secret })
-
-    if (error) {
-      return { error }
-    }
-
-    const { jti } = value.payload
-
+    const { jti } = claims
     if (!jti) {
-      return { error: new Error(`Token has no jti claim`) }
+      return { error: new Error(`token was verified but it has no jti claim`) }
     }
 
-    log.debug(`Revoking token that has jti claim ${jti}`)
+    log.debug(`${prefix}revoking token that has jti claim ${jti}`)
 
     a.swapIn(['blacklist'], (blacklist) => {
       blacklist.add(jti)
@@ -185,37 +167,26 @@ export const defStore = (options?: Options): AtomStore => {
   }
 
   const revokeAll: RevokeAll = async () => {
-    let before = 0
-    let after = 0
-
     a.swap((state) => {
-      //   return { ...state, blacklist: new Set(state.issuelist) }
-      before = state.blacklist.size
-      state.blacklist = new Set(state.issuelist)
-      after = state.blacklist.size
-      return state
+      return { ...state, blacklist: new Set(state.issuelist) }
     })
-
-    log.debug(a.deref(), `Current state of ${name}`)
 
     return Promise.resolve({
       value: {
-        blacklist: a.deref().blacklist,
-        blacklist_size: { before, after },
-        // message: `Revoked all tokens`
-        message: `Revoked ${after - before} tokens`
+        message: `Revoked all tokens`
       }
     })
   }
 
+  log.debug(`${prefix}initialized`)
+
   return {
-    blacklist: async () => a.deref().blacklist,
+    blacklist,
     info: { name },
-    init,
     issue,
-    issuelist: async () => a.deref().issuelist,
+    issuelist,
+    reset,
     revoke,
-    revokeAll,
-    setSecret
+    revokeAll
   }
 }

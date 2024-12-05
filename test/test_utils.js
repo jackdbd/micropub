@@ -1,28 +1,50 @@
 import assert from 'node:assert'
 import { fileURLToPath } from 'node:url'
-import { secret, sign } from '../dist/lib/token.js'
+import { defFastify } from '../dist/app.js'
+import { defConfig } from '../dist/config.js'
+import { randomKid, sign } from '../dist/lib/token/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 
+export const DEFAULT_ISSUER = __filename
+export const DEFAULT_EXPIRATION = '5 minutes'
+
+const jwks_private = process.env.JWKS
+if (!jwks_private) {
+  throw new Error('JWKS not set')
+}
+export const JWKS = JSON.parse(jwks_private)
+
+export const JWKS_URL = new URL(
+  'https://content.giacomodebidda.com/misc/jwks-public.json'
+)
+
+export const defTestApp = async () => {
+  const { error, value: config } = await defConfig()
+  if (error) {
+    console.error(error)
+  }
+  assert.ok(!error)
+  const app = await defFastify(config)
+  return app
+}
+
 export const issueJWT = async (payload = {}) => {
-  const algorithm = payload.algorithm || 'HS256'
-  const expiration = payload.expiration || '1 hour'
-  const issuer = __filename
+  const { error: kid_error, value: kid } = randomKid(JWKS.keys)
+  assert.ok(!kid_error)
 
-  const { value: key } = await secret({ alg: algorithm })
+  const expiration = DEFAULT_EXPIRATION
+  const issuer = DEFAULT_ISSUER
 
-  const { value: jwt } = await sign({
-    algorithm,
+  const { error, value: jwt } = await sign({
     expiration,
     issuer,
-    payload,
-    secret: key
+    jwks: JWKS,
+    kid,
+    payload
   })
-
-  assert.ok(expiration)
-  assert.ok(issuer)
+  assert.ok(!error)
   assert.ok(jwt)
-  assert.ok(key)
 
-  return { expiration, issuer, jwt, secret: key }
+  return { expiration, issuer, jwt }
 }

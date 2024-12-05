@@ -1,9 +1,9 @@
+import type { JWK } from 'jose'
 import type { SyndicateToItem } from './lib/micropub/index.js'
 
 // TODO: use a short-lived access token (e.g. 3600 seconds) and a long-lived
 // refresh token.
 const access_token_expiration = '72 hours'
-// const access_token_expiration = '5 seconds'
 
 const me = 'https://giacomodebidda.com/'
 
@@ -53,6 +53,9 @@ const syndicate_to: SyndicateToItem[] = [
 const should_media_endpoint_ignore_filename = false
 // const should_media_endpoint_ignore_filename = true
 
+/**
+ * Configuration for the entire app.
+ */
 export interface Config {
   access_token_expiration: string
   base_url: string
@@ -64,7 +67,34 @@ export interface Config {
   github_repo: string
   github_token: string
   host: string
+
+  /**
+   * Whether to include the `error_description` property in all JSON responses.
+   *
+   * This property is a human-readable description of the error message, used to
+   * assist the client developer in understanding the error. This property is
+   * not meant to be shown to the end user.
+   * @see [Micropub Error Response](https://micropub.spec.indieweb.org/#error-response-p-4)
+   */
   include_error_description: boolean
+
+  /**
+   * **Private** JSON Web Key Set (JWKS).
+   *
+   * This private JWKS is used by the token endpoint to sign JSON Web Tokens (JWTs).
+   * It should contain at least one private key.
+   *
+   * **Sensitive:** This key should never be logged, and should be stored securely
+   * (e.g. in a secret management system).
+   * @sensitive
+   */
+  jwks: { keys: JWK[] }
+
+  /**
+   * URL where the **public** JSON Web Key Set (JWKS) is hosted.
+   */
+  jwks_url: URL
+
   log_level: string
   me: string
   multipart_form_data_max_file_size: number
@@ -87,6 +117,7 @@ const SENSITIVE = new Set([
   'cloudflare_r2_access_key_id',
   'cloudflare_r2_secret_access_key',
   'github_token',
+  'jwks',
   'secure_session_key_one_buf',
   'secure_session_key_two_buf',
   'telegram_token'
@@ -106,7 +137,9 @@ export const unsentiveEntries = (config: Config) => {
   })
 }
 
-export const defConfig = () => {
+// Most likely, a few configuration values will be asynchronous. Here is why
+// this function is async.
+export const defConfig = async () => {
   // port should match the internal_port specified in fly.toml
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
 
@@ -152,6 +185,13 @@ export const defConfig = () => {
 
   const include_error_description = true
 
+  const jwks_private = process.env.JWKS
+  if (!jwks_private) {
+    return { error: new Error('JWKS not set') }
+  }
+
+  const jwks = JSON.parse(jwks_private) as { keys: JWK[] }
+
   const report_all_ajv_errors =
     process.env.NODE_ENV === 'development' ? true : false
 
@@ -180,6 +220,10 @@ export const defConfig = () => {
   // localhost, otherwise we will have mixed content errors.
   const base_url = process.env.BASE_URL || `http://localhost:${port}`
 
+  const jwks_url = process.env.JWKS_PUBLIC_URL
+    ? new URL(process.env.JWKS_PUBLIC_URL)
+    : new URL('https://content.giacomodebidda.com/misc/jwks-public.json')
+
   const config: Config = {
     base_url,
     access_token_expiration,
@@ -192,6 +236,8 @@ export const defConfig = () => {
     github_token,
     host: process.env.HOST || '0.0.0.0',
     include_error_description,
+    jwks,
+    jwks_url,
     log_level: process.env.PINO_LOG_LEVEL || 'info',
     me,
     multipart_form_data_max_file_size,

@@ -1,26 +1,27 @@
-import fs from 'node:fs/promises'
-import * as jose from 'jose'
 import { applyToDefaults } from '@hapi/hoek'
+import type { JWK } from 'jose'
 import type {
-  Init,
+  Blacklist,
+  Cleanup,
   Issue,
+  Issuelist,
+  Reset,
   Revoke,
-  RevokeAll,
-  SetSecret
+  RevokeAll
 } from '../micropub/store/api.js'
 import type { TokenStore } from '../micropub/store/index.js'
-import { secret as defSecret, sign, verify } from '../token.js'
+import { randomKid, sign } from '../token/sign-jwt.js'
+import { verify } from '../token/verify-jwt.js'
 import {
   DEFAULT_STORE_NAME,
-  DEFAULT_TOKEN_ALGORITHM,
   DEFAULT_TOKEN_BLACKLIST,
   DEFAULT_TOKEN_EXPIRATION,
   DEFAULT_TOKEN_ISSUELIST,
   DEFAULT_TOKEN_ISSUER,
   DEFAULT_TOKEN_BLACKLIST_PATH,
-  DEFAULT_TOKEN_ISSUELIST_PATH,
-  DEFAULT_TOKEN_JWK_PATH
+  DEFAULT_TOKEN_ISSUELIST_PATH
 } from './defaults.js'
+import * as storage from './fs.js'
 
 export interface FileSystemStore extends TokenStore {}
 
@@ -30,27 +31,26 @@ interface Log {
 }
 
 interface Options {
-  algorithm?: string
   blacklist?: string[]
+  blacklist_path?: string
   expiration?: string
   issuelist?: string[]
+  issuelist_path?: string
   issuer?: string
-  jwk_path?: string
+  jwks: { keys: JWK[] }
+  jwks_url: URL
   log?: Log
   name?: string
-  blacklist_path?: string
-  issuelist_path?: string
+  prefix?: string
 }
 
 const defaults: Partial<Options> = {
-  algorithm: DEFAULT_TOKEN_ALGORITHM,
   blacklist: DEFAULT_TOKEN_BLACKLIST,
   blacklist_path: DEFAULT_TOKEN_BLACKLIST_PATH,
   expiration: DEFAULT_TOKEN_EXPIRATION,
   issuelist: DEFAULT_TOKEN_ISSUELIST,
   issuelist_path: DEFAULT_TOKEN_ISSUELIST_PATH,
   issuer: DEFAULT_TOKEN_ISSUER,
-  jwk_path: DEFAULT_TOKEN_JWK_PATH,
   log: {
     debug: (..._args: any) => {},
     error: (..._args: any) => {}
@@ -58,186 +58,50 @@ const defaults: Partial<Options> = {
   name: DEFAULT_STORE_NAME
 }
 
-interface AppendJTIConfig {
-  jti: string
-  path: string
-}
-
-interface GetSecretConfig {
-  algorithm: string
-  jwk_path: string
-}
-
-const writeJSON = async (filepath: string, data: any) => {
-  try {
-    await fs.writeFile(filepath, JSON.stringify(data), 'utf8')
-    return { value: { message: `Wrote ${filepath}` } }
-  } catch (err: any) {
-    return { error: err as Error }
-  }
-}
-
-export const defStore = (options?: Options): FileSystemStore => {
+export const defStore = async (options?: Options): Promise<FileSystemStore> => {
   const opt = options || {}
   const store_cfg = applyToDefaults(defaults, opt) as Required<Options>
 
-  const { blacklist_path, issuelist_path, jwk_path, log, name } = store_cfg
+  const {
+    blacklist_path,
+    expiration,
+    issuelist_path,
+    issuer,
+    jwks,
+    jwks_url,
+    log,
+    name
+  } = store_cfg
 
-  const setSecret: SetSecret = async (cfg = {}) => {
-    const alg = cfg.algorithm || store_cfg.algorithm
+  const prefix = store_cfg.prefix ? store_cfg.prefix : `[${store_cfg.name}] `
 
-    const { error: secret_error, value: secret_key } = await defSecret({ alg })
-
-    if (secret_error) {
-      return {
-        error: new Error(`Could not generate secret: ${secret_error.message}`)
-      }
-    }
-
-    log.debug(`Generated secret using algorithm ${alg}`)
-
-    let jwk: jose.JWK
-    try {
-      jwk = await jose.exportJWK(secret_key)
-    } catch (err: any) {
-      return { error: err as Error }
-    }
-
-    const { error } = await writeJSON(jwk_path, { ...jwk, alg })
-
+  const blacklist: Blacklist = async () => {
+    log.debug(`${prefix}read blacklist ${blacklist_path}`)
+    const { error, value } = await storage.readJSON<string[]>(blacklist_path)
     if (error) {
-      log.error(error.message)
       return { error }
     }
-
-    const message = `Stored ${alg} JWK at ${jwk_path}`
-    log.debug(message)
-
-    return { value: { message } }
+    return { value: new Set(value) }
   }
 
-  const init: Init = async () => {
-    log.debug(`Initialize store ${name}`)
-
-    const { error: blacklist_error } = await writeJSON(
-      blacklist_path,
-      store_cfg.blacklist
-    )
-    if (blacklist_error) {
-      log.error(
-        `Could not stored blacklist at ${blacklist_path}: ${blacklist_error.message}`
-      )
-      return { error: blacklist_error }
-    }
-    log.debug(`Stored blacklist at ${blacklist_path}`)
-
-    let { error: issuelist_error } = await writeJSON(
-      issuelist_path,
-      store_cfg.issuelist
-    )
-    if (issuelist_error) {
-      log.error(
-        `Could not stored issuelist at ${issuelist_path}: ${issuelist_error.message}`
-      )
-      return { error: issuelist_error }
-    }
-    log.debug(`Stored issuelist at ${issuelist_path}`)
-
-    const { error: secret_error } = await setSecret({
-      algorithm: store_cfg.algorithm
-    })
-    if (secret_error) {
-      log.error(`Could not set secret: ${secret_error.message}`)
-      return { error: secret_error }
-    }
-
-    return { value: { message: `Store ${name} initialized` } }
+  const cleanup: Cleanup = async () => {
+    log.debug(`${prefix}cleanup`)
+    return await storage.cleanup({ blacklist_path, issuelist_path })
   }
 
-  const readJWK = async (jwk_path: string) => {
-    try {
-      const jwk_data = await fs.readFile(jwk_path, { encoding: 'utf8' })
-      return { value: JSON.parse(jwk_data) as jose.JWK }
-    } catch (err: any) {
-      const message = `Could not read JWK from ${jwk_path}: ${err.message}`
-      return { error: new Error(message) }
-    }
-  }
+  const issue: Issue = async (payload) => {
+    const { error: kid_error, value: kid } = randomKid(jwks.keys)
 
-  const importJWK = async (jwk: jose.JWK, algorithm: string) => {
-    try {
-      const keylike = await jose.importJWK(jwk, algorithm)
-      return { value: keylike as jose.KeyLike | Uint8Array }
-    } catch (err: any) {
-      const message = `Could not import JWK from ${jwk_path}: ${err.message}`
-      return { error: new Error(message) }
-    }
-  }
-
-  const getSecret = async (cfg: GetSecretConfig) => {
-    const { algorithm, jwk_path } = cfg
-
-    const { error: read_error, value: jwk } = await readJWK(jwk_path)
-
-    if (read_error) {
-      log.error(read_error.message)
-      return { error: read_error }
-    }
-
-    const { error: import_error, value } = await importJWK(jwk, algorithm)
-
-    if (import_error) {
-      log.error(import_error.message)
-      return { error: import_error }
-    }
-
-    return { value }
-  }
-
-  const appendJTI = async (cfg: AppendJTIConfig) => {
-    try {
-      const json = await fs.readFile(cfg.path, 'utf8')
-      const arr = JSON.parse(json)
-      arr.push(cfg.jti)
-      await fs.writeFile(cfg.path, JSON.stringify(arr), 'utf8')
-      return { value: { message: `jti ${cfg.jti} written to ${cfg.path}` } }
-    } catch (err: any) {
-      return { error: err as Error }
-    }
-  }
-
-  const blacklistArray = async () => {
-    const json = await fs.readFile(blacklist_path, { encoding: 'utf8' })
-    return JSON.parse(json) as string[]
-  }
-
-  const issuelistArray = async () => {
-    const json = await fs.readFile(issuelist_path, { encoding: 'utf8' })
-    return JSON.parse(json) as string[]
-  }
-
-  const issue: Issue = async (cfg) => {
-    const algorithm = cfg.algorithm || store_cfg.algorithm
-    const expiration = cfg.expiration || store_cfg.expiration
-    const issuer = cfg.issuer || store_cfg.issuer
-    const payload = cfg.payload
-
-    const { error: secret_error, value: secret } = await getSecret({
-      algorithm,
-      jwk_path
-    })
-
-    if (secret_error) {
-      log.error(`Could not retrieve secret: ${secret_error.message}`)
-      return { error: secret_error }
+    if (kid_error) {
+      return { error: kid_error }
     }
 
     const { error: sign_error, value: jwt } = await sign({
-      algorithm,
       expiration,
       issuer,
-      payload,
-      secret
+      jwks,
+      kid,
+      payload
     })
 
     if (sign_error) {
@@ -246,69 +110,85 @@ export const defStore = (options?: Options): FileSystemStore => {
 
     // We need to decode the token we have just issued because we need to store
     // its jti claim in the issuelist.
-    const { error: verify_error, value: decoded } = await verify({
-      expiration,
+    const { error: verify_error, value: claims } = await verify({
       issuer,
+      jwks_url,
       jwt,
-      secret
+      max_token_age: expiration
     })
 
     if (verify_error) {
       return { error: verify_error }
     }
 
-    const jti = decoded.payload.jti
+    const { jti } = claims
     if (!jti) {
-      return { error: new Error(`Token has no jti claim`) }
+      // This should never happen, since we are required the jti claim in the
+      // verify function. But better safe than sorry.
+      return { error: new Error(`token was verified but it has no jti claim`) }
     }
 
-    const { error } = await appendJTI({ jti, path: issuelist_path })
+    const { error } = await storage.appendJTI({ jti, path: issuelist_path })
 
     if (error) {
       return { error }
     }
 
     return {
-      value: { message: `Issued token ${jti}`, jwt, claims: decoded.payload }
+      value: { message: `Issued token ${jti}`, jwt, claims }
     }
   }
 
-  const revoke: Revoke = async (cfg) => {
-    const algorithm = store_cfg.algorithm
-    const expiration = cfg.expiration || store_cfg.expiration
-    const issuer = cfg.issuer || store_cfg.issuer
-    const jwt = cfg.jwt
+  const issuelist: Issuelist = async () => {
+    log.debug(`${prefix}read blacklist ${issuelist_path}`)
+    const { error, value } = await storage.readJSON<string[]>(issuelist_path)
+    if (error) {
+      return { error }
+    }
+    return { value: new Set(value) }
+  }
 
-    const { error: secret_error, value: secret } = await getSecret({
-      algorithm,
-      jwk_path
+  const reset: Reset = async () => {
+    log.debug(`${prefix}reset`)
+
+    const { error, value } = await storage.reset({
+      blacklist: store_cfg.blacklist,
+      blacklist_path: store_cfg.blacklist_path,
+      issuelist: store_cfg.issuelist,
+      issuelist_path: store_cfg.issuelist_path
     })
 
-    if (secret_error) {
-      log.error(`Could not retrieve secret: ${secret_error.message}`)
-      return { error: secret_error }
+    if (error) {
+      log.error(`${prefix}cannot reset: ${error.message}`)
+      return { error }
     }
 
-    const { error: verify_error, value } = await verify({
-      expiration,
+    return { value }
+  }
+
+  const revoke: Revoke = async (jwt) => {
+    log.debug(`${prefix}revoke token`)
+
+    const { error: verify_error, value: claims } = await verify({
       issuer,
+      jwks_url,
       jwt,
-      secret
+      max_token_age: expiration
     })
 
     if (verify_error) {
+      log.error(`${prefix}cannot verify secret: ${verify_error.message}`)
       return { error: verify_error }
     }
 
-    const { jti } = value.payload
-
+    const { jti } = claims
     if (!jti) {
-      return { error: new Error(`Token has no jti claim`) }
+      return { error: new Error(`token was verified but it has no jti claim`) }
     }
 
-    log.debug(`Revoking token that has jti claim ${jti}`)
+    log.debug(`${prefix}revoking token that has jti claim ${jti}`)
 
-    const { error } = await appendJTI({ jti, path: blacklist_path })
+    const { error } = await storage.appendJTI({ jti, path: blacklist_path })
 
     if (error) {
       return { error }
@@ -318,39 +198,38 @@ export const defStore = (options?: Options): FileSystemStore => {
   }
 
   const revokeAll: RevokeAll = async () => {
-    try {
-      const arr = await issuelistArray()
-      const { error } = await writeJSON(blacklist_path, arr)
-      if (error) {
-        log.error(`Could not revoke all tokens: ${error.message}`)
-        return { error }
-      }
-      return { value: { message: `Revoked all tokens` } }
-    } catch (err: any) {
-      return { error: err as Error }
+    log.debug(`${prefix}revoke all tokens`)
+    const { error: read_error, value: arr } = await storage.readJSON<string[]>(
+      issuelist_path
+    )
+    if (read_error) {
+      return { error: read_error }
     }
+
+    const { error: write_error } = await storage.writeJSON(blacklist_path, arr)
+    if (write_error) {
+      return { error: write_error }
+    }
+
+    return { value: { message: `Revoked all tokens` } }
   }
 
+  const { error: init_error, value } = await storage.reset(store_cfg)
+
+  if (init_error) {
+    throw init_error
+  }
+
+  log.debug(`${prefix}initialized: ${value.message}`)
+
   return {
-    blacklist: async () => {
-      const arr = await blacklistArray()
-      return new Set(arr)
-    },
-    cleanup: async () => {
-      log.debug(`Cleanup store ${name}`)
-      await fs.rm(blacklist_path)
-      await fs.rm(issuelist_path)
-      await fs.rm(jwk_path)
-    },
+    blacklist,
+    cleanup,
     info: { name },
-    init,
     issue,
-    issuelist: async () => {
-      const arr = await issuelistArray()
-      return new Set(arr)
-    },
+    issuelist,
+    reset,
     revoke,
-    revokeAll,
-    setSecret
+    revokeAll
   }
 }

@@ -228,14 +228,14 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/micropub',
     {
-      preHandler: [
+      onRequest: [
         decodeJwtAndSetClaims,
         logIatAndExpClaims,
         validateClaimExp,
         validateClaimMe,
-        validateClaimJti,
-        validateAccessTokenNotBlacklisted
+        validateClaimJti
       ],
+      preHandler: [validateAccessTokenNotBlacklisted],
       schema: micropub_post_request
     },
     defMicropubPost({

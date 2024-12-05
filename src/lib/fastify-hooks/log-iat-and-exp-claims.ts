@@ -1,6 +1,6 @@
-import type { preHandlerHookHandler } from 'fastify'
+import type { onRequestHookHandler } from 'fastify'
 import { msToUTCString } from '../date.js'
-import { isExpired } from '../token.js'
+import { isExpired } from '../token/utils.js'
 
 export interface Options {
   include_error_description?: boolean
@@ -12,7 +12,7 @@ export const defLogIatAndExpClaims = (options?: Options) => {
   // const include_error_description = opt.include_error_description || false
   const log_prefix = opt.log_prefix || ''
 
-  const logIatAndExpClaims: preHandlerHookHandler = (request, _reply, done) => {
+  const logIatAndExpClaims: onRequestHookHandler = (request, _reply, done) => {
     const claims = request.requestContext.get('access_token_claims') as
       | any
       | undefined
