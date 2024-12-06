@@ -7,7 +7,9 @@ export interface VerifyConfig {
   max_token_age: string
 }
 
-export const verify = async (config: VerifyConfig) => {
+export const verify = async <P extends jose.JWTPayload = jose.JWTPayload>(
+  config: VerifyConfig
+) => {
   const { issuer, jwks_url, jwt, max_token_age } = config
 
   const JWKS = jose.createRemoteJWKSet(jwks_url)
@@ -18,7 +20,7 @@ export const verify = async (config: VerifyConfig) => {
       maxTokenAge: max_token_age,
       requiredClaims: ['exp', 'iat', 'iss', 'jti', 'me', 'scope']
     })
-    return { value: verify_result.payload }
+    return { value: verify_result.payload as P }
   } catch (err) {
     return { error: err as Error }
   }

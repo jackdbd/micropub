@@ -7,14 +7,15 @@ import {
   normalizeJf2,
   serverError,
   type StoreUpdatePatch,
-  type Syndicator,
-  type SyndicatorStore
-} from '../../lib/micropub/index.js'
+  type Syndicator
+  // type SyndicatorStore
+} from '../../../lib/micropub/index.js'
+import type { Store } from '../../../lib/schemas/syndication.js'
 
 export interface Config {
   include_error_description: boolean
   prefix: string
-  store: SyndicatorStore
+  store: Store
   syndicators: { [uid: string]: Syndicator }
 }
 

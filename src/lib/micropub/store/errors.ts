@@ -1,19 +1,12 @@
-import type {
-  ContentStore,
-  MediaStore,
-  SyndicatorStore,
-  TokenStore
-} from './interface.js'
-
 export const errorIfMethodNotImplementedInStore = (
-  store: ContentStore | MediaStore | SyndicatorStore | TokenStore,
+  store: any,
   method: string
 ) => {
-  if (!(store as any)[method]) {
+  if (!store || !store[method]) {
     const code = 501
     const body = {
       error: 'Not Implemented',
-      error_description: `Store ${store.info.name} does not implement '${method}'.`
+      error_description: `provided store does not implement '${method}'.`
     }
     return { code, body }
   }

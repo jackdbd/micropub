@@ -11,7 +11,8 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
-import { defStore as defAtomStore } from './lib/atom-store/index.js'
+// import { defStore as defAtomStore } from './lib/atom-store/index.js'
+import { defStore as defFileSystemStore } from './lib/fs-store/index.js'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-store/publication.js'
 import { defStore as defGitHubStore } from './lib/github-store/index.js'
@@ -30,7 +31,7 @@ import type {
   NoScopeResponseOptions
 } from './plugins/micropub-endpoint/decorators/request.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
-import introspection from './plugins/introspect-endpoint/index.js'
+import introspection from './plugins/introspection-endpoint/index.js'
 import responseDecorators from './plugins/response-decorators/index.js'
 import type {
   BaseErrorResponseBody,
@@ -212,36 +213,61 @@ export async function defFastify(config: Config) {
     jwks_url
   })
 
-  fastify.register(introspection, {
-    clientId: client_id,
-    includeErrorDescription: include_error_description,
-    me
-  })
+  // const token_storage = await defAtomStore({
+  //   expiration: access_token_expiration,
+  //   issuer,
+  //   jwks,
+  //   jwks_url,
+  //   log: {
+  //     debug: (message: string) => {
+  //       return fastify.log.debug(`@jackdbd/atom-store ${message}`)
+  //     },
+  //     error: (message: string) => {
+  //       return fastify.log.error(`@jackdbd/atom-store ${message}`)
+  //     }
+  //   }
+  // })
 
-  const token_store = await defAtomStore({
+  const token_storage = await defFileSystemStore({
+    // blacklist: [],
+    // blacklist_path: 'blacklist.json',
     expiration: access_token_expiration,
+    // issuelist: [],
+    // issuelist_path: 'issuelist.json',
     issuer,
     jwks,
     jwks_url,
     log: {
       debug: (message: string) => {
-        return fastify.log.debug(`@jackdbd/atom-store ${message}`)
+        return fastify.log.debug(`@jackdbd/fs-store ${message}`)
       },
       error: (message: string) => {
-        return fastify.log.error(`@jackdbd/atom-store ${message}`)
+        return fastify.log.error(`@jackdbd/fs-store ${message}`)
       }
     }
   })
 
+  const { isBlacklisted, revoke } = token_storage
+
+  fastify.register(introspection, {
+    expiration: access_token_expiration,
+    includeErrorDescription: include_error_description,
+    isBlacklisted,
+    issuer,
+    jwks_url
+  })
+
   fastify.register(revocation, {
     includeErrorDescription: include_error_description,
+    isBlacklisted,
     me,
-    store: token_store
+    revoke
   })
 
   fastify.register(userinfo, {
     includeErrorDescription: include_error_description,
-    me
+    me,
+    store: token_storage
   })
 
   fastify.register(indieauth, {
@@ -256,7 +282,7 @@ export async function defFastify(config: Config) {
 
   const publication = defDefaultPublication({ domain, subdomain: 'www' })
 
-  const store = defGitHubStore({
+  const content_storage = defGitHubStore({
     // This doesn't work. It errors with: this[writeSym] is not a function
     // log: { debug: fastify.log.debug, error: fastify.log.error },
     log: {
@@ -280,7 +306,7 @@ export async function defFastify(config: Config) {
 
   // fastify.log.warn(store.info, `=== Store ${store.info.name} ===`)
 
-  const mediaStore = defR2Store({
+  const media_storage = defR2Store({
     account_id: cloudflare_account_id,
     bucket_name: cloudflare_r2_bucket_name,
     credentials: {
@@ -296,7 +322,7 @@ export async function defFastify(config: Config) {
     me,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    store: mediaStore
+    store: { ...media_storage, isBlacklisted: token_storage.isBlacklisted }
   })
 
   fastify.register(micropub, {
@@ -308,7 +334,7 @@ export async function defFastify(config: Config) {
     micropubEndpoint: micropub_endpoint,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    store,
+    store: { ...content_storage, isBlacklisted: token_storage.isBlacklisted },
     submitEndpoint: submit_endpoint,
     syndicateTo: syndicate_to,
     tokenEndpoint: token_endpoint
@@ -325,7 +351,7 @@ export async function defFastify(config: Config) {
   fastify.register(syndicate, {
     includeErrorDescription: include_error_description,
     me,
-    store,
+    store: { ...content_storage, isBlacklisted: token_storage.isBlacklisted },
     syndicators: { [uid]: telegram_syndicator }
   })
 

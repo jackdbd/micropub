@@ -1,69 +1,76 @@
 import formbody from '@fastify/formbody'
-import type { FastifyPluginCallback, FastifyPluginOptions } from 'fastify'
-import fp from 'fastify-plugin'
 import { applyToDefaults } from '@hapi/hoek'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
+import type { FastifyPluginCallback } from 'fastify'
+import fp from 'fastify-plugin'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
   defValidateAccessTokenNotBlacklisted,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
-import type { TokenStore } from '../../lib/micropub/store/index.js'
+import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-import { DEFAULT_INCLUDE_ERROR_DESCRIPTION, NAME } from './constants.js'
+import {
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_REPORT_ALL_AJV_ERRORS,
+  NAME
+} from './constants.js'
 import { defRevocationPost } from './routes/revocation-post.js'
+import { options as options_schema, type Options } from './schemas.js'
 
-const PREFIX = `${NAME} `
-
-export interface PluginOptions extends FastifyPluginOptions {
-  includeErrorDescription: boolean
-  me: string
-  store: TokenStore
+const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
 }
 
-const defaults: Partial<PluginOptions> = {
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION
-}
+const revocationEndpoint: FastifyPluginCallback<Options> = (
+  fastify,
+  options,
+  done
+) => {
+  const config = applyToDefaults(defaults, options) as Required<Options>
+  const prefix = `${NAME} `
 
-const fastifyIndieAuthRevocationEndpoint: FastifyPluginCallback<
-  PluginOptions
-> = (fastify, options, done) => {
-  const config = applyToDefaults(defaults, options) as Required<PluginOptions>
+  const report_all_ajv_errors = config.reportAllAjvErrors
+  const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+
+  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
 
   const {
     includeErrorDescription: include_error_description,
+    isBlacklisted,
     me,
-    store
+    revoke
   } = config
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
   fastify.log.debug(
-    `${PREFIX}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+    `${prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
 
   fastify.register(responseDecorators)
-  fastify.log.debug(`${PREFIX}registered plugin: responseDecorators`)
+  fastify.log.debug(`${prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
-  const log_prefix = `${NAME}/hooks `
-
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
 
   const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
     include_error_description,
-    log_prefix
+    log_prefix: prefix
   })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix }
+    { include_error_description, log_prefix: prefix }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -72,18 +79,20 @@ const fastifyIndieAuthRevocationEndpoint: FastifyPluginCallback<
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix }
+    { include_error_description, log_prefix: prefix }
   )
 
   const validateClaimJti = defValidateClaim(
     { claim: 'jti' },
-    { include_error_description, log_prefix }
+    { include_error_description, log_prefix: prefix }
   )
 
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
-      log_prefix
+      isBlacklisted,
+      log_prefix: prefix,
+      report_all_ajv_errors
     })
 
   // === ROUTES ============================================================= //
@@ -97,23 +106,23 @@ const fastifyIndieAuthRevocationEndpoint: FastifyPluginCallback<
         decodeJwtAndSetClaims,
         validateClaimExp,
         validateClaimMe,
-        validateClaimJti
-      ],
-      preHandler: [validateAccessTokenNotBlacklisted]
+        validateClaimJti,
+        validateAccessTokenNotBlacklisted
+      ]
       // schema: revocation_post_request
     },
     defRevocationPost({
       include_error_description,
       me,
-      prefix: `${NAME}/routes `,
-      store
+      prefix,
+      revoke
     })
   )
 
   done()
 }
 
-export default fp(fastifyIndieAuthRevocationEndpoint, {
+export default fp(revocationEndpoint, {
   fastify: '5.x',
   name: NAME,
   encapsulate: true

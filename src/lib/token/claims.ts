@@ -1,9 +1,11 @@
+import type { JWTPayload } from 'jose'
+
 /**
  * Claims in an access token.
  *
  * @see https://www.rfc-editor.org/rfc/rfc7519#section-4
  */
-export interface AccessTokenClaims {
+export interface AccessTokenClaims extends JWTPayload {
   /**
    * (Expiration Time): Indicates the UNIX timestamp (in seconds) at which the
    * access token expires.

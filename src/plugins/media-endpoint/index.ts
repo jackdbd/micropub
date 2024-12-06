@@ -44,11 +44,11 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     includeErrorDescription: include_error_description,
     me,
     multipartFormDataMaxFileSize: fileSize,
-    reportAllAjvErrors: allErrors,
+    reportAllAjvErrors: report_all_ajv_errors,
     store
   } = config
 
-  const ajv = addFormats(new Ajv({ allErrors }), ['uri'])
+  const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
 
   const errors = validationErrors(ajv, options_schema, config)
   if (errors.length > 0) {
@@ -120,7 +120,9 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
-      log_prefix
+      isBlacklisted: store.isBlacklisted,
+      log_prefix,
+      report_all_ajv_errors
     })
 
   // === ROUTES ============================================================= //
@@ -135,9 +137,9 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
         validateClaimExp,
         validateClaimMe,
         validateClaimJti,
-        validateScopeMedia
-      ],
-      preHandler: [validateAccessTokenNotBlacklisted]
+        validateScopeMedia,
+        validateAccessTokenNotBlacklisted
+      ]
     },
     defMediaPost({ store, include_error_description })
   )
@@ -146,9 +148,9 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
 }
 
 /**
- * Adds a Media Endpoint to a Micropub server.
+ * Plugin that adds a media endpoint to a Fastify server.
  *
- * @see https://www.w3.org/TR/micropub/#media-endpoint
+ * @see [Micropub Media Endpoint](https://www.w3.org/TR/micropub/#media-endpoint)
  */
 export default fp(mediaEndpoint, {
   fastify: '5.x',

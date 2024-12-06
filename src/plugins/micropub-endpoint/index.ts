@@ -194,6 +194,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
+      isBlacklisted: store.isBlacklisted,
       log_prefix
     })
 
@@ -233,9 +234,9 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
         logIatAndExpClaims,
         validateClaimExp,
         validateClaimMe,
-        validateClaimJti
+        validateClaimJti,
+        validateAccessTokenNotBlacklisted
       ],
-      preHandler: [validateAccessTokenNotBlacklisted],
       schema: micropub_post_request
     },
     defMicropubPost({

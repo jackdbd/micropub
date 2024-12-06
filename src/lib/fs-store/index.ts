@@ -10,6 +10,7 @@ import type {
   RevokeAll
 } from '../micropub/store/api.js'
 import type { TokenStore } from '../micropub/store/index.js'
+import type { Introspection } from '../schemas/introspection.js'
 import { randomKid, sign } from '../token/sign-jwt.js'
 import { verify } from '../token/verify-jwt.js'
 import {
@@ -23,7 +24,7 @@ import {
 } from './defaults.js'
 import * as storage from './fs.js'
 
-export interface FileSystemStore extends TokenStore {}
+export interface FileSystemStore extends Introspection, TokenStore {}
 
 interface Log {
   debug: (...args: any) => void
@@ -82,6 +83,17 @@ export const defStore = async (options?: Options): Promise<FileSystemStore> => {
       return { error }
     }
     return { value: new Set(value) }
+  }
+
+  const isBlacklisted = async (jti: string) => {
+    const { error, value: blacklist_set } = await blacklist()
+    if (error) {
+      return { error }
+    }
+
+    const value = (blacklist_set as Set<string>).has(jti)
+
+    return { value }
   }
 
   const cleanup: Cleanup = async () => {
@@ -226,6 +238,7 @@ export const defStore = async (options?: Options): Promise<FileSystemStore> => {
     blacklist,
     cleanup,
     info: { name },
+    isBlacklisted,
     issue,
     issuelist,
     reset,

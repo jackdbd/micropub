@@ -10,6 +10,7 @@ import type {
   RevokeAll
 } from '../micropub/store/api.js'
 import type { TokenStore } from '../micropub/store/index.js'
+import type { Introspection } from '../schemas/introspection.js'
 import { randomKid, sign } from '../token/sign-jwt.js'
 import { verify } from '../token/verify-jwt.js'
 import {
@@ -20,7 +21,7 @@ import {
   DEFAULT_TOKEN_ISSUER
 } from './defaults.js'
 
-export interface AtomStore extends TokenStore {}
+export interface AtomStore extends Introspection, TokenStore {}
 
 interface Log {
   debug: (...args: any) => void
@@ -66,6 +67,17 @@ export const defStore = async (options?: Options): Promise<AtomStore> => {
 
   const blacklist: Blacklist = async () => {
     return { value: a.deref().blacklist }
+  }
+
+  const isBlacklisted = async (jti: string) => {
+    const { error, value: blacklist_set } = await blacklist()
+    if (error) {
+      return { error }
+    }
+
+    const value = (blacklist_set as Set<string>).has(jti)
+
+    return { value }
   }
 
   const issue: Issue = async (payload) => {
@@ -147,7 +159,7 @@ export const defStore = async (options?: Options): Promise<AtomStore> => {
     })
 
     if (verify_error) {
-      log.error(`${prefix}cannot verify secret: ${verify_error.message}`)
+      log.error(`${prefix}cannot verify token: ${verify_error.message}`)
       return { error: verify_error }
     }
 
@@ -183,6 +195,7 @@ export const defStore = async (options?: Options): Promise<AtomStore> => {
   return {
     blacklist,
     info: { name },
+    isBlacklisted,
     issue,
     issuelist,
     reset,

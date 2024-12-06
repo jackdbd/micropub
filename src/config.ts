@@ -3,6 +3,7 @@ import type { SyndicateToItem } from './lib/micropub/index.js'
 
 // TODO: use a short-lived access token (e.g. 3600 seconds) and a long-lived
 // refresh token.
+// const access_token_expiration = '5 minutes'
 const access_token_expiration = '72 hours'
 
 const me = 'https://giacomodebidda.com/'

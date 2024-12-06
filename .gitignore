@@ -28,3 +28,6 @@ assets/schemas-docs/
 
 secrets/*
 !secrets/README.md
+
+fs-store-token-blacklist.json
+fs-store-token-issuelist.json

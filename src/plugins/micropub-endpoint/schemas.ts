@@ -6,6 +6,30 @@ import {
   h_event
 } from '../../lib/microformats2/index.js'
 import {
+  create,
+  deleteContent,
+  get,
+  info,
+  isBlacklisted,
+  jf2ToContent,
+  me,
+  publishedUrlToStoreLocation,
+  report_all_ajv_errors,
+  syndicate_to_item,
+  undelete,
+  update
+} from '../../lib/schemas/index.js'
+import type {
+  Create,
+  Delete,
+  Get,
+  IsBlacklisted,
+  JF2ToContent,
+  PublishedUrlToStoreLocation,
+  Undelete,
+  Update
+} from '../../lib/schemas/index.js'
+import {
   DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
   DEFAULT_CODE_CHALLENGE_METHOD,
   DEFAULT_CODE_VERIFIER_LENGTH,
@@ -14,35 +38,28 @@ import {
   DEFAULT_REPORT_ALL_AJV_ERRORS
 } from './constants.js'
 
-const service = Type.Object({
-  name: Type.String(),
-  url: Type.String(),
-  photo: Type.Optional(Type.String())
+export const store = Type.Object({
+  create,
+  delete: Type.Optional(deleteContent),
+  get,
+  info,
+  isBlacklisted,
+  jf2ToContent,
+  publishedUrlToStoreLocation,
+  undelete: Type.Optional(undelete),
+  update
 })
 
-const user = Type.Object({
-  name: Type.String(),
-  url: Type.String(),
-  photo: Type.Optional(Type.String())
-})
-
-const syndicate_to_item = Type.Object({
-  uid: Type.String(),
-  name: Type.String(),
-  service: Type.Optional(service),
-  user: Type.Optional(user)
-})
-
-const store = Type.Object({
-  create: Type.Any(),
-  delete: Type.Optional(Type.Any()),
-  get: Type.Any(),
-  info: Type.Any(),
-  jf2ToContent: Type.Any(),
-  publishedUrlToStoreLocation: Type.Any(),
-  undelete: Type.Optional(Type.Any()),
-  update: Type.Any()
-})
+export interface Store extends Static<typeof store> {
+  create: Create
+  delete: Delete
+  get: Get
+  isBlacklisted: IsBlacklisted
+  jf2ToContent: JF2ToContent
+  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
+  undelte: Undelete
+  update: Update
+}
 
 export const options = Type.Object(
   {
@@ -75,11 +92,7 @@ export const options = Type.Object(
       Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
     ),
 
-    me: Type.String({
-      format: 'uri',
-      title: 'me',
-      description: `URL of the user's website trying to authenticate using Web sign-in.`
-    }),
+    me,
 
     mediaEndpoint: Type.Optional(
       Type.String({
@@ -104,9 +117,10 @@ export const options = Type.Object(
       })
     ),
 
-    reportAllAjvErrors: Type.Optional(
-      Type.Boolean({ default: DEFAULT_REPORT_ALL_AJV_ERRORS })
-    ),
+    reportAllAjvErrors: Type.Optional({
+      ...report_all_ajv_errors,
+      default: DEFAULT_REPORT_ALL_AJV_ERRORS
+    }),
 
     store,
 

@@ -11,7 +11,7 @@ post {
 }
 
 headers {
-  Accept: application/json
+  Accept: text/html
 }
 
 auth:bearer {
@@ -19,5 +19,5 @@ auth:bearer {
 }
 
 body:form-urlencoded {
-  token: {{access_token}}
+  token: {{access_token_expired}}
 }

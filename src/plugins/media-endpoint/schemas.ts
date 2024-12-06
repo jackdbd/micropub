@@ -1,4 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
+import { isBlacklisted } from '../../lib/schemas/is-blacklisted.js'
 import {
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
@@ -79,7 +80,6 @@ export const options = Type.Object(
         //   }
         // ),
         delete: Type.Optional(Type.Any()),
-        upload: Type.Any(),
         info: Type.Object({
           name: Type.String({
             title: 'Store name',
@@ -90,7 +90,9 @@ export const options = Type.Object(
             description:
               'The base URL at which your files will be publicly accessible.'
           })
-        })
+        }),
+        isBlacklisted,
+        upload: Type.Any()
       },
       {
         $id: 'micropub-media-endpoint-store',
