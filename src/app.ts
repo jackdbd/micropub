@@ -48,32 +48,32 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Token storage - Filesystem backend //////////////////////////////////////////
-import {
-  defAddToIssuedTokens,
-  defMarkTokenAsRevoked,
-  defIsBlacklisted
-} from './lib/fs-storage/index.js'
-
-const assets_dir = path.join(__dirname, '..', 'assets')
-const filepath = path.join(assets_dir, 'fs-store-token-issuelist.json')
-const addToIssuedTokens = defAddToIssuedTokens({ filepath })
-const isBlacklisted = defIsBlacklisted({ filepath })
-const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
-////////////////////////////////////////////////////////////////////////////////
-
-// Token storage - In-memory backend ///////////////////////////////////////////
-// import { defAtom } from '@thi.ng/atom'
-// import { IssueTable } from './lib/token-storage-interface/index.js'
 // import {
 //   defAddToIssuedTokens,
 //   defMarkTokenAsRevoked,
 //   defIsBlacklisted
-// } from './lib/in-memory-storage/index.js'
+// } from './lib/fs-storage/index.js'
 
-// const atom = defAtom<IssueTable>({})
-// const addToIssuedTokens = defAddToIssuedTokens({ atom })
-// const isBlacklisted = defIsBlacklisted({ atom })
-// const markTokenAsRevoked = defMarkTokenAsRevoked({ atom })
+// const assets_dir = path.join(__dirname, '..', 'assets')
+// const filepath = path.join(assets_dir, 'fs-store-token-issuelist.json')
+// const addToIssuedTokens = defAddToIssuedTokens({ filepath })
+// const isBlacklisted = defIsBlacklisted({ filepath })
+// const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
+////////////////////////////////////////////////////////////////////////////////
+
+// Token storage - In-memory backend ///////////////////////////////////////////
+import { defAtom } from '@thi.ng/atom'
+import { IssueTable } from './lib/token-storage-interface/index.js'
+import {
+  defAddToIssuedTokens,
+  defMarkTokenAsRevoked,
+  defIsBlacklisted
+} from './lib/in-memory-storage/index.js'
+
+const atom = defAtom<IssueTable>({})
+const addToIssuedTokens = defAddToIssuedTokens({ atom })
+const isBlacklisted = defIsBlacklisted({ atom })
+const markTokenAsRevoked = defMarkTokenAsRevoked({ atom })
 ////////////////////////////////////////////////////////////////////////////////
 
 const NAME = 'app'

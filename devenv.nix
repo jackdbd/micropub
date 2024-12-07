@@ -8,6 +8,8 @@
   cloudflare_r2 = builtins.fromJSON (builtins.readFile /run/secrets/cloudflare/r2);
   micropub = builtins.fromJSON (builtins.readFile /run/secrets/micropub);
   fly_micropub = builtins.fromJSON (builtins.readFile /run/secrets/fly/micropub);
+  jwks_str = builtins.readFile /home/jack/repos/micropub/secrets/jwks-private.json;
+  jwks_json = builtins.fromJSON jwks_str;
   telegram = builtins.fromJSON (builtins.readFile /run/secrets/telegram/jackdbd_github_bot);
 in {
   enterShell = ''
@@ -32,7 +34,7 @@ in {
     GITHUB_REPO = "giacomodebidda-content";
     GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
     INCLUDE_ERROR_DESCRIPTION = true;
-    JWKS = builtins.readFile /home/jack/repos/micropub/secrets/jwks-private.json;
+    JWKS = jwks_str;
 
     # Since the fly CLI uses the LOG_LEVEL environment variable, I use a
     # different environment variable for pino.
@@ -81,6 +83,8 @@ in {
     container-inspect.exec = ''
       docker inspect micropub:latest --format json | jq "."
     '';
+    # How do I set JWKS? Using --env JWKS=${jwks_str} does not work.
+    # I guess I need to use a Docker secret.
     container-run.exec = ''
       docker run \
         --env CLOUDFLARE_ACCOUNT_ID=${config.env.CLOUDFLARE_ACCOUNT_ID} \
