@@ -7,13 +7,9 @@ import {
 } from '../../lib/microformats2/index.js'
 import {
   create,
-  deleteContent,
-  get,
-  info,
+  deleteContentOrMedia,
   isBlacklisted,
-  jf2ToContent,
   me,
-  publishedUrlToStoreLocation,
   report_all_ajv_errors,
   syndicate_to_item,
   undelete,
@@ -21,43 +17,21 @@ import {
 } from '../../lib/schemas/index.js'
 import type {
   Create,
-  Delete,
-  Get,
+  DeleteContentOrMedia,
   IsBlacklisted,
-  JF2ToContent,
-  PublishedUrlToStoreLocation,
   Undelete,
   Update
 } from '../../lib/schemas/index.js'
 import {
   DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
+  DEFAULT_AUTHORIZATION_ENDPOINT,
   DEFAULT_CODE_CHALLENGE_METHOD,
   DEFAULT_CODE_VERIFIER_LENGTH,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  DEFAULT_REPORT_ALL_AJV_ERRORS
+  DEFAULT_REPORT_ALL_AJV_ERRORS,
+  DEFAULT_TOKEN_ENDPOINT
 } from './constants.js'
-
-export const store = Type.Object({
-  create,
-  delete: Type.Optional(deleteContent),
-  get,
-  info,
-  jf2ToContent,
-  publishedUrlToStoreLocation,
-  undelete: Type.Optional(undelete),
-  update
-})
-
-export interface Store extends Static<typeof store> {
-  create: Create
-  delete: Delete
-  get: Get
-  jf2ToContent: JF2ToContent
-  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
-  undelte: Undelete
-  update: Update
-}
 
 export const options = Type.Object(
   {
@@ -66,7 +40,7 @@ export const options = Type.Object(
         format: 'uri',
         title: 'authorization endpoint',
         description: `Micropub clients that want to post to a user's Micropub endpoint need to obtain authorization from the user in order to get an access token.`,
-        default: 'https://indieauth.com/auth'
+        default: DEFAULT_AUTHORIZATION_ENDPOINT
       })
     ),
     authorizationCallbackRoute: Type.Optional(
@@ -80,6 +54,8 @@ export const options = Type.Object(
     codeVerifierLength: Type.Optional(
       Type.Number({ default: DEFAULT_CODE_VERIFIER_LENGTH })
     ),
+    create,
+    delete: deleteContentOrMedia,
     includeErrorDescription: Type.Optional(
       Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
     ),
@@ -109,7 +85,6 @@ export const options = Type.Object(
       ...report_all_ajv_errors,
       default: DEFAULT_REPORT_ALL_AJV_ERRORS
     }),
-    store,
     submitEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
@@ -122,9 +97,11 @@ export const options = Type.Object(
         format: 'uri',
         title: 'token endpoint',
         description: `Micropub clients will be able to obtain an access token from this endpoint after you have granted authorization. The Micropub client will then use this access token when making requests to your Micropub endpoint.`,
-        default: 'https://tokens.indieauth.com/token'
+        default: DEFAULT_TOKEN_ENDPOINT
       })
-    )
+    ),
+    undelete: Type.Optional(undelete),
+    update
   },
   {
     $id: 'fastify-micropub-endpoint-options',
@@ -134,7 +111,11 @@ export const options = Type.Object(
 )
 
 export interface Options extends Static<typeof options> {
+  create: Create
+  delete: DeleteContentOrMedia
   isBlacklisted: IsBlacklisted
+  undelete?: Undelete
+  update: Update
 }
 
 export const micropub_get_request = Type.Object(

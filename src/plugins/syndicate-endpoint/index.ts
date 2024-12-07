@@ -44,11 +44,13 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
 
   const {
+    get,
     includeErrorDescription: include_error_description,
     isBlacklisted,
     me,
-    store,
-    syndicators
+    publishedUrlToStoreLocation,
+    syndicators,
+    update
   } = config
 
   // === PLUGINS ============================================================ //
@@ -121,10 +123,12 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
       // schema: syndicator_post_request
     },
     defSyndicatePost({
+      get,
       include_error_description,
-      prefix: `${NAME}/routes `,
-      store,
-      syndicators
+      prefix,
+      publishedUrlToStoreLocation,
+      syndicators,
+      update
     })
   )
 

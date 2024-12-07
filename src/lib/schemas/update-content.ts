@@ -2,16 +2,7 @@ import { Static, Type } from '@sinclair/typebox'
 import { failure } from './failure.js'
 import { url } from './url.js'
 
-export const action = Type.Union([
-  Type.Literal('delete'),
-  Type.Literal('undelete'),
-  Type.Literal('update'),
-  Type.Literal('create')
-])
-
-export type Action = Static<typeof action>
-
-const update_patch = Type.Object({
+export const update_patch = Type.Object({
   add: Type.Optional(Type.Any()),
   delete: Type.Optional(Type.String({ minLength: 1 })),
   replace: Type.Optional(Type.Any())

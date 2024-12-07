@@ -1,9 +1,9 @@
 import type { FastifyRequest } from 'fastify'
 import {
   insufficientScope,
-  invalidRequest,
-  type StoreAction
+  invalidRequest
 } from '../../../lib/micropub/index.js'
+import { Action } from '../../../lib/schemas/index.js'
 import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/decorators/request `
@@ -14,7 +14,7 @@ export interface NoScopeResponseOptions {
 
 export function noScopeResponse(
   this: FastifyRequest,
-  action: StoreAction,
+  action: Action,
   options?: NoScopeResponseOptions
 ) {
   const opt = options || ({} as NoScopeResponseOptions)
@@ -37,7 +37,7 @@ export interface NoActionSupportedResponseOptions {
 
 export function noActionSupportedResponse(
   this: FastifyRequest,
-  action: StoreAction,
+  action: Action,
   options?: NoActionSupportedResponseOptions
 ) {
   const opt = options || ({} as NoActionSupportedResponseOptions)

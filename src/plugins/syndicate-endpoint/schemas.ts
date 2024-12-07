@@ -3,7 +3,6 @@ import {
   include_error_description,
   me,
   get,
-  info,
   isBlacklisted,
   publishedUrlToStoreLocation,
   report_all_ajv_errors,
@@ -23,34 +22,26 @@ import {
 // import type { Syndicator } from '../../lib/micropub/index.js'
 // syndicators: { [uid: string]: Syndicator }
 
-const store = Type.Object({
-  get,
-  info,
-  publishedUrlToStoreLocation,
-  update
-})
-
-export interface Store extends Static<typeof store> {
-  get: Get
-  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
-  update: Update
-}
-
 export const options = Type.Object({
+  get,
   includeErrorDescription: Type.Optional({
     ...include_error_description,
     default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
   }),
   isBlacklisted,
   me,
+  publishedUrlToStoreLocation,
   reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,
     default: DEFAULT_REPORT_ALL_AJV_ERRORS
   }),
-  store,
-  syndicators: Type.Any()
+  syndicators: Type.Any(),
+  update
 })
 
 export interface Options extends Static<typeof options> {
+  get: Get
   isBlacklisted: IsBlacklisted
+  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
+  update: Update
 }

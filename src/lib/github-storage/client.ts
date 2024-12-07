@@ -1,5 +1,12 @@
 import { applyToDefaults } from '@hapi/hoek'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
+import type {
+  Create,
+  DeleteContentOrMedia,
+  Get,
+  Undelete,
+  Update
+} from '../../lib/schemas/index.js'
 import { rfc3339 } from '../date.js'
 import { base64ToUtf8, utf8ToBase64 } from '../encoding.js'
 import * as api from '../github-contents-api/index.js'
@@ -17,26 +24,6 @@ import {
   jf2ToSlug,
   type Publication
 } from '../micropub/index.js'
-import type {
-  BaseValueGet,
-  ContentStore,
-  StoreCreate,
-  StoreDelete,
-  StoreGet,
-  StoreUndelete,
-  StoreUpdate,
-  SyndicatorStore
-} from '../micropub/store/index.js'
-
-// interface ValueDelete extends BaseValueDelete {}
-
-interface ValueGet extends BaseValueGet {
-  sha: string
-}
-
-export interface GitHubStore extends ContentStore, SyndicatorStore {}
-
-// interface ValueUpdate extends BaseValueUpdate {}
 
 interface Log {
   debug: (...args: any) => void
@@ -63,7 +50,7 @@ export interface Config {
   token?: string
 }
 
-const store_defaults: Partial<Config> = {
+const defaults: Partial<Config> = {
   branch: REF,
   github_api_base_url: GITHUB_API_BASE_URL,
   log: {
@@ -73,8 +60,8 @@ const store_defaults: Partial<Config> = {
   token: process.env.GITHUB_TOKEN
 }
 
-export const defStore = (config: Config): GitHubStore => {
-  const store_cfg = applyToDefaults(store_defaults, config) as Required<Config>
+export const defGitHub = (config: Config) => {
+  const store_cfg = applyToDefaults(defaults, config) as Required<Config>
 
   const {
     branch,
@@ -119,7 +106,7 @@ export const defStore = (config: Config): GitHubStore => {
     // return xs.join('\n')
   }
 
-  const update: StoreUpdate = async (url, patch) => {
+  const update: Update = async (url, patch) => {
     const loc = publishedUrlToStoreLocation(url)
 
     // should we support updating a deleted post (loc.store_deleted)? Probably not.
@@ -188,7 +175,7 @@ export const defStore = (config: Config): GitHubStore => {
     }
   }
 
-  const get: StoreGet<ValueGet> = async (loc) => {
+  const get: Get = async (loc) => {
     const result = await api.get({
       base_url,
       owner,
@@ -206,7 +193,7 @@ export const defStore = (config: Config): GitHubStore => {
     }
   }
 
-  const hardDelete: StoreDelete = async (url) => {
+  const hardDelete: DeleteContentOrMedia = async (url) => {
     const loc = publishedUrlToStoreLocation(url)
 
     const result_get = await get(loc)
@@ -246,7 +233,7 @@ export const defStore = (config: Config): GitHubStore => {
     }
   }
 
-  const softDelete: StoreDelete = async (url) => {
+  const softDelete: DeleteContentOrMedia = async (url) => {
     const loc = publishedUrlToStoreLocation(url)
 
     if (!loc.store_deleted) {
@@ -275,7 +262,7 @@ export const defStore = (config: Config): GitHubStore => {
     }
   }
 
-  const undelete: StoreUndelete = async (url) => {
+  const undelete: Undelete = async (url) => {
     const loc = publishedUrlToStoreLocation(url)
 
     if (!loc.store_deleted) {
@@ -344,7 +331,7 @@ export const defStore = (config: Config): GitHubStore => {
     return loc
   }
 
-  const create: StoreCreate = async (jf2) => {
+  const create: Create = async (jf2) => {
     const content = jf2ToContent(jf2)
     const slug = jf2ToSlug(jf2)
     const filename = `${slug}.md`

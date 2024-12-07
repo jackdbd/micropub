@@ -1,4 +1,4 @@
-export const NAME = '@jackdbd/fastify-media-endpoint'
+export const NAME = '@jackdbd/media-endpoint'
 
 export const DEFAULT_INCLUDE_ERROR_DESCRIPTION = false
 

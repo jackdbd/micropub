@@ -1,9 +1,11 @@
 import { Static, Type } from '@sinclair/typebox'
 import {
+  deleteContentOrMedia,
   include_error_description,
   isBlacklisted,
   me,
-  report_all_ajv_errors
+  report_all_ajv_errors,
+  uploadMedia
 } from '../../lib/schemas/index.js'
 import type { IsBlacklisted } from '../../lib/schemas/index.js'
 import {
@@ -39,6 +41,7 @@ import {
  */
 export const options = Type.Object(
   {
+    delete: deleteContentOrMedia,
     includeErrorDescription: Type.Optional({
       ...include_error_description,
       default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
@@ -57,42 +60,7 @@ export const options = Type.Object(
       ...report_all_ajv_errors,
       default: DEFAULT_REPORT_ALL_AJV_ERRORS
     }),
-    store: Type.Object(
-      {
-        // upload: Type.Function(
-        //   [
-        //     Type.Object(
-        //       { body: Type.Any(), contentType: Type.String() },
-        //       { title: 'create config' }
-        //     )
-        //   ],
-        //   Type.Promise(Type.Any()),
-        //   {
-        //     description:
-        //       'create function. It will upload to the file to the storage backend.'
-        //   }
-        // ),
-        delete: Type.Optional(Type.Any()),
-        info: Type.Object({
-          name: Type.String({
-            title: 'Store name',
-            description: 'Storage backend for the Micropub media endpoint.'
-          }),
-          public_root_url: Type.String({
-            title: 'Public base URL',
-            description:
-              'The base URL at which your files will be publicly accessible.'
-          })
-        }),
-        upload: Type.Any()
-      },
-      {
-        $id: 'micropub-media-endpoint-store',
-        title: 'Micropub media endpoint store',
-        description: 'Storage backend for the Micropub media endpoint.',
-        additionalProperties: true
-      }
-    )
+    upload: uploadMedia
   },
   {
     $id: 'fastify-media-endpoint-options',

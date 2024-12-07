@@ -2,8 +2,8 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { ValidateFunction } from 'ajv'
 import type { FastifyReply } from 'fastify'
 
-import type { ContentStore } from '../../../lib/micropub/index.js'
 import { invalidRequest } from '../../../lib/micropub/error-responses.js'
+import type { Create } from '../../../lib/schemas/index.js'
 
 import {
   storeErrorToMicropubError,
@@ -20,13 +20,13 @@ export interface ResponseConfig {
 }
 
 export interface MicropubResponseConfig {
+  create: Create
   include_error_description: boolean
   prefix: string
-  store: ContentStore
 }
 
 export function defMicropubResponse(config: MicropubResponseConfig) {
-  const { include_error_description, prefix, store } = config
+  const { create, include_error_description, prefix } = config
 
   return async function micropubResponse(
     this: FastifyReply,
@@ -75,7 +75,7 @@ export function defMicropubResponse(config: MicropubResponseConfig) {
       }
     }
 
-    const result = await store.create(jf2)
+    const result = await create(jf2)
 
     if (result.error) {
       const { code, body } = storeErrorToMicropubError(result.error, {

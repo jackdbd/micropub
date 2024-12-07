@@ -2,27 +2,38 @@ import type { RouteHandler } from 'fastify'
 import { XMLParser } from 'fast-xml-parser'
 
 import {
-  errorIfMethodNotImplementedInStore,
   invalidRequest,
   normalizeJf2,
   serverError,
-  type StoreUpdatePatch,
   type Syndicator
-  // type SyndicatorStore
 } from '../../../lib/micropub/index.js'
-import type { Store } from '../../../lib/schemas/syndication.js'
+import type {
+  Get,
+  PublishedUrlToStoreLocation,
+  Update,
+  UpdatePatch
+} from '../../../lib/schemas/index.js'
 
 export interface Config {
+  get: Get
   include_error_description: boolean
   prefix: string
-  store: Store
+  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
   syndicators: { [uid: string]: Syndicator }
+  update: Update
 }
 
 const parser = new XMLParser()
 
 export const defSyndicatePost = (config: Config) => {
-  const { include_error_description, prefix, store, syndicators } = config
+  const {
+    get,
+    include_error_description,
+    prefix,
+    // publishedUrlToStoreLocation,
+    syndicators,
+    update
+  } = config
 
   const syndicatePost: RouteHandler = async (request, reply) => {
     // TODO: decide what request body to expect. For example:
@@ -43,17 +54,8 @@ export const defSyndicatePost = (config: Config) => {
     request.log.debug(`${prefix}Feed title: ${feed_title}`)
     // const me_url = obj.feed.entry.id
 
-    const store_error = errorIfMethodNotImplementedInStore(
-      store,
-      'publishedUrlToStoreLocation'
-    )
-    if (store_error) {
-      const { code, body } = store_error
-      return reply.errorResponse(code, body)
-    }
-
     // TODO: do this for each post in the feed
-    // const loc = store.publishedUrlToStoreLocation(me_url)
+    // const loc = publishedUrlToStoreLocation(me_url)
 
     // ====================================================================== //
     // Testing a bookmark-of
@@ -78,11 +80,11 @@ export const defSyndicatePost = (config: Config) => {
     }
     // ====================================================================== //
 
-    const result = await store.get(loc)
+    const result = await get(loc)
 
     if (result.error) {
       const title = 'Syndication error'
-      const error_description = `The post published at ${loc.website} is not stored in ${store.info.name} at ${loc.store}.`
+      const error_description = `The post published at ${loc.website} is not stored at ${loc.store}.`
       request.log.warn(`${prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
@@ -180,16 +182,16 @@ export const defSyndicatePost = (config: Config) => {
       }
     }
 
-    const patch: StoreUpdatePatch = {
+    const patch: UpdatePatch = {
       delete: 'mp-syndicated-to',
       replace: {
         'mp-syndicate-to': Array.from(mp_syndicate_to),
         syndication: Array.from(syndication)
       }
     }
-    // request.log.warn(patch, `=== store.update patch ===`)
+    // request.log.warn(patch, `=== update patch ===`)
 
-    const result_update = await store.update(loc.website, patch)
+    const result_update = await update(loc.website, patch)
 
     if (result_update.error) {
       const error_description = result_update.error.message
@@ -202,7 +204,7 @@ export const defSyndicatePost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    // request.log.warn(result_update, `=== syndication store.update ===`)
+    // request.log.warn(result_update, `=== syndication update ===`)
 
     const summary = [
       `${successes.length} Successes: ${successes.join('\n')}`,

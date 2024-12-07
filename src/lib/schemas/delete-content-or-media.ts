@@ -4,13 +4,13 @@ import { url } from './url.js'
 
 const success = Type.Object({
   error: Type.Optional(Type.Undefined()),
-  value: Type.Object({})
+  value: Type.Any()
 })
 
 const result_promise = Type.Promise(Type.Union([failure, success]))
 
-const undelete_ = Type.Function([url], result_promise)
+const deleteContentOrMedia_ = Type.Function([url], result_promise)
 
-export type Undelete = Static<typeof undelete_>
+export type DeleteContentOrMedia = Static<typeof deleteContentOrMedia_>
 
-export const undelete = Type.Any()
+export const deleteContentOrMedia = Type.Any()

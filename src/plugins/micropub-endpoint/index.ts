@@ -92,16 +92,19 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     authorizationCallbackRoute: auth_callback,
     baseUrl: base_url,
     clientId: client_id,
+    create,
+    delete: deleteContent,
     includeErrorDescription: include_error_description,
     isBlacklisted,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
     multipartFormDataMaxFileSize,
-    store,
     submitEndpoint,
     syndicateTo: syndicate_to,
-    tokenEndpoint: token_endpoint
+    tokenEndpoint: token_endpoint,
+    undelete,
+    update
   } = config
 
   // === PLUGINS ============================================================ //
@@ -132,9 +135,9 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(`${prefix}decorateRequest: noScopeResponse`)
 
   const micropubResponse = defMicropubResponse({
+    create,
     include_error_description,
-    prefix,
-    store
+    prefix
   })
 
   const dependencies = ['errorResponse']
@@ -224,12 +227,14 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     },
     defMicropubPost({
       ajv,
+      delete: deleteContent,
       include_error_description,
       me,
       media_endpoint,
       micropub_endpoint,
       prefix,
-      store
+      undelete,
+      update
     })
   )
 

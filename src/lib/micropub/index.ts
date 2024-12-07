@@ -55,24 +55,6 @@ export type {
   UpdateSuccess as UpdateSuccessStatusCode
 } from './status-codes.js'
 
-export { errorIfMethodNotImplementedInStore } from './store/index.js'
-export type {
-  BaseValueGet as StoreBaseValueGet,
-  BaseValueUpdate as StoreBaseValueUpdate,
-  ContentStore,
-  Info as StoreInfo,
-  Jf2ToContent as StoreJf2ToContent,
-  MediaStore,
-  StoreAction,
-  StoreCreate,
-  StoreDelete,
-  StoreUndelete,
-  StoreUpdate,
-  StoreUpdatePatch,
-  StoreUpload,
-  SyndicatorStore
-} from './store/index.js'
-
 export type { Syndicator } from './syndicator.js'
 
 export type { SyndicateToItem } from './syndicate-to.js'

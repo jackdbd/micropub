@@ -2,11 +2,8 @@ import Ajv from 'ajv'
 import type { preHandlerHookHandler } from 'fastify'
 
 import { hasScope } from '../../lib/fastify-request-predicates/index.js'
-import {
-  insufficientScope,
-  invalidRequest,
-  type StoreAction
-} from '../../lib/micropub/index.js'
+import { insufficientScope, invalidRequest } from '../../lib/micropub/index.js'
+import type { Action } from '../../lib/schemas/index.js'
 
 import { NAME } from './constants.js'
 import { micropub_get_request } from './schemas.js'
@@ -62,9 +59,9 @@ export const defEnsureRequestHasScope = (config: {
     reply,
     done
   ) => {
-    let action: StoreAction = 'create'
+    let action: Action = 'create'
     if (request.body && (request.body as any).action) {
-      action = (request.body as any).action as StoreAction
+      action = (request.body as any).action as Action
     }
 
     if (!hasScope(request, action)) {

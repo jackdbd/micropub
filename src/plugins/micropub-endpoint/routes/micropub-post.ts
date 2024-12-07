@@ -8,10 +8,12 @@ import { hasScope } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
 import { invalidRequest, normalizeJf2 } from '../../../lib/micropub/index.js'
 import type {
-  ContentStore,
-  StoreAction,
-  StoreUpdatePatch
-} from '../../../lib/micropub/index.js'
+  Action,
+  DeleteContentOrMedia,
+  Undelete,
+  Update,
+  UpdatePatch
+} from '../../../lib/schemas/index.js'
 
 import type { PostRequestBody } from '../request.js'
 import {
@@ -28,12 +30,14 @@ interface PostRouteGeneric extends RouteGenericInterface {
 
 export interface MicropubPostConfig {
   ajv: Ajv
+  delete: DeleteContentOrMedia
   include_error_description: boolean
   me: string
   media_endpoint: string
   micropub_endpoint: string
   prefix: string
-  store: ContentStore
+  undelete?: Undelete
+  update: Update
 }
 
 // We should return a Location response header if we can't (or don't want to)
@@ -71,12 +75,14 @@ export interface MicropubPostConfig {
 export const defMicropubPost = (config: MicropubPostConfig) => {
   const {
     ajv,
+    delete: deleteContent,
     include_error_description,
     // me,
     media_endpoint,
     micropub_endpoint,
     prefix,
-    store
+    undelete,
+    update
   } = config
 
   const {
@@ -204,15 +210,15 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     // post to change, the server MUST respond with HTTP 201 and include the new
     // URL in the HTTP Location header.
     // https://micropub.spec.indieweb.org/#delete
-    const action = jf2.action as StoreAction
+    const action = jf2.action as Action
     const url = jf2.url
 
-    if (!store[action]) {
-      const { code, body } = request.noActionSupportedResponse(action, {
-        include_error_description
-      })
-      return reply.errorResponse(code, body)
-    }
+    // if (!store[action]) {
+    //   const { code, body } = request.noActionSupportedResponse(action, {
+    //     include_error_description
+    //   })
+    //   return reply.errorResponse(code, body)
+    // }
 
     if (!hasScope(request, action)) {
       const { code, body } = request.noScopeResponse(action, {
@@ -224,7 +230,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     if (url) {
       switch (action) {
         case 'delete': {
-          const result = await store[action](url)
+          const result = await deleteContent(url)
 
           if (result.error) {
             const { code, body } = storeErrorToMicropubError(result.error, {
@@ -249,7 +255,20 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
         }
 
         case 'undelete': {
-          const result = await store[action](url)
+          if (!undelete) {
+            const error_description =
+              'undelete not supported by this Micropub server.'
+            request.log.error(`${prefix}${error_description}`)
+
+            const { code, body } = invalidRequest({
+              error_description,
+              include_error_description
+            })
+
+            return reply.errorResponse(code, body)
+          }
+
+          const result = await undelete(url)
 
           if (result.error) {
             const { code, body } = storeErrorToMicropubError(result.error, {
@@ -275,8 +294,8 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         case 'update': {
           const { action: _action, h: _h, type: _type, ...rest } = jf2
-          const patch = rest as StoreUpdatePatch
-          const result = await store[action](url, patch)
+          const patch = rest as UpdatePatch
+          const result = await update(url, patch)
 
           if (result.error) {
             const { code, body } = storeErrorToMicropubError(result.error, {

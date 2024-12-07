@@ -3,9 +3,14 @@ import { failure } from './failure.js'
 import { jf2 } from './jf2.js'
 import { location } from './location.js'
 
+const sha = Type.String({ minLength: 1 })
+
 const success = Type.Object({
   error: Type.Optional(Type.Undefined()),
-  value: Type.Object({ jf2 })
+  value: Type.Object({
+    jf2,
+    sha: Type.Optional(sha)
+  })
 })
 
 // CANNOT be used with a standard JSON Schema validator

@@ -1,3 +1,5 @@
+export { action, type Action } from './action.js'
+
 export {
   addToIssuedTokens,
   type AddToIssuedTokens
@@ -6,6 +8,11 @@ export {
 export { create, type Create } from './create-content.js'
 
 export { deleteContent, type Delete } from './delete-content.js'
+
+export {
+  deleteContentOrMedia,
+  type DeleteContentOrMedia
+} from './delete-content-or-media.js'
 
 export { include_error_description, report_all_ajv_errors } from './flags.js'
 
@@ -62,6 +69,18 @@ export { syndicate_to_item, type SyndicateToItem } from './syndicate-to.js'
 
 export { undelete, type Undelete } from './undelete-content.js'
 
-export { update, type Update } from './update-content.js'
+export {
+  upload_config,
+  uploadMedia,
+  type UploadConfig,
+  type UploadMedia
+} from './upload-media.js'
+
+export {
+  update,
+  update_patch,
+  type UpdatePatch,
+  type Update
+} from './update-content.js'
 
 export { url } from './url.js'

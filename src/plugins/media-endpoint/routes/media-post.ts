@@ -1,20 +1,20 @@
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
 import type { RouteHandler } from 'fastify'
 import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
-import {
-  errorIfMethodNotImplementedInStore,
-  invalidRequest,
-  serverError,
-  type MediaStore,
-  type StoreAction
-} from '../../../lib/micropub/index.js'
+import { invalidRequest, serverError } from '../../../lib/micropub/index.js'
+import type {
+  Action,
+  DeleteContentOrMedia,
+  UploadMedia
+} from '../../../lib/schemas/index.js'
 import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/routes `
 
 interface Config {
+  delete: DeleteContentOrMedia
   include_error_description: boolean
-  store: MediaStore
+  upload: UploadMedia
 }
 
 /**
@@ -37,7 +37,7 @@ interface Config {
  * @see https://micropub.spec.indieweb.org/#uploading-files
  */
 export const defMediaPost = (config: Config) => {
-  const { include_error_description, store } = config
+  const { delete: deleteMedia, include_error_description, upload } = config
 
   const errorIfActionNotAllowed = defErrorIfActionNotAllowed({
     include_error_description,
@@ -46,7 +46,7 @@ export const defMediaPost = (config: Config) => {
 
   const mediaPost: RouteHandler = async (request, reply) => {
     if (!request.isMultipart()) {
-      const action = (request.body as any).action as StoreAction
+      const action = (request.body as any).action as Action
 
       if (action !== 'delete') {
         const { code, body } = invalidRequest({
@@ -56,11 +56,11 @@ export const defMediaPost = (config: Config) => {
         return reply.errorResponse(code, body)
       }
 
-      const store_error = errorIfMethodNotImplementedInStore(store, action)
-      if (store_error) {
-        const { code, body } = store_error
-        return reply.errorResponse(code, body)
-      }
+      // const store_error = errorIfMethodNotImplementedInStore(store, action)
+      // if (store_error) {
+      //   const { code, body } = store_error
+      //   return reply.errorResponse(code, body)
+      // }
 
       // We should also check the presence of a 'media' scope in the access token
       // claims. But there is already a Fastify hook that does just that.
@@ -72,11 +72,11 @@ export const defMediaPost = (config: Config) => {
 
       const url = (request.body as any).url as string
 
-      const result = await store.delete!(url)
+      const result = await deleteMedia(url)
 
       if (result.error) {
         const original = result.error.message
-        const error_description = `Could not delete ${url} from media store ${store.info.name}: ${original}`
+        const error_description = `Could not delete ${url} from media store: ${original}`
         request.log.error(`${PREFIX}: ${error_description}`)
 
         const { code, body } = serverError({
@@ -165,11 +165,11 @@ export const defMediaPost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    const result = await store.upload({ body, contentType, filename })
+    const result = await upload({ body, contentType, filename })
 
     if (result.error) {
       const original = result.error.message
-      const error_description = `Could not upload file ${filename} to media store ${store.info.name}: ${original}`
+      const error_description = `Could not upload file ${filename} to media store: ${original}`
       request.log.error(`${PREFIX}: ${error_description}`)
 
       const { code, body } = serverError({

@@ -46,11 +46,12 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
 
   const {
+    delete: deleteMedia,
     includeErrorDescription: include_error_description,
     isBlacklisted,
     me,
     multipartFormDataMaxFileSize: fileSize,
-    store
+    upload
   } = config
 
   // === PLUGINS ============================================================ //
@@ -120,7 +121,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     })
 
   // === ROUTES ============================================================= //
-  fastify.get('/media', defMediaGet({ store }))
+  fastify.get('/media', defMediaGet({ delete: deleteMedia }))
 
   fastify.post(
     '/media',
@@ -135,7 +136,11 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
         validateAccessTokenNotBlacklisted
       ]
     },
-    defMediaPost({ store, include_error_description })
+    defMediaPost({
+      delete: deleteMedia,
+      include_error_description,
+      upload
+    })
   )
 
   done()

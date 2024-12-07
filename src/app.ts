@@ -12,10 +12,11 @@ import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
 import { secondsToUTCString } from './lib/date.js'
-import { defDefaultPublication } from './lib/github-store/publication.js'
-import { defStore as defGitHubStore } from './lib/github-store/index.js'
-import { defStore as defR2Store } from './lib/r2-store/index.js'
-import type { StoreAction, ErrorResponseBody } from './lib/micropub/index.js'
+import { defDefaultPublication } from './lib/github-storage/publication.js'
+import { defGitHub } from './lib/github-storage/client.js'
+import type { ErrorResponseBody } from './lib/micropub/index.js'
+import { defR2 } from './lib/r2-storage/client.js'
+import { Action } from './lib/schemas/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/claims.js'
 
@@ -81,12 +82,12 @@ const PREFIX = `${NAME} `
 declare module 'fastify' {
   interface FastifyRequest {
     noScopeResponse: (
-      action: StoreAction,
+      action: Action,
       options?: NoScopeResponseOptions
     ) => { code: number; body: ErrorResponseBody }
 
     noActionSupportedResponse: (
-      action: StoreAction,
+      action: Action,
       options?: NoActionSupportedResponseOptions
     ) => { code: number; body: ErrorResponseBody }
   }
@@ -282,7 +283,7 @@ export async function defFastify(config: Config) {
 
   const publication = defDefaultPublication({ domain, subdomain: 'www' })
 
-  const content_storage = defGitHubStore({
+  const github = defGitHub({
     // This doesn't work. It errors with: this[writeSym] is not a function
     // log: { debug: fastify.log.debug, error: fastify.log.error },
     log: {
@@ -304,9 +305,7 @@ export async function defFastify(config: Config) {
     }
   })
 
-  // fastify.log.warn(store.info, `=== Store ${store.info.name} ===`)
-
-  const media_storage = defR2Store({
+  const r2 = defR2({
     account_id: cloudflare_account_id,
     bucket_name: cloudflare_r2_bucket_name,
     credentials: {
@@ -318,17 +317,21 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(media, {
+    delete: r2.delete,
     includeErrorDescription,
     isBlacklisted,
     me,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    store: media_storage
+    upload: r2.upload
   })
 
   fastify.register(micropub, {
+    authorizationCallbackRoute,
     baseUrl,
     clientId: indieauth_client_id,
+    create: github.create,
+    delete: github.delete,
     includeErrorDescription,
     isBlacklisted,
     me,
@@ -336,10 +339,11 @@ export async function defFastify(config: Config) {
     micropubEndpoint,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    store: content_storage,
     submitEndpoint,
     syndicateTo: syndicate_to,
-    tokenEndpoint
+    tokenEndpoint,
+    undelete: github.undelete,
+    update: github.update
   })
 
   const { uid } = syndicate_to.filter((d) => d.uid.includes('t.me'))[0]!
@@ -351,12 +355,14 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(syndicate, {
+    get: github.get,
     includeErrorDescription,
     isBlacklisted,
     me,
-    store: content_storage,
+    publishedUrlToStoreLocation: github.publishedUrlToStoreLocation,
     syndicators: { [uid]: telegram_syndicator },
-    reportAllAjvErrors
+    reportAllAjvErrors,
+    update: github.update
   })
 
   fastify.register(view, {
