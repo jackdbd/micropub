@@ -29,6 +29,13 @@ Verify a JWT using the public JWKS.
 npx tsm ./scripts/verify-jwt.ts
 ```
 
+Issue a JWT and immediately revoke it.
+
+```sh
+npx tsm ./scripts/issue-and-revoke-jwt.ts --impl fs
+npx tsm ./scripts/issue-and-revoke-jwt.ts --impl mem
+```
+
 Generate JSON schemas from TypeBox schemas, then generate HTML pages from those JSON schemas using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans).
 
 ```sh

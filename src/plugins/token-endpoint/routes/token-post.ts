@@ -1,19 +1,7 @@
 import type { RouteHandler } from 'fastify'
-import type { JWK } from 'jose'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
 import { invalidRequest, serverError } from '../../../lib/micropub/index.js'
-import { randomKid, sign } from '../../../lib/token/sign-jwt.js'
-import { verify } from '../../../lib/token/verify-jwt.js'
-
-export interface Config {
-  authorization_endpoint: string
-  expiration: string
-  include_error_description: boolean
-  issuer: string
-  jwks: { keys: JWK[] }
-  jwks_url: URL
-  log_prefix: string
-}
+import { type TokenPostConfig as Config } from '../schemas.js'
 
 interface ResponseBodyFromAuth {
   client_id: string
@@ -26,11 +14,8 @@ interface ResponseBodyFromAuth {
 export const defTokenPost = (config: Config) => {
   const {
     authorization_endpoint,
-    expiration,
     include_error_description,
-    issuer,
-    jwks,
-    jwks_url,
+    issueJWT,
     log_prefix
   } = config
 
@@ -82,17 +67,14 @@ export const defTokenPost = (config: Config) => {
 
     const payload = { me, scope }
 
-    request.log.debug(
-      `${log_prefix}try selecting one JWK from the ${jwks.keys.length} keys available in the JWKS`
-    )
-    const { error: kid_error, value: kid } = randomKid(jwks.keys)
+    const { error, value } = await issueJWT(payload)
 
-    if (kid_error) {
-      const error_description = kid_error.message
+    if (error) {
+      const error_description = `cannot issue JWT: ${error.message}`
       request.log.error(`${log_prefix}${error_description}`)
 
       const { code, body } = serverError({
-        error: 'jwks_kid_error',
+        error: 'issue_jwt_error',
         error_description,
         include_error_description
       })
@@ -100,48 +82,72 @@ export const defTokenPost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    request.log.debug(`${log_prefix}try signing JWT using key ID ${kid}`)
+    const { claims, jwt, message } = value
 
-    const { error: sign_error, value: jwt } = await sign({
-      expiration,
-      issuer,
-      jwks,
-      kid,
-      payload
-    })
-
-    if (sign_error) {
-      const error_description = `cannot sign token: ${sign_error.message}`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = serverError({
-        error: 'jwt_sign_error',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+    if (message) {
+      request.log.debug(message)
     }
 
-    const { error: verify_error, value: claims } = await verify({
-      issuer,
-      jwks_url,
-      jwt,
-      max_token_age: expiration
-    })
+    // request.log.debug(
+    //   `${log_prefix}try selecting one JWK from the ${jwks.keys.length} keys available in the JWKS`
+    // )
+    // const { error: kid_error, value: kid } = randomKid(jwks.keys)
 
-    if (verify_error) {
-      const error_description = `cannot verify token: ${verify_error.message}`
-      request.log.error(`${log_prefix}${error_description}`)
+    // if (kid_error) {
+    //   const error_description = kid_error.message
+    //   request.log.error(`${log_prefix}${error_description}`)
 
-      const { code, body } = serverError({
-        error: 'jwt_verify_error',
-        error_description,
-        include_error_description
-      })
+    //   const { code, body } = serverError({
+    //     error: 'jwks_kid_error',
+    //     error_description,
+    //     include_error_description
+    //   })
 
-      return reply.errorResponse(code, body)
-    }
+    //   return reply.errorResponse(code, body)
+    // }
+
+    // request.log.debug(`${log_prefix}try signing JWT using key ID ${kid}`)
+
+    // const { error: sign_error, value: jwt } = await sign({
+    //   expiration,
+    //   issuer,
+    //   jwks,
+    //   kid,
+    //   payload
+    // })
+
+    // if (sign_error) {
+    //   const error_description = `cannot sign token: ${sign_error.message}`
+    //   request.log.error(`${log_prefix}${error_description}`)
+
+    //   const { code, body } = serverError({
+    //     error: 'jwt_sign_error',
+    //     error_description,
+    //     include_error_description
+    //   })
+
+    //   return reply.errorResponse(code, body)
+    // }
+
+    // const { error: verify_error, value: claims } = await verify({
+    //   issuer,
+    //   jwks_url: jwks_url as URL,
+    //   jwt,
+    //   max_token_age: expiration
+    // })
+
+    // if (verify_error) {
+    //   const error_description = `cannot verify token: ${verify_error.message}`
+    //   request.log.error(`${log_prefix}${error_description}`)
+
+    //   const { code, body } = serverError({
+    //     error: 'jwt_verify_error',
+    //     error_description,
+    //     include_error_description
+    //   })
+
+    //   return reply.errorResponse(code, body)
+    // }
 
     reply.header('Authorization', jwt)
     request.log.debug(`${log_prefix}set Bearer <JWT> in Authorization header`)

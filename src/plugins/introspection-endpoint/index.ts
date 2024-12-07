@@ -13,16 +13,16 @@ import {
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
+  DEFAULT_ACCESS_TOKEN_EXPIRATION,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_REPORT_ALL_AJV_ERRORS,
-  DEFAULT_TOKEN_EXPIRATION,
   NAME
 } from './constants.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  expiration: DEFAULT_TOKEN_EXPIRATION,
+  expiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
 }
@@ -71,7 +71,8 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     log_prefix: prefix
   })
 
-  // Should I check the `me` claim?
+  // Should I check whether the token from the Authorization header matches an
+  // expected a `me` claim?
   // const validateClaimMe = defValidateClaim(
   //   { claim: 'me', op: '==', value: me },
   //   { include_error_description, log_prefix: prefix }
@@ -88,10 +89,10 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     { include_error_description, log_prefix: prefix }
   )
 
-  // const validateClaimJti = defValidateClaim(
-  //   { claim: 'jti' },
-  //   { include_error_description, log_prefix: prefix }
-  // )
+  const validateClaimJti = defValidateClaim(
+    { claim: 'jti' },
+    { include_error_description, log_prefix: prefix }
+  )
 
   // TODO: re-read RFC7662 and decide which scope to check
   // const validateScopeMedia = defValidateScope({
@@ -115,6 +116,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
       onRequest: [
         decodeJwtAndSetClaims,
         validateClaimExp,
+        validateClaimJti,
         validateAccessTokenNotBlacklisted
       ]
     },

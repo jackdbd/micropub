@@ -11,8 +11,6 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
-// import { defStore as defAtomStore } from './lib/atom-store/index.js'
-import { defStore as defFileSystemStore } from './lib/fs-store/index.js'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-store/publication.js'
 import { defStore as defGitHubStore } from './lib/github-store/index.js'
@@ -40,13 +38,42 @@ import type {
 import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
-import tokenEndpoint from './plugins/token-endpoint/index.js'
+import token from './plugins/token-endpoint/index.js'
 
 import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
 import { tap } from './nunjucks/filters.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+// Token storage - Filesystem backend //////////////////////////////////////////
+import {
+  defAddToIssuedTokens,
+  defMarkTokenAsRevoked,
+  defIsBlacklisted
+} from './lib/fs-storage/index.js'
+
+const assets_dir = path.join(__dirname, '..', 'assets')
+const filepath = path.join(assets_dir, 'fs-store-token-issuelist.json')
+const addToIssuedTokens = defAddToIssuedTokens({ filepath })
+const isBlacklisted = defIsBlacklisted({ filepath })
+const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
+////////////////////////////////////////////////////////////////////////////////
+
+// Token storage - In-memory backend ///////////////////////////////////////////
+// import { defAtom } from '@thi.ng/atom'
+// import { IssueTable } from './lib/token-storage-interface/index.js'
+// import {
+//   defAddToIssuedTokens,
+//   defMarkTokenAsRevoked,
+//   defIsBlacklisted
+// } from './lib/in-memory-storage/index.js'
+
+// const atom = defAtom<IssueTable>({})
+// const addToIssuedTokens = defAddToIssuedTokens({ atom })
+// const isBlacklisted = defIsBlacklisted({ atom })
+// const markTokenAsRevoked = defMarkTokenAsRevoked({ atom })
+////////////////////////////////////////////////////////////////////////////////
 
 const NAME = 'app'
 const PREFIX = `${NAME} `
@@ -102,9 +129,12 @@ declare module '@fastify/secure-session' {
  * Instantiates the Fastify app.
  */
 export async function defFastify(config: Config) {
+  // TODO: validate config with Ajv
   const {
     access_token_expiration,
-    base_url,
+    authorization_callback_route: authorizationCallbackRoute,
+    authorization_endpoint: authorizationEndpoint,
+    base_url: baseUrl,
     cloudflare_account_id,
     cloudflare_r2_access_key_id,
     cloudflare_r2_bucket_name,
@@ -112,11 +142,16 @@ export async function defFastify(config: Config) {
     github_owner,
     github_repo,
     github_token,
-    include_error_description,
+    include_error_description: includeErrorDescription,
+    indieauth_client_id,
+    issuer,
     jwks,
     jwks_url,
     log_level,
     me,
+    media_endpoint: mediaEndpoint,
+    media_public_base_url,
+    micropub_endpoint: micropubEndpoint,
     multipart_form_data_max_file_size: multipartFormDataMaxFileSize,
     report_all_ajv_errors: reportAllAjvErrors,
     secure_session_expiration,
@@ -124,9 +159,11 @@ export async function defFastify(config: Config) {
     secure_session_key_two_buf,
     should_media_endpoint_ignore_filename,
     soft_delete,
+    submit_endpoint: submitEndpoint,
     syndicate_to,
     telegram_chat_id,
     telegram_token,
+    token_endpoint: tokenEndpoint,
     use_development_error_handler,
     use_secure_flag_for_session_cookie
   } = config
@@ -193,88 +230,51 @@ export async function defFastify(config: Config) {
     })
   }
 
-  const issuer = base_url
-  const client_id = base_url
-  // const token_endpoint = 'https://tokens.indieauth.com/token'
-  const token_endpoint = `${base_url}/token`
-  const micropub_endpoint = `${base_url}/micropub`
-  const media_endpoint = `${base_url}/media`
-  const submit_endpoint = `${base_url}/submit`
-  const media_content_base_url = 'https://content.giacomodebidda.com/'
-
   fastify.register(responseDecorators)
 
-  fastify.register(tokenEndpoint, {
-    // authorizationEndpoint,
+  fastify.register(token, {
+    addToIssuedTokens,
+    authorizationEndpoint,
     expiration: access_token_expiration,
-    includeErrorDescription: include_error_description,
+    includeErrorDescription,
+    isBlacklisted,
     issuer,
     jwks,
-    jwks_url
+    reportAllAjvErrors
   })
-
-  // const token_storage = await defAtomStore({
-  //   expiration: access_token_expiration,
-  //   issuer,
-  //   jwks,
-  //   jwks_url,
-  //   log: {
-  //     debug: (message: string) => {
-  //       return fastify.log.debug(`@jackdbd/atom-store ${message}`)
-  //     },
-  //     error: (message: string) => {
-  //       return fastify.log.error(`@jackdbd/atom-store ${message}`)
-  //     }
-  //   }
-  // })
-
-  const token_storage = await defFileSystemStore({
-    // blacklist: [],
-    // blacklist_path: 'blacklist.json',
-    expiration: access_token_expiration,
-    // issuelist: [],
-    // issuelist_path: 'issuelist.json',
-    issuer,
-    jwks,
-    jwks_url,
-    log: {
-      debug: (message: string) => {
-        return fastify.log.debug(`@jackdbd/fs-store ${message}`)
-      },
-      error: (message: string) => {
-        return fastify.log.error(`@jackdbd/fs-store ${message}`)
-      }
-    }
-  })
-
-  const { isBlacklisted, revoke } = token_storage
 
   fastify.register(introspection, {
     expiration: access_token_expiration,
-    includeErrorDescription: include_error_description,
+    includeErrorDescription,
     isBlacklisted,
     issuer,
-    jwks_url
+    jwks_url,
+    reportAllAjvErrors
   })
 
   fastify.register(revocation, {
-    includeErrorDescription: include_error_description,
+    includeErrorDescription,
     isBlacklisted,
+    issuer,
+    jwks_url,
+    markTokenAsRevoked,
+    maxTokenAge: access_token_expiration,
     me,
-    revoke
+    reportAllAjvErrors
   })
 
   fastify.register(userinfo, {
-    includeErrorDescription: include_error_description,
+    includeErrorDescription,
+    isBlacklisted,
     me,
-    store: token_storage
+    reportAllAjvErrors
   })
 
   fastify.register(indieauth, {
-    // authorizationCallbackRoute: '/auth/callback',
-    // authorizationEndpoint: 'https://indieauth.com/auth',
-    baseUrl: base_url,
-    clientId: client_id,
+    authorizationCallbackRoute,
+    authorizationEndpoint,
+    baseUrl,
+    clientId: indieauth_client_id,
     me
   })
 
@@ -314,30 +314,32 @@ export async function defFastify(config: Config) {
       secretAccessKey: cloudflare_r2_secret_access_key
     },
     ignore_filename: should_media_endpoint_ignore_filename,
-    public_base_url: media_content_base_url
+    public_base_url: media_public_base_url
   })
 
   fastify.register(media, {
-    includeErrorDescription: include_error_description,
+    includeErrorDescription,
+    isBlacklisted,
     me,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    store: { ...media_storage, isBlacklisted: token_storage.isBlacklisted }
+    store: media_storage
   })
 
   fastify.register(micropub, {
-    baseUrl: base_url,
-    clientId: client_id,
-    includeErrorDescription: include_error_description,
+    baseUrl,
+    clientId: indieauth_client_id,
+    includeErrorDescription,
+    isBlacklisted,
     me,
-    mediaEndpoint: media_endpoint,
-    micropubEndpoint: micropub_endpoint,
+    mediaEndpoint,
+    micropubEndpoint,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    store: { ...content_storage, isBlacklisted: token_storage.isBlacklisted },
-    submitEndpoint: submit_endpoint,
+    store: content_storage,
+    submitEndpoint,
     syndicateTo: syndicate_to,
-    tokenEndpoint: token_endpoint
+    tokenEndpoint
   })
 
   const { uid } = syndicate_to.filter((d) => d.uid.includes('t.me'))[0]!
@@ -349,10 +351,12 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(syndicate, {
-    includeErrorDescription: include_error_description,
+    includeErrorDescription,
+    isBlacklisted,
     me,
-    store: { ...content_storage, isBlacklisted: token_storage.isBlacklisted },
-    syndicators: { [uid]: telegram_syndicator }
+    store: content_storage,
+    syndicators: { [uid]: telegram_syndicator },
+    reportAllAjvErrors
   })
 
   fastify.register(view, {
@@ -381,11 +385,6 @@ export async function defFastify(config: Config) {
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
-  // fastify.addHook('onRoute', (routeOptions) => {
-  //   fastify.log.debug(
-  //     `${PREFIX}registered route ${routeOptions.method} ${routeOptions.url}`
-  //   )
-  // })
 
   // === ROUTES ============================================================= //
   fastify.get('/', async (_request, reply) => {

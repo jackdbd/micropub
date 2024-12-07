@@ -45,6 +45,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
 
   const {
     includeErrorDescription: include_error_description,
+    isBlacklisted,
     me,
     store,
     syndicators
@@ -100,7 +101,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
-      isBlacklisted: store.isBlacklisted,
+      isBlacklisted,
       log_prefix: prefix,
       report_all_ajv_errors
     })

@@ -1,5 +1,6 @@
 import type { onRequestAsyncHookHandler } from 'fastify'
 import { unauthorized } from '../micropub/error-responses.js'
+import type { AccessTokenClaims } from '../token/claims.js'
 import { safeDecode } from '../token/decode.js'
 
 export interface Options {
@@ -77,7 +78,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       return reply.errorResponse(code, body)
     }
 
-    const { error, value: claims } = await safeDecode(jwt)
+    const { error, value: claims } = await safeDecode<AccessTokenClaims>(jwt)
 
     if (error) {
       const error_description = `Error while decoding ${key_in_header} value in ${hkey} header: ${error.message}`
@@ -91,7 +92,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       return reply.errorResponse(code, body)
     }
 
-    request.log.warn(claims, '=== JWT claims ===')
+    // request.log.warn(claims, '=== JWT claims ===')
     request.requestContext.set('access_token_claims', claims)
     request.log.debug(
       `${log_prefix}stored access token claims in request context key 'access_token_claims'`

@@ -43,7 +43,6 @@ export const store = Type.Object({
   delete: Type.Optional(deleteContent),
   get,
   info,
-  isBlacklisted,
   jf2ToContent,
   publishedUrlToStoreLocation,
   undelete: Type.Optional(undelete),
@@ -54,7 +53,6 @@ export interface Store extends Static<typeof store> {
   create: Create
   delete: Delete
   get: Get
-  isBlacklisted: IsBlacklisted
   jf2ToContent: JF2ToContent
   publishedUrlToStoreLocation: PublishedUrlToStoreLocation
   undelte: Undelete
@@ -71,43 +69,34 @@ export const options = Type.Object(
         default: 'https://indieauth.com/auth'
       })
     ),
-
     authorizationCallbackRoute: Type.Optional(
       Type.String({ default: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE })
     ),
-
     baseUrl: Type.String(),
-
     clientId: Type.String(),
-
     codeChallengeMethod: Type.Optional(
       Type.String({ default: DEFAULT_CODE_CHALLENGE_METHOD })
     ),
-
     codeVerifierLength: Type.Optional(
       Type.Number({ default: DEFAULT_CODE_VERIFIER_LENGTH })
     ),
-
     includeErrorDescription: Type.Optional(
       Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
     ),
-
+    isBlacklisted,
     me,
-
     mediaEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'media endpoint'
       })
     ),
-
     micropubEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'micropub endpoint'
       })
     ),
-
     multipartFormDataMaxFileSize: Type.Optional(
       Type.Number({
         title: 'multipart/form-data max file size',
@@ -116,23 +105,18 @@ export const options = Type.Object(
         minimum: 0
       })
     ),
-
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
       default: DEFAULT_REPORT_ALL_AJV_ERRORS
     }),
-
     store,
-
     submitEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'submit endpoint'
       })
     ),
-
     syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
-
     tokenEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
@@ -149,7 +133,9 @@ export const options = Type.Object(
   }
 )
 
-export type Options = Static<typeof options>
+export interface Options extends Static<typeof options> {
+  isBlacklisted: IsBlacklisted
+}
 
 export const micropub_get_request = Type.Object(
   { query: Type.Object({ q: Type.String() }) },

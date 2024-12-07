@@ -17,6 +17,9 @@ export type ResultPromise = Static<typeof result_promise>
 // validator. However, we can still use its TypeScript type.
 const isBlacklisted_ = Type.Function([jti], result_promise)
 
+/**
+ * Returns true if a jti (JSON Web Token ID) is blacklisted.
+ */
 export type IsBlacklisted = Static<typeof isBlacklisted_>
 
 // This is INCORRECT. This schema does not validate a function but a description

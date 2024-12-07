@@ -13,7 +13,7 @@ import {
   defValidateScope,
   defValidateAccessTokenNotBlacklisted
 } from '../../lib/fastify-hooks/index.js'
-import { validationErrors } from '../../lib/validators.js'
+import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
@@ -24,8 +24,6 @@ import {
 import { defMediaGet } from './routes/media-get.js'
 import { defMediaPost } from './routes/media-post.js'
 import { options as options_schema, type Options } from './schemas.js'
-
-const PREFIX = `${NAME} `
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
@@ -39,33 +37,31 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   done
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
+  const prefix = `${NAME} `
 
-  const {
-    includeErrorDescription: include_error_description,
-    me,
-    multipartFormDataMaxFileSize: fileSize,
-    reportAllAjvErrors: report_all_ajv_errors,
-    store
-  } = config
+  const { reportAllAjvErrors: report_all_ajv_errors } = config
 
   const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
 
-  const errors = validationErrors(ajv, options_schema, config)
-  if (errors.length > 0) {
-    throw new Error(
-      `${PREFIX}plugin registered using invalid options: ${errors.join('; ')}`
-    )
-  }
+  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+
+  const {
+    includeErrorDescription: include_error_description,
+    isBlacklisted,
+    me,
+    multipartFormDataMaxFileSize: fileSize,
+    store
+  } = config
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
   fastify.log.debug(
-    `${PREFIX}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+    `${prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
 
   fastify.register(multipart, { limits: { fileSize } })
   fastify.log.debug(
-    `${PREFIX}registered plugin: multipart (for parsing multipart/form-data)`
+    `${prefix}registered plugin: multipart (for parsing multipart/form-data)`
   )
 
   fastify.register(responseDecorators)
@@ -74,27 +70,25 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
-  const log_prefix = `${NAME}/hooks `
-
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
 
   const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
     include_error_description,
-    log_prefix
+    log_prefix: prefix
   })
 
   const logIatAndExpClaims = defLogIatAndExpClaims({
     include_error_description,
-    log_prefix
+    log_prefix: prefix
   })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix }
+    { include_error_description, log_prefix: prefix }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -103,25 +97,25 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix }
+    { include_error_description, log_prefix: prefix }
   )
 
   const validateClaimJti = defValidateClaim(
     { claim: 'jti' },
-    { include_error_description, log_prefix }
+    { include_error_description, log_prefix: prefix }
   )
 
   const validateScopeMedia = defValidateScope({
     scope: 'media',
     include_error_description,
-    log_prefix
+    log_prefix: prefix
   })
 
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
-      isBlacklisted: store.isBlacklisted,
-      log_prefix,
+      isBlacklisted,
+      log_prefix: prefix,
       report_all_ajv_errors
     })
 

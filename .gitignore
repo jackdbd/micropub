@@ -26,8 +26,8 @@ lcov.info
 assets/json-schemas/
 assets/schemas-docs/
 
+# I use this issuelist in scripts.
+assets/fs-store-token-issuelist.json
+
 secrets/*
 !secrets/README.md
-
-fs-store-token-blacklist.json
-fs-store-token-issuelist.json

@@ -10,6 +10,7 @@ import {
   defValidateAccessTokenNotBlacklisted,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
+import { defRevokeJWT } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
@@ -41,9 +42,19 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   const {
     includeErrorDescription: include_error_description,
     isBlacklisted,
-    me,
-    revoke
+    issuer,
+    jwks_url,
+    markTokenAsRevoked,
+    maxTokenAge: max_token_age,
+    me
   } = config
+
+  const revokeJWT = defRevokeJWT({
+    issuer,
+    jwks_url,
+    markTokenAsRevoked,
+    max_token_age
+  })
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
@@ -115,7 +126,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
       include_error_description,
       me,
       prefix,
-      revoke
+      revokeJWT
     })
   )
 

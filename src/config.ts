@@ -59,6 +59,8 @@ const should_media_endpoint_ignore_filename = false
  */
 export interface Config {
   access_token_expiration: string
+  authorization_callback_route: string
+  authorization_endpoint: string
   base_url: string
   cloudflare_account_id: string
   cloudflare_r2_access_key_id: string
@@ -79,6 +81,10 @@ export interface Config {
    */
   include_error_description: boolean
 
+  indieauth_client_id: string
+
+  issuer: string
+
   /**
    * **Private** JSON Web Key Set (JWKS).
    *
@@ -98,6 +104,9 @@ export interface Config {
 
   log_level: string
   me: string
+  media_endpoint: string
+  media_public_base_url: string
+  micropub_endpoint: string
   multipart_form_data_max_file_size: number
   port: number
   report_all_ajv_errors: boolean
@@ -106,9 +115,11 @@ export interface Config {
   secure_session_key_two_buf: string
   should_media_endpoint_ignore_filename: boolean
   soft_delete: boolean
+  submit_endpoint: string
   syndicate_to: SyndicateToItem[]
   telegram_chat_id: string
   telegram_token: string
+  token_endpoint: string
   use_development_error_handler: boolean
   use_secure_flag_for_session_cookie: boolean
   NODE_ENV: string
@@ -221,11 +232,27 @@ export const defConfig = async () => {
   // localhost, otherwise we will have mixed content errors.
   const base_url = process.env.BASE_URL || `http://localhost:${port}`
 
+  const authorization_callback_route = '/auth/callback'
+  const indieauth_client_id = base_url
+  const issuer = base_url
+
+  // ENDPOINTS /////////////////////////////////////////////////////////////////
+  const authorization_endpoint = 'https://indieauth.com/auth'
+  // const token_endpoint = 'https://tokens.indieauth.com/token'
+  const token_endpoint = `${base_url}/token`
+  const micropub_endpoint = `${base_url}/micropub`
+  const media_endpoint = `${base_url}/media`
+  const media_public_base_url = 'https://content.giacomodebidda.com/'
+  const submit_endpoint = `${base_url}/submit`
+  //////////////////////////////////////////////////////////////////////////////
+
   const jwks_url = process.env.JWKS_PUBLIC_URL
     ? new URL(process.env.JWKS_PUBLIC_URL)
     : new URL('https://content.giacomodebidda.com/misc/jwks-public.json')
 
   const config: Config = {
+    authorization_callback_route,
+    authorization_endpoint,
     base_url,
     access_token_expiration,
     cloudflare_account_id,
@@ -237,10 +264,15 @@ export const defConfig = async () => {
     github_token,
     host: process.env.HOST || '0.0.0.0',
     include_error_description,
+    indieauth_client_id,
+    issuer,
     jwks,
     jwks_url,
     log_level: process.env.PINO_LOG_LEVEL || 'info',
     me,
+    media_endpoint,
+    media_public_base_url,
+    micropub_endpoint,
     multipart_form_data_max_file_size,
     port,
     report_all_ajv_errors,
@@ -249,9 +281,11 @@ export const defConfig = async () => {
     secure_session_key_two_buf,
     should_media_endpoint_ignore_filename,
     soft_delete,
+    submit_endpoint,
     syndicate_to,
     telegram_chat_id,
     telegram_token,
+    token_endpoint,
     use_development_error_handler:
       process.env.NODE_ENV === 'development' ? true : false,
     use_secure_flag_for_session_cookie:

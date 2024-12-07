@@ -1,3 +1,4 @@
+import assert from 'node:assert'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import {
   secondsToUTCString,
@@ -7,7 +8,7 @@ import {
   invalidRequest,
   serverError
 } from '../../../lib/micropub/error-responses.js'
-import type { Revoke } from '../../../lib/schemas/index.js'
+import type { RevokeJWT } from '../../../lib/schemas/index.js'
 import { safeDecode } from '../../../lib/token/decode.js'
 
 interface RequestBody {
@@ -22,14 +23,14 @@ interface Config {
   include_error_description: boolean
   me: string
   prefix: string
-  revoke: Revoke
+  revokeJWT: RevokeJWT
 }
 
 /**
  * https://indieauth.spec.indieweb.org/#token-revocation
  */
 export const defRevocationPost = (config: Config) => {
-  const { include_error_description, me, prefix, revoke } = config
+  const { include_error_description, me, prefix, revokeJWT } = config
 
   const revocationPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
@@ -70,6 +71,22 @@ export const defRevocationPost = (config: Config) => {
       })
     }
 
+    if (!claims.exp) {
+      const error_description =
+        'Cannot revoke token because it has no `exp` claim.'
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Token has no `exp` claim',
+        description: 'Revocation endpoint error page'
+      })
+    }
+
     const unix_now = unixTimestampInSeconds()
     if (claims.exp < unix_now) {
       const exp = secondsToUTCString(claims.exp)
@@ -102,14 +119,14 @@ export const defRevocationPost = (config: Config) => {
       })
     }
 
-    request.log.debug(claims, `${prefix}try revoking token`)
-    const result = await revoke(token)
+    request.log.debug(`${prefix}try revoking token ${claims.jti}`)
+    const { error: revoke_error, value: revoke_value } = await revokeJWT(token)
 
     // The revocation itself can fail, and if it's not the client's fault, it
     // does not make sense to return a 4xx. A generic server error is more
     // appropriate.
-    if (result.error) {
-      const original = result.error.message
+    if (revoke_error) {
+      const original = revoke_error.message
       const error_description = `cannot revoke token: ${original}`
       request.log.error(`${prefix}${error_description}`)
 
@@ -120,19 +137,22 @@ export const defRevocationPost = (config: Config) => {
       })
 
       return reply.errorResponse(code, body)
-    } else {
-      const summary = claims.jti
-        ? `Token ${claims.jti} revoked.`
-        : `Token revoked.`
-
-      request.log.debug(result.value, `${prefix}${summary}`)
-
-      return reply.successResponse(200, {
-        title: 'Success',
-        description: 'Token revoke success page',
-        summary
-      })
     }
+
+    const { jti, message } = revoke_value
+    assert.strictEqual(jti, claims.jti)
+
+    if (message) {
+      request.log.debug(`${prefix}${message}`)
+    } else {
+      request.log.debug(`${prefix}token ${jti} revoked`)
+    }
+
+    return reply.successResponse(200, {
+      title: 'Success',
+      description: 'Token revoke success page',
+      summary: `Token ${jti} is revoked.`
+    })
   }
 
   return revocationPost

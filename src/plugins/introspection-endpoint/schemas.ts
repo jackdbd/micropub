@@ -5,6 +5,7 @@ import {
   include_error_description,
   isBlacklisted,
   iss,
+  jwks_url,
   jti,
   me,
   report_all_ajv_errors,
@@ -12,9 +13,9 @@ import {
 } from '../../lib/schemas/index.js'
 import type { IsBlacklisted } from '../../lib/schemas/index.js'
 import {
+  DEFAULT_ACCESS_TOKEN_EXPIRATION,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  DEFAULT_TOKEN_EXPIRATION
+  DEFAULT_REPORT_ALL_AJV_ERRORS
 } from './constants.js'
 
 const active = Type.Boolean({
@@ -23,7 +24,7 @@ const active = Type.Boolean({
 })
 
 const expiration = Type.String({
-  default: DEFAULT_TOKEN_EXPIRATION,
+  default: DEFAULT_ACCESS_TOKEN_EXPIRATION,
   description: `Token expiration`,
   minLength: 1,
   title: 'JWT expiration'
@@ -38,14 +39,7 @@ export const options = Type.Object(
     }),
     isBlacklisted,
     issuer: iss,
-    jwks_url: Type.Object(
-      { host: Type.String(), origin: Type.String() },
-      {
-        additionalProperties: true,
-        description: `URL where the public JSON Web Key Set is hosted.`,
-        title: 'JWKS public URL'
-      }
-    ),
+    jwks_url,
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
       default: DEFAULT_REPORT_ALL_AJV_ERRORS

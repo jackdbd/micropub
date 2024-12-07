@@ -41,8 +41,8 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
 
   const {
     includeErrorDescription: include_error_description,
-    me,
-    store
+    isBlacklisted,
+    me
   } = config
 
   // === PLUGINS ============================================================ //
@@ -83,7 +83,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
-      isBlacklisted: store.isBlacklisted,
+      isBlacklisted,
       log_prefix: prefix,
       report_all_ajv_errors
     })

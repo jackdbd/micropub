@@ -132,11 +132,11 @@ export const defIntrospectPost = (config: Config) => {
     // taken place.
     let blacklisted = false
     if (jti) {
-      request.log.debug(`${prefix}checking if JWT ${jti} is blacklisted`)
+      request.log.debug(`${prefix}check whether token ID ${jti} is blacklisted`)
       const { error: black_err, value } = await isBlacklisted(jti)
 
       if (black_err) {
-        const error_description = `Error when trying to determine whether jti ${jti} is blacklisted: ${black_err.message}`
+        const error_description = `cannot determine whether token ID ${jti} is blacklisted or not: ${black_err.message}`
         request.log.error(`${prefix}${error_description}`)
 
         const { code, body } = serverError({

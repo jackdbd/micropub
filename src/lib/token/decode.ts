@@ -1,5 +1,4 @@
 import * as jose from 'jose'
-import type { AccessTokenClaims } from './claims.ts'
 
 /**
  * Decodes a signed JSON Web Token payload.
@@ -7,9 +6,11 @@ import type { AccessTokenClaims } from './claims.ts'
  * This does not validate the JWT Claims Set types or values.
  * This does not validate the JWS Signature.
  */
-export const safeDecode = async (jwt: string) => {
+export const safeDecode = async <P extends jose.JWTPayload = jose.JWTPayload>(
+  jwt: string
+) => {
   try {
-    const value = jose.decodeJwt(jwt) as unknown as AccessTokenClaims
+    const value = jose.decodeJwt(jwt) as P
     return { value }
   } catch (err) {
     return { error: err as Error }

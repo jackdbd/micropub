@@ -2,6 +2,7 @@ import Ajv from 'ajv'
 import type { onRequestAsyncHookHandler } from 'fastify'
 import { applyToDefaults } from '@hapi/hoek'
 import { invalidToken, serverError } from '../../micropub/error-responses.js'
+import type { AccessTokenClaims } from '../../token/claims.js'
 import { safeDecode } from '../../token/decode.js'
 import { throwIfDoesNotConform } from '../../validators.js'
 import { options as options_schema, Options } from './schemas.js'
@@ -65,7 +66,8 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
       return reply.errorResponse(code, body)
     }
 
-    const { error: decode_error, value: claims } = await safeDecode(jwt)
+    const { error: decode_error, value: claims } =
+      await safeDecode<AccessTokenClaims>(jwt)
 
     if (decode_error) {
       const error_description = decode_error.message
@@ -80,6 +82,9 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
     }
 
     const { jti } = claims
+    request.log.debug(
+      `${prefix}validating that token ID ${jti} is not blacklisted`
+    )
 
     const { error: black_err, value: blacklisted } = await isBlacklisted(jti)
 
@@ -97,9 +102,8 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
     }
 
     if (blacklisted) {
-      // Should I mention the jti in the error description?
-      // const error_description = `Token is blacklisted.`
       const error_description = `Token ${jti} is blacklisted.`
+      // use a warn level to easily spot this log entry.
       request.log.warn(`${prefix}${error_description}`)
 
       const { code, body } = invalidToken({

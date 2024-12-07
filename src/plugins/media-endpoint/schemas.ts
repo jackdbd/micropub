@@ -1,5 +1,11 @@
 import { Static, Type } from '@sinclair/typebox'
-import { isBlacklisted } from '../../lib/schemas/is-blacklisted.js'
+import {
+  include_error_description,
+  isBlacklisted,
+  me,
+  report_all_ajv_errors
+} from '../../lib/schemas/index.js'
+import type { IsBlacklisted } from '../../lib/schemas/index.js'
 import {
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
@@ -33,20 +39,12 @@ import {
  */
 export const options = Type.Object(
   {
-    includeErrorDescription: Type.Optional(
-      Type.Boolean({
-        title: 'include error_description',
-        default: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-        description: 'Whether to include error_description in error responses.'
-      })
-    ),
-
-    me: Type.String({
-      format: 'uri',
-      title: 'me',
-      description: `URL of the user's website trying to authenticate using Web sign-in.`
+    includeErrorDescription: Type.Optional({
+      ...include_error_description,
+      default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
     }),
-
+    isBlacklisted,
+    me,
     multipartFormDataMaxFileSize: Type.Optional(
       Type.Number({
         title: 'multipart/form-data max file size',
@@ -55,15 +53,10 @@ export const options = Type.Object(
         minimum: 0
       })
     ),
-
-    reportAllAjvErrors: Type.Optional(
-      Type.Boolean({
-        title: 'report all AJV errors',
-        default: DEFAULT_REPORT_ALL_AJV_ERRORS,
-        description: 'Whether to report all AJV validation errors.'
-      })
-    ),
-
+    reportAllAjvErrors: Type.Optional({
+      ...report_all_ajv_errors,
+      default: DEFAULT_REPORT_ALL_AJV_ERRORS
+    }),
     store: Type.Object(
       {
         // upload: Type.Function(
@@ -91,7 +84,6 @@ export const options = Type.Object(
               'The base URL at which your files will be publicly accessible.'
           })
         }),
-        isBlacklisted,
         upload: Type.Any()
       },
       {
@@ -109,4 +101,6 @@ export const options = Type.Object(
   }
 )
 
-export type Options = Static<typeof options>
+export interface Options extends Static<typeof options> {
+  isBlacklisted: IsBlacklisted
+}

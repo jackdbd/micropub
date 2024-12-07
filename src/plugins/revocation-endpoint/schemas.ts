@@ -2,11 +2,16 @@ import { Static, Type } from '@sinclair/typebox'
 import {
   include_error_description,
   isBlacklisted,
+  iss,
+  jwks_url,
+  markTokenAsRevoked,
   me,
-  report_all_ajv_errors,
-  revoke
+  report_all_ajv_errors
 } from '../../lib/schemas/index.js'
-import type { IsBlacklisted, Revoke } from '../../lib/schemas/index.js'
+import type {
+  IsBlacklisted,
+  MarkTokenAsRevoked
+} from '../../lib/schemas/index.js'
 import {
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_REPORT_ALL_AJV_ERRORS
@@ -18,15 +23,18 @@ export const options = Type.Object({
     default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
   }),
   isBlacklisted,
+  issuer: iss,
+  jwks_url,
+  markTokenAsRevoked,
+  maxTokenAge: Type.String({ minLength: 1 }),
   me,
   reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,
     default: DEFAULT_REPORT_ALL_AJV_ERRORS
-  }),
-  revoke
+  })
 })
 
 export interface Options extends Static<typeof options> {
   isBlacklisted: IsBlacklisted
-  revoke: Revoke
+  markTokenAsRevoked: MarkTokenAsRevoked
 }
