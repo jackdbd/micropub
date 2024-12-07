@@ -51,6 +51,7 @@ jobs:
           GITHUB_OWNER: jackdbd
           GITHUB_REPO: giacomodebidda-content
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JWKS: ${{ secrets.JWKS }}
           NODE_ENV: test
           PINO_LOG_LEVEL: warn
           PORT: 3000
