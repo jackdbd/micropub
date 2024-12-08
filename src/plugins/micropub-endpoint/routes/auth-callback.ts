@@ -1,6 +1,7 @@
 import type { RouteHandler } from 'fastify'
 import {
   invalidRequest,
+  serverError,
   unauthorized
 } from '../../../lib/micropub/error-responses.js'
 
@@ -17,6 +18,8 @@ export interface Config {
   include_error_description: boolean
   prefix: string
   redirect_uri: string
+  // session_key: string // default 'access_token'
+  // also, 'state' and 'code_verifier' could be configuration parameters
   token_endpoint: string
 }
 
@@ -99,19 +102,6 @@ export const defAuthCallback = (config: Config) => {
 
     request.log.debug(`${prefix}extracted code_verifier from session`)
 
-    ////////////////////////////////////////////////////////////////////////////
-    // This is for testing/demoing the token exchange.
-    // return reply.view('auth-success.njk', {
-    //   code,
-    //   code_verifier,
-    //   description: 'Auth success page',
-    //   me,
-    //   redirect_uri,
-    //   title: 'Auth success',
-    //   token_endpoint
-    // })
-    ////////////////////////////////////////////////////////////////////////////
-
     // After the IndieAuth client validates the state parameter, the client
     // makes a POST request to the token endpoint to exchange the authorization
     // code for an access token.
@@ -147,18 +137,22 @@ export const defAuthCallback = (config: Config) => {
       })
     }
 
-    // let payload: string
+    let access_token: string | undefined
+    let refresh_token: string | undefined
     try {
-      const tokenResponse = await response.json()
-      console.log('=== defAuthCallback tokenResponse ===', tokenResponse)
-      // payload = stringify(tokenResponse, undefined, 2)
-      // payload = stringify(tokenResponse.payload, undefined, 2)
+      const res_body = await response.json()
+      // console.log('=== token endpoint response body in auth-callback ===', res_body)
+      access_token = res_body.access_token
+      refresh_token = res_body.refresh_token
     } catch (err) {
       const error = err as Error
-      const error_description = `Failed to parse response received from token endpoint: ${error.message}`
+      const error_description = `Failed to parse the JSON response received from the token endpoint: ${error.message}`
       request.log.error(`${prefix}${error_description}`)
 
-      const { code, body } = invalidRequest({
+      // I don't think it's the client's fault if we couldn't parse the response
+      // body, so we return a generic server error.
+      const { code, body } = serverError({
+        error: 'response_body_parse_error',
         error_description,
         include_error_description
       })
@@ -170,10 +164,8 @@ export const defAuthCallback = (config: Config) => {
       })
     }
 
-    const auth = response.headers.get('Authorization')
-
-    if (!auth) {
-      const error_description = `Request has no Authorization header`
+    if (!access_token) {
+      const error_description = `Response body from token endpoint has no access_token parameter.`
 
       const { code, body } = unauthorized({
         error_description,
@@ -187,11 +179,17 @@ export const defAuthCallback = (config: Config) => {
       })
     }
 
-    request.session.set('jwt', auth)
-    request.log.debug(
-      `${prefix}set access token in session key 'jwt'. Redirecting to token endpoint ${token_endpoint}`
-    )
+    request.session.set('access_token', access_token)
+    request.log.debug(`${prefix}set access token in session key 'access_token'`)
 
+    if (refresh_token) {
+      request.session.set('refresh_token', refresh_token)
+      request.log.debug(
+        `${prefix}set refresh token in session key 'refresh_token'`
+      )
+    }
+
+    request.log.debug(`${prefix}redirect to token endpoint ${token_endpoint}`)
     return reply.redirect(token_endpoint)
   }
 

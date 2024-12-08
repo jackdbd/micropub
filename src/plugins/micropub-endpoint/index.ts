@@ -16,19 +16,17 @@ import type { SyndicateToItem } from '../../lib/micropub/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
-  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
   DEFAULT_CODE_CHALLENGE_METHOD,
   DEFAULT_CODE_VERIFIER_LENGTH,
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_LOG_PREFIX,
+  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
 import { defMicropubResponse } from './decorators/reply.js'
-import {
-  noActionSupportedResponse,
-  noScopeResponse
-} from './decorators/request.js'
+import { noScopeResponse } from './decorators/request.js'
 import { defValidateGetRequest } from './hooks.js'
 import { postAccepted } from './routes/accepted-get.js'
 import { defAuthCallback } from './routes/auth-callback.js'
@@ -49,6 +47,7 @@ const defaults: Partial<Options> = {
   codeChallengeMethod: DEFAULT_CODE_CHALLENGE_METHOD,
   codeVerifierLength: DEFAULT_CODE_VERIFIER_LENGTH,
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  logPrefix: DEFAULT_LOG_PREFIX,
   multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
   reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS,
   syndicateTo: [] as SyndicateToItem[]
@@ -60,15 +59,14 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   done
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
-  const prefix = `${NAME} `
 
-  const report_all_ajv_errors = config.reportAllAjvErrors
+  const { logPrefix: prefix, reportAllAjvErrors: all_ajv_errors } = config
   // TODO: can I get an existing Ajv instance somehow? Should I?
   // Do NOT use allErrors in production
   // https://ajv.js.org/security.html#security-risks-of-trusted-schemas
   // We need these extra formats to fully support fluent-json-schema
   // https://github.com/ajv-validator/ajv-formats#formats
-  const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), [
+  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), [
     'date',
     'date-time',
     'duration',
@@ -125,12 +123,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(`${prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
-  fastify.decorateRequest(
-    'noActionSupportedResponse',
-    noActionSupportedResponse
-  )
-  fastify.log.debug(`${prefix}decorateRequest: noActionSupportedResponse`)
-
   fastify.decorateRequest('noScopeResponse', noScopeResponse)
   fastify.log.debug(`${prefix}decorateRequest: noScopeResponse`)
 
@@ -142,7 +134,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   const dependencies = ['errorResponse']
   fastify.decorateReply('micropubResponse', micropubResponse, dependencies)
-  fastify.log.debug(`${prefix}decorateReply: micropubResponse`)
+  fastify.log.debug(`${prefix}decorated fastify.reply with micropubResponse`)
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {

@@ -16,6 +16,7 @@ import {
   defRevokeJWT,
   IssueTable
 } from '../src/lib/token-storage-interface/index.js'
+import * as DEFAULT from '../src/defaults.js'
 
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'
@@ -38,7 +39,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const assets_dir = path.join(__dirname, '..', 'assets')
 
-const filepath = path.join(assets_dir, 'fs-store-token-issuelist.json')
+const filepath = path.join(assets_dir, 'issued-access-tokens.json')
 
 const expiration = '5 minutes'
 const issuer = __filename
@@ -50,14 +51,12 @@ const EMOJI = {
   ALL_TOKENS_REVOKED: '🚧'
 }
 
-if (!process.env.JWKS) {
+if (!DEFAULT.JWKS) {
   throw new Error('JWKS not set')
 }
-export const jwks = JSON.parse(process.env.JWKS)
+export const jwks = JSON.parse(DEFAULT.JWKS)
 
-export const jwks_url = new URL(
-  'https://content.giacomodebidda.com/misc/jwks-public.json'
-)
+export const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
 interface StatusConfig {
   implementation: string

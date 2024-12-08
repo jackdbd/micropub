@@ -1,4 +1,5 @@
 import { applyToDefaults } from '@hapi/hoek'
+import * as DEFAULT from '../../defaults.js'
 import { ACCEPT, BASE_URL, GITHUB_API_VERSION, REF } from './defaults.js'
 import type { GetResponseBody } from './interfaces.js'
 
@@ -22,9 +23,9 @@ interface HeadersOptions {
 }
 
 const headers = (options?: HeadersOptions) => {
-  const opt = options || {}
-  const api_version = opt.github_api_version || GITHUB_API_VERSION
-  const token = opt.token || process.env.GITHUB_TOKEN
+  const opt = options ?? {}
+  const api_version = opt.github_api_version ?? GITHUB_API_VERSION
+  const token = opt.token ?? DEFAULT.GITHUB_TOKEN
 
   return {
     accept: ACCEPT,

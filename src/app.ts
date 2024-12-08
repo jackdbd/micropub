@@ -25,10 +25,7 @@ import errorHandler from './plugins/error-handler/index.js'
 import indieauth from './plugins/indieauth/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
-import type {
-  NoActionSupportedResponseOptions,
-  NoScopeResponseOptions
-} from './plugins/micropub-endpoint/decorators/request.js'
+import type { NoScopeResponseOptions } from './plugins/micropub-endpoint/decorators/request.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
 import introspection from './plugins/introspection-endpoint/index.js'
 import responseDecorators from './plugins/response-decorators/index.js'
@@ -55,7 +52,7 @@ const __dirname = path.dirname(__filename)
 // } from './lib/fs-storage/index.js'
 
 // const assets_dir = path.join(__dirname, '..', 'assets')
-// const filepath = path.join(assets_dir, 'fs-store-token-issuelist.json')
+// const filepath = path.join(assets_dir, 'issued-access-tokens.json')
 // const addToIssuedTokens = defAddToIssuedTokens({ filepath })
 // const isBlacklisted = defIsBlacklisted({ filepath })
 // const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
@@ -85,11 +82,6 @@ declare module 'fastify' {
       action: Action,
       options?: NoScopeResponseOptions
     ) => { code: number; body: ErrorResponseBody }
-
-    noActionSupportedResponse: (
-      action: Action,
-      options?: NoActionSupportedResponseOptions
-    ) => { code: number; body: ErrorResponseBody }
   }
   interface FastifyReply {
     errorResponse<B extends BaseErrorResponseBody = BaseErrorResponseBody>(
@@ -110,7 +102,6 @@ declare module 'fastify' {
 
 declare module '@fastify/request-context' {
   interface RequestContextData {
-    access_token_claims?: AccessTokenClaims
     jf2?: Jf2
   }
 }
@@ -118,9 +109,11 @@ declare module '@fastify/request-context' {
 // https://github.com/fastify/fastify-secure-session?tab=readme-ov-file#add-typescript-types
 declare module '@fastify/secure-session' {
   interface SessionData {
+    access_token: string
+    claims: AccessTokenClaims
     code_challenge: string
     code_verifier: string
-    jwt: string
+    refresh_token: string
     scope: string
     state: string
   }

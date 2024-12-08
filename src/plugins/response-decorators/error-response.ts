@@ -10,10 +10,10 @@ import {
 } from '../../lib/http-error.js'
 
 export interface BaseErrorResponseBody {
-  title?: string
   description?: string
   error: string
   error_description?: string
+  title?: string
 }
 
 export function errorResponse<

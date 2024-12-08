@@ -1,7 +1,11 @@
 import Ajv from 'ajv'
 import type { onRequestAsyncHookHandler } from 'fastify'
 import { applyToDefaults } from '@hapi/hoek'
-import { invalidToken, serverError } from '../../micropub/error-responses.js'
+import {
+  invalidToken,
+  serverError,
+  unauthorized
+} from '../../micropub/error-responses.js'
 import type { AccessTokenClaims } from '../../token/claims.js'
 import { safeDecode } from '../../token/decode.js'
 import { throwIfDoesNotConform } from '../../validators.js'
@@ -9,6 +13,7 @@ import { options as options_schema, Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
   include_error_description: false,
+  key_in_session: 'access_token',
   log_prefix: '',
   report_all_ajv_errors: false
 }
@@ -33,7 +38,8 @@ const authorizationHeaderToToken = (auth?: string) => {
 export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
   const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
-  const { isBlacklisted, log_prefix: prefix } = config
+  const hkey = 'authorization'
+  const { isBlacklisted, key_in_session, log_prefix: prefix } = config
   const allErrors = config.report_all_ajv_errors as boolean
   const include_error_description = config.include_error_description as boolean
 
@@ -50,15 +56,32 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
     request,
     reply
   ) => {
-    const { error, value: jwt } = authorizationHeaderToToken(
-      request.headers.authorization
-    )
+    let jwt = request.session.get(key_in_session)
 
-    if (error) {
-      const error_description = error.message
+    if (!jwt) {
+      const { error, value } = authorizationHeaderToToken(request.headers[hkey])
+      if (value) {
+        jwt = value
+      } else {
+        if (error) {
+          const error_description = error.message
+          request.log.warn(`${prefix}${error_description}`)
+
+          const { code, body } = invalidToken({
+            error_description,
+            include_error_description
+          })
+
+          return reply.errorResponse(code, body)
+        }
+      }
+    }
+
+    if (!jwt) {
+      const error_description = `access token not found neither in session, nor in request header ${hkey}`
       request.log.warn(`${prefix}${error_description}`)
 
-      const { code, body } = invalidToken({
+      const { code, body } = unauthorized({
         error_description,
         include_error_description
       })

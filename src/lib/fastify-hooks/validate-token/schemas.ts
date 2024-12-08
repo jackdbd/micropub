@@ -13,6 +13,7 @@ export const options = Type.Object({
     default: false
   }),
   isBlacklisted: Type.Any(),
+  key_in_session: Type.Optional(Type.String({ default: 'access_token' })),
   log_prefix: Type.Optional(Type.String({ default: '' })),
   report_all_ajv_errors: Type.Optional({
     ...report_all_ajv_errors,

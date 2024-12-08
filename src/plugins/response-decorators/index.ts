@@ -2,24 +2,27 @@ import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import { errorResponse } from './error-response.js'
 import { successResponse } from './success-response.js'
-import { NAME } from './constants.js'
+import { DEFAULT_LOG_PREFIX, NAME } from './constants.js'
 
-interface Options {}
+interface Options {
+  prefix?: string
+}
 
 const responseDecorators: FastifyPluginCallback<Options> = (
   fastify,
-  _options,
+  options,
   done
 ) => {
+  const opt = options ?? {}
+  const prefix = opt.prefix ?? DEFAULT_LOG_PREFIX
   // TODO: config = options + defaults
 
   // === DECORATORS ========================================================= //
-  const prefix_decorators = `${NAME}/decorators `
   fastify.decorateReply('errorResponse', errorResponse)
-  fastify.log.debug(`${prefix_decorators}decorateReply: errorResponse`)
+  fastify.log.debug(`${prefix}decorated fastify.reply with errorResponse`)
 
   fastify.decorateReply('successResponse', successResponse)
-  fastify.log.debug(`${prefix_decorators}decorateReply: successResponse`)
+  fastify.log.debug(`${prefix}decorated fastify.reply with successResponse`)
 
   done()
 }

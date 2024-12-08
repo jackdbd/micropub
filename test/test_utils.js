@@ -2,6 +2,7 @@ import assert from 'node:assert'
 import { fileURLToPath } from 'node:url'
 import { defFastify } from '../dist/app.js'
 import { defConfig } from '../dist/config.js'
+import * as DEFAULT from '../dist/defaults.js'
 import { randomKid, safeDecode, sign } from '../dist/lib/token/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -9,28 +10,24 @@ const __filename = fileURLToPath(import.meta.url)
 export const DEFAULT_ISSUER = __filename
 export const DEFAULT_EXPIRATION = '5 minutes'
 
-const jwks_private = process.env.JWKS
-if (!jwks_private) {
-  throw new Error('JWKS not set')
+// In some environments (e.g. Fly.io) we need to set JWKS as an escaped JSON
+// string (e.g. "{\"keys\":[]}"). So in those environments we need to call
+// JSON.parse twice to build the actual JS object.
+let jwks = JSON.parse(DEFAULT.JWKS)
+if (typeof jwks === 'string') {
+  jwks = JSON.parse(jwks)
 }
-export const JWKS = JSON.parse(jwks_private)
+export { jwks }
 
-export const JWKS_URL = new URL(
-  'https://content.giacomodebidda.com/misc/jwks-public.json'
-)
+export const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
 export const defTestApp = async () => {
-  const { error, value: config } = await defConfig()
-  if (error) {
-    console.error(error)
-  }
-  assert.ok(!error)
-  const app = await defFastify(config)
-  return app
+  const config = await defConfig()
+  return await defFastify(config)
 }
 
 export const issueJWT = async (payload = {}) => {
-  const { error: kid_error, value: kid } = randomKid(JWKS.keys)
+  const { error: kid_error, value: kid } = randomKid(jwks.keys)
   assert.ok(!kid_error)
 
   const expiration = DEFAULT_EXPIRATION
@@ -39,7 +36,7 @@ export const issueJWT = async (payload = {}) => {
   const { error, value: jwt } = await sign({
     expiration,
     issuer,
-    jwks: JWKS,
+    jwks,
     kid,
     payload
   })

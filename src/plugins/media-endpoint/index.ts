@@ -18,6 +18,7 @@ import responseDecorators from '../response-decorators/index.js'
 import {
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_LOG_PREFIX,
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
@@ -27,6 +28,7 @@ import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  logPrefix: DEFAULT_LOG_PREFIX,
   multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
   reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
 }
@@ -37,11 +39,10 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   done
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
-  const prefix = `${NAME} `
 
-  const { reportAllAjvErrors: report_all_ajv_errors } = config
+  const { logPrefix: prefix, reportAllAjvErrors: all_ajv_errors } = config
 
-  const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
 
   throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
 
@@ -117,7 +118,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
       include_error_description,
       isBlacklisted,
       log_prefix: prefix,
-      report_all_ajv_errors
+      report_all_ajv_errors: all_ajv_errors
     })
 
   // === ROUTES ============================================================= //

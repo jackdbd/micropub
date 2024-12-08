@@ -10,7 +10,7 @@ export const defRevokeAllTokens = (config: Config) => {
   const { atom } = config
 
   const revokeAllTokens: RevokeAllTokens = async (options) => {
-    const opt = options || {}
+    const opt = options ?? {}
 
     atom.swap((before) => {
       return Object.entries(before).reduce((table, [jti, record]) => {

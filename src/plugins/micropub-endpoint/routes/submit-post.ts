@@ -10,12 +10,13 @@ export const defSubmit = (config: Config) => {
   const { micropub_endpoint, prefix } = config
 
   const submit: RouteHandler = async (request, reply) => {
-    const jwt = request.session.get('jwt')
+    const access_token = request.session.get('access_token')
 
-    if (!jwt) {
+    if (!access_token) {
       request.log.debug(
-        `${prefix}Key 'jwt' not found in session or it is undefined. Redirecting to /login`
+        `${prefix}key 'access_token' not found in session or it is undefined`
       )
+      request.log.debug(`${prefix}redirect to /login`)
       return reply.redirect('/login')
     }
 
@@ -23,7 +24,7 @@ export const defSubmit = (config: Config) => {
       method: 'POST',
       body: stringify(request.body),
       headers: {
-        Authorization: `Bearer ${jwt}`,
+        Authorization: `Bearer ${access_token}`,
         'Content-Type': 'application/json'
       }
     })

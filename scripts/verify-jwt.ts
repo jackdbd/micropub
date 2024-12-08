@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as jose from 'jose'
+import * as DEFAULT from '../src/defaults.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -63,7 +64,7 @@ const verify = async ({ explicitly_choose_jwk, jwks, jwt }: VerifyConfig) => {
 }
 
 const runLocal = async () => {
-  const jwks_path = path.join(secrets_dir, 'jwks-public.json')
+  const jwks_path = path.join(secrets_dir, 'jwks-pub.json')
   const str = await fs.readFile(jwks_path, 'utf8')
   const jwks = JSON.parse(str)
 
@@ -79,9 +80,7 @@ const runRemote = async () => {
   const jwt_path = path.join(secrets_dir, 'jwt.txt')
   const jwt = await fs.readFile(jwt_path, 'utf8')
 
-  const jwks_url = new URL(
-    'https://content.giacomodebidda.com/misc/jwks-public.json'
-  )
+  const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
   const JWKS = jose.createRemoteJWKSet(jwks_url)
 
   const verify_result = await jose.jwtVerify(jwt, JWKS)

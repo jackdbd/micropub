@@ -13,8 +13,8 @@ import { issueJWT } from './test_utils.js'
 import {
   DEFAULT_EXPIRATION,
   DEFAULT_ISSUER,
-  JWKS as jwks,
-  JWKS_URL as jwks_url
+  jwks,
+  jwks_url
 } from './test_utils.js'
 import { nanoid } from 'nanoid'
 

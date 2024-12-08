@@ -1,4 +1,5 @@
 import type { RouteHandler } from 'fastify'
+import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
 import { invalidRequest, serverError } from '../../../lib/micropub/index.js'
 import { type TokenPostConfig as Config } from '../schemas.js'
@@ -18,6 +19,9 @@ export const defTokenPost = (config: Config) => {
     issueJWT,
     log_prefix
   } = config
+
+  // OAuth 2.0 Access Token Request
+  // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
 
   const tokenPost: RouteHandler = async (request, reply) => {
     const { client_id, code, redirect_uri } =
@@ -45,19 +49,19 @@ export const defTokenPost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    const auth_response = await authResponse.json()
+    request.log.debug(`${log_prefix}verified authorization code`)
 
-    const { me, scope } = auth_response
-    request.session.set('scope', scope)
-    request.log.debug(
-      `${log_prefix}verified authorization code and stored scope in session`
-    )
+    let auth_res_body: { me: string; scope: string }
+    try {
+      auth_res_body = await authResponse.json()
+    } catch (err: any) {
+      const error_description = `Failed to parse the JSON response received from the authorization endpoint: ${err.message}`
+      request.log.error(`${log_prefix}${error_description}`)
 
-    if (!scope) {
-      const error_description = `scope not found in session`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
+      // I don't think it's the client's fault if we couldn't parse the response
+      // body, so we return a generic server error.
+      const { code, body } = serverError({
+        error: 'response_body_parse_error',
         error_description,
         include_error_description
       })
@@ -65,12 +69,15 @@ export const defTokenPost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    const payload = { me, scope }
+    const { me, scope } = auth_res_body
+    request.session.set('scope', scope)
+    request.log.debug(`${log_prefix}stored scope in session`)
 
+    const payload = { me, scope }
     const { error, value } = await issueJWT(payload)
 
     if (error) {
-      const error_description = `cannot issue JWT: ${error.message}`
+      const error_description = `Cannot issue JWT: ${error.message}`
       request.log.error(`${log_prefix}${error_description}`)
 
       const { code, body } = serverError({
@@ -88,88 +95,27 @@ export const defTokenPost = (config: Config) => {
       request.log.debug(message)
     }
 
-    // request.log.debug(
-    //   `${log_prefix}try selecting one JWK from the ${jwks.keys.length} keys available in the JWKS`
-    // )
-    // const { error: kid_error, value: kid } = randomKid(jwks.keys)
-
-    // if (kid_error) {
-    //   const error_description = kid_error.message
-    //   request.log.error(`${log_prefix}${error_description}`)
-
-    //   const { code, body } = serverError({
-    //     error: 'jwks_kid_error',
-    //     error_description,
-    //     include_error_description
-    //   })
-
-    //   return reply.errorResponse(code, body)
-    // }
-
-    // request.log.debug(`${log_prefix}try signing JWT using key ID ${kid}`)
-
-    // const { error: sign_error, value: jwt } = await sign({
-    //   expiration,
-    //   issuer,
-    //   jwks,
-    //   kid,
-    //   payload
-    // })
-
-    // if (sign_error) {
-    //   const error_description = `cannot sign token: ${sign_error.message}`
-    //   request.log.error(`${log_prefix}${error_description}`)
-
-    //   const { code, body } = serverError({
-    //     error: 'jwt_sign_error',
-    //     error_description,
-    //     include_error_description
-    //   })
-
-    //   return reply.errorResponse(code, body)
-    // }
-
-    // const { error: verify_error, value: claims } = await verify({
-    //   issuer,
-    //   jwks_url: jwks_url as URL,
-    //   jwt,
-    //   max_token_age: expiration
-    // })
-
-    // if (verify_error) {
-    //   const error_description = `cannot verify token: ${verify_error.message}`
-    //   request.log.error(`${log_prefix}${error_description}`)
-
-    //   const { code, body } = serverError({
-    //     error: 'jwt_verify_error',
-    //     error_description,
-    //     include_error_description
-    //   })
-
-    //   return reply.errorResponse(code, body)
-    // }
-
-    reply.header('Authorization', jwt)
-    request.log.debug(`${log_prefix}set Bearer <JWT> in Authorization header`)
-
-    // https://indieauth.spec.indieweb.org/#access-token-response-p-5
-
     const { exp } = claims
     let expires_in: number | undefined
     if (exp) {
       expires_in = exp - unixTimestampInSeconds()
     }
 
-    return reply.send({
-      access_token: jwt,
-      expires_in,
-      me,
-      payload: claims,
-      // profile: '',
-      // refresh_token: ''
-      scope,
-      token_type: 'Bearer'
-    })
+    // OAuth 2.0 Access Token Response
+    // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.4
+
+    return reply
+      .header('Cache-Control', 'no-store')
+      .header('Pragma', 'no-cache')
+      .send({
+        access_token: jwt,
+        expires_in,
+        me,
+        payload: claims,
+        refresh_token: nanoid(), // TODO: the jwt itself should (?) contain a refresh token
+        scope,
+        token_type: 'Bearer'
+      })
   }
 
   return tokenPost

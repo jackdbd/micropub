@@ -23,13 +23,13 @@ const errorHandler: FastifyPluginCallback<PluginOptions> = (
   fastify.setErrorHandler(async function (error, request, reply) {
     const status = error.statusCode || request.raw.statusCode || 500
 
-    const access_token_claims = requestContext.get('access_token_claims')
+    const claims = request.session.get('claims')
     const jf2 = requestContext.get('jf2')
 
     const error_title = error.name || 'Error'
 
     const obj = {
-      access_token_claims,
+      access_token_claims: claims,
       error_message: error.message,
       error_validation: error.validation,
       error_validationContext: error.validationContext,

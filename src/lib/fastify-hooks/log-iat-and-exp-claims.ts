@@ -8,14 +8,12 @@ export interface Options {
 }
 
 export const defLogIatAndExpClaims = (options?: Options) => {
-  const opt = options || {}
+  const opt = options ?? {}
   // const include_error_description = opt.include_error_description || false
-  const log_prefix = opt.log_prefix || ''
+  const log_prefix = opt.log_prefix ?? ''
 
   const logIatAndExpClaims: onRequestHookHandler = (request, _reply, done) => {
-    const claims = request.requestContext.get('access_token_claims') as
-      | any
-      | undefined
+    const claims = request.session.get('claims')
 
     if (!claims) {
       return done()

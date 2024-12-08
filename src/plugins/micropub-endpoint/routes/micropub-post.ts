@@ -213,13 +213,6 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     const action = jf2.action as Action
     const url = jf2.url
 
-    // if (!store[action]) {
-    //   const { code, body } = request.noActionSupportedResponse(action, {
-    //     include_error_description
-    //   })
-    //   return reply.errorResponse(code, body)
-    // }
-
     if (!hasScope(request, action)) {
       const { code, body } = request.noScopeResponse(action, {
         include_error_description

@@ -8,8 +8,6 @@
   cloudflare_r2 = builtins.fromJSON (builtins.readFile /run/secrets/cloudflare/r2);
   micropub = builtins.fromJSON (builtins.readFile /run/secrets/micropub);
   fly_micropub = builtins.fromJSON (builtins.readFile /run/secrets/fly/micropub);
-  jwks_str = builtins.readFile /home/jack/repos/micropub/secrets/jwks-private.json;
-  jwks_json = builtins.fromJSON jwks_str;
   telegram = builtins.fromJSON (builtins.readFile /run/secrets/telegram/jackdbd_github_bot);
 in {
   enterShell = ''
@@ -34,8 +32,7 @@ in {
     GITHUB_REPO = "giacomodebidda-content";
     GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
     INCLUDE_ERROR_DESCRIPTION = true;
-    JWKS = jwks_str;
-
+    JWKS = builtins.readFile /home/jack/repos/micropub/secrets/jwks.txt;
     # Since the fly CLI uses the LOG_LEVEL environment variable, I use a
     # different environment variable for pino.
     # https://betterstack.com/community/guides/logging/how-to-install-setup-and-use-pino-to-log-node-js-applications/
@@ -83,8 +80,7 @@ in {
     container-inspect.exec = ''
       docker inspect micropub:latest --format json | jq "."
     '';
-    # How do I set JWKS? Using --env JWKS=${jwks_str} does not work.
-    # I guess I need to use a Docker secret.
+    # JWKS must be passed as stringified.
     container-run.exec = ''
       docker run \
         --env CLOUDFLARE_ACCOUNT_ID=${config.env.CLOUDFLARE_ACCOUNT_ID} \
@@ -95,6 +91,7 @@ in {
         --env GITHUB_OWNER=jackdbd \
         --env GITHUB_REPO=giacomodebidda-content \
         --env GITHUB_TOKEN=${config.env.GITHUB_TOKEN} \
+        --env JWKS=${config.env.JWKS} \
         --env LOG_LEVEL=debug \
         --env NODE_ENV=development \
         --env PORT=${config.env.PORT} \
@@ -110,6 +107,7 @@ in {
       trivy image --severity MEDIUM,HIGH,CRITICAL -f table micropub:latest
     '';
     debug.exec = ''
+      npm run clean
       npm run build
       NODE_OPTIONS='--inspect' node dist/server.js
       # Then attach to the running Node.js server using the configuration that
@@ -139,6 +137,10 @@ in {
     '';
     prod.exec = ''
       npm run build && npm run start
+    '';
+    rotate-jwks.exec = ''
+      npx tsm scripts/generate-jwks.ts
+      npx tsm scripts/deploy-jwks.ts
     '';
     versions.exec = ''
       echo "=== Versions ==="

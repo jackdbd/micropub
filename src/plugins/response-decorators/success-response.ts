@@ -3,10 +3,10 @@ import { APPLICATION_JSON, TEXT_HTML } from '../../lib/content-type.js'
 import { clientAcceptsHtml } from '../../lib/fastify-request-predicates/index.js'
 
 export interface BaseSuccessResponseBody {
-  title?: string
   description?: string
-  summary: string
   payload?: any
+  summary: string
+  title?: string
 }
 
 export function successResponse<

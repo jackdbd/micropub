@@ -10,7 +10,7 @@ export const defMarkTokenAsRevoked = (config: Config) => {
   const { filepath } = config
 
   const markTokenAsRevoked: MarkTokenAsRevoked = async (jti, options) => {
-    const opt = options || {}
+    const opt = options ?? {}
     const { error: read_error, value: table } = await readJSON<IssueTable>(
       filepath
     )

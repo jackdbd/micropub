@@ -10,7 +10,7 @@ export const defRevokeAllTokens = (config: Config) => {
   const { filepath } = config
 
   const revokeAllTokens: RevokeAllTokens = async (options) => {
-    const opt = options || {}
+    const opt = options ?? {}
     const { error: read_error, value: table } = await readJSON<IssueTable>(
       filepath
     )

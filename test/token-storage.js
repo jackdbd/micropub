@@ -14,15 +14,13 @@ import {
   assertTokenHasRequiredClaims,
   assertTokenHasRequiredAndCustomClaims,
   defTotalBlacklisted,
-  JWKS,
-  JWKS_URL
+  jwks,
+  jwks_url
 } from './test_utils.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const issuer = __filename
 const expiration = '5 seconds'
-const jwks = JWKS
-const jwks_url = JWKS_URL
 
 const IMPLEMENTATIONS = ['fs', 'mem']
 

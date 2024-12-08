@@ -6,11 +6,15 @@ interface Config {
   atom: Atom<IssueTable>
 }
 
+// TODO: make this function (and the associated interface) accept a list of IDs,
+// so clients can revoke multiple tokens with a single "batch" call.
+// Also, use the plural in the name. For example: markTokensAsRevoked.
+
 export const defMarkTokenAsRevoked = (config: Config) => {
   const { atom } = config
 
   const markTokenAsRevoked: MarkTokenAsRevoked = async (jti, options) => {
-    const opt = options || {}
+    const opt = options ?? {}
 
     const record = atom.deref()[jti]
 

@@ -13,7 +13,7 @@ export const areSameOrigin = (src: string, dest: string) => {
 }
 
 export const hasScope = (request: FastifyRequest, scope: string) => {
-  const claims = request.requestContext.get('access_token_claims')
+  const claims = request.session.get('claims')
 
   if (!claims) {
     return false

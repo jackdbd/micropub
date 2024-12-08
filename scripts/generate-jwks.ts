@@ -9,12 +9,12 @@ const __dirname = path.dirname(__filename)
 const secrets_dir = path.join(__dirname, '..', 'secrets')
 const assets_dir = path.join(__dirname, '..', 'assets')
 
-interface Config {
+interface GenConfig {
   algorithm: 'RS256'
   n: number
 }
 
-const generateJWKS = async ({ algorithm: alg, n }: Config) => {
+export const generateJWKS = async ({ algorithm: alg, n }: GenConfig) => {
   const public_jwks: jose.JWK[] = []
 
   const private_jwks: jose.JWK[] = []
@@ -34,27 +34,21 @@ const generateJWKS = async ({ algorithm: alg, n }: Config) => {
 }
 
 interface WriteJWKSConfig {
-  public_jwks: jose.JWK[]
-  public_path: string
-  private_path: string
-  private_jwks: jose.JWK[]
+  jwks: jose.JWK[]
+  dirpath: string
+  name: string
 }
 
-const writeJWKS = async ({
-  public_jwks,
-  public_path,
-  private_jwks,
-  private_path
-}: WriteJWKSConfig) => {
-  await fs.writeFile(public_path, JSON.stringify({ keys: public_jwks }), {
-    encoding: 'utf8'
-  })
-  console.log(`wrote ${public_path}`)
+const writeJWKS = async ({ jwks, dirpath, name }: WriteJWKSConfig) => {
+  const json = JSON.stringify({ keys: jwks })
 
-  await fs.writeFile(private_path, JSON.stringify({ keys: private_jwks }), {
-    encoding: 'utf8'
-  })
-  console.log(`wrote ${private_path}`)
+  const json_path = path.join(dirpath, `${name}.json`)
+  await fs.writeFile(path.join(dirpath, `${name}.json`), json, 'utf8')
+  console.log(`wrote ${json_path}`)
+
+  const txt_path = path.join(dirpath, `${name}.txt`)
+  await fs.writeFile(txt_path, JSON.stringify(json), 'utf8')
+  console.log(`wrote ${txt_path}`)
 }
 
 // Generate at least two JWK keys for each JWKS, so they are easy to rotate
@@ -64,12 +58,8 @@ const run = async () => {
     n: 2
   })
 
-  await writeJWKS({
-    public_jwks,
-    public_path: path.join(assets_dir, 'jwks-public.json'),
-    private_jwks,
-    private_path: path.join(secrets_dir, 'jwks-private.json')
-  })
+  await writeJWKS({ jwks: public_jwks, dirpath: assets_dir, name: 'jwks-pub' })
+  await writeJWKS({ jwks: private_jwks, dirpath: secrets_dir, name: 'jwks' })
 }
 
 run()

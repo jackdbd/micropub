@@ -14,9 +14,9 @@ export interface Options {
  * @see https://micropub.spec.indieweb.org/#scope
  */
 export const defValidateScope = (options?: Options) => {
-  const opt = options || {}
-  const include_error_description = opt.include_error_description || false
-  const log_prefix = opt.log_prefix || ''
+  const opt = options ?? {}
+  const include_error_description = opt.include_error_description ?? false
+  const log_prefix = opt.log_prefix ?? ''
   const scope = opt.scope
 
   const errorIfActionNotAllowed = defErrorIfActionNotAllowed({

@@ -1,4 +1,4 @@
-export const NAME = '@jackdbd/fastify-indieauth-token-endpoint'
+export const NAME = '@jackdbd/token-endpoint'
 
 export const DEFAULT_ACCESS_TOKEN_EXPIRATION = '3600 seconds'
 

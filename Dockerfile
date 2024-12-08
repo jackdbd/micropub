@@ -24,10 +24,14 @@ RUN npm install --location=global typescript@5.6.3 && \
     npm install --omit=dev && \
     npm install --save-dev @types/node@22.7.7
 
-COPY custom-types ./custom-types
-COPY src ./src
+# If we bake the public JWKS into the container image, then we need to rebuild
+# the container image every time we want to rotate the keys. So it's probably
+# not a great idea.
+# COPY assets/jwks-pub.json ./assets/jwks-pub.json
 COPY src/templates ./dist/templates
 COPY src/public ./dist/public
+COPY custom-types ./custom-types
+COPY src ./src
 
 # This is for troubleshooting TypeScript configuration
 # RUN tsc --project tsconfig.json \
@@ -69,6 +73,8 @@ WORKDIR /home/${APP_USER}/${APP_NAME}
 # open a non-privileged port for the app to listen to
 EXPOSE ${APP_PORT}
 
+# Baking the JWKS into the image is probably not a good idea. See comment at stage 1.
+# COPY --from=builder ${BUILDER_APP_DIR}/assets/jwks-pub.json ./assets/jwks-pub.json
 COPY --from=builder ${BUILDER_APP_DIR}/package.json ./
 COPY --from=builder ${BUILDER_APP_DIR}/node_modules ./node_modules
 COPY --from=builder ${BUILDER_APP_DIR}/dist ./dist

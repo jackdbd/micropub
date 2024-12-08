@@ -28,6 +28,7 @@ import {
   DEFAULT_CODE_CHALLENGE_METHOD,
   DEFAULT_CODE_VERIFIER_LENGTH,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_LOG_PREFIX,
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   DEFAULT_TOKEN_ENDPOINT
@@ -60,6 +61,7 @@ export const options = Type.Object(
       Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
     ),
     isBlacklisted,
+    logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
     me,
     mediaEndpoint: Type.Optional(
       Type.String({

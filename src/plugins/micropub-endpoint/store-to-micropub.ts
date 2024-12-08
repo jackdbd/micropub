@@ -14,17 +14,17 @@ interface Options {
 }
 
 export const storeErrorToMicropubError = (err: any, options?: Options) => {
-  const opt = options || {}
+  const opt = options ?? {}
 
   const include_error_description =
-    opt.include_error_description || DEFAULT_INCLUDE_ERROR_DESCRIPTION
+    opt.include_error_description ?? DEFAULT_INCLUDE_ERROR_DESCRIPTION
 
   const error_description =
-    err.message || 'There was an error with the Micropub store.'
+    err.message ?? 'There was an error with the Micropub store.'
 
   // I can't rely on a status code being returned by a store. Probably this
   // switch is not a good idea.
-  const status_code = err.status_code || DEFAULT_STATUS_CODE_ERROR
+  const status_code = err.status_code ?? DEFAULT_STATUS_CODE_ERROR
 
   switch (status_code) {
     case 400: {

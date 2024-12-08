@@ -2,12 +2,7 @@ import closeWithGrace from 'close-with-grace'
 import { defFastify } from './app.js'
 import { defConfig } from './config.js'
 
-const { error, value: config } = await defConfig()
-
-if (error) {
-  console.error(error)
-  process.exit(1)
-}
+const config = await defConfig()
 
 const fastify = await defFastify(config)
 

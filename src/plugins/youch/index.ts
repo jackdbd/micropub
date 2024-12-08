@@ -101,7 +101,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
       postLines: config.postLines
     })
 
-    const access_token_claims = requestContext.get('access_token_claims')
+    const claims = request.session.get('claims')
     const jf2 = requestContext.get('jf2')
 
     // Maybe allow to customise this CSS with as an option for this plugin.
@@ -157,7 +157,7 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
         error_description: error.message,
         error_validation: error.validation,
         error_validationContext: error.validationContext,
-        access_token_claims,
+        access_token_claims: claims,
         jf2
       })
       // Uncomment this if you want to see the stack trace. It might be useful

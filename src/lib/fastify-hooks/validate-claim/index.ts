@@ -1,6 +1,14 @@
 import type { onRequestHookHandler } from 'fastify'
-import { forbidden, unauthorized } from '../micropub/error-responses.js'
-import type { Assertion, Claims } from './interfaces.js'
+import {
+  forbidden,
+  invalidRequest,
+  unauthorized
+} from '../../micropub/error-responses.js'
+import type { Assertion, Value } from './interfaces.js'
+import {
+  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_LOG_PREFIX
+} from './constants.js'
 
 export interface Options {
   include_error_description?: boolean
@@ -8,18 +16,17 @@ export interface Options {
 }
 
 export const defValidateClaim = (assertion: Assertion, options?: Options) => {
-  const opt = options || {}
-  const include_error_description = opt.include_error_description || false
-  const log_prefix = opt.log_prefix || ''
+  const opt = options ?? {}
+  const include_error_description =
+    opt.include_error_description ?? DEFAULT_INCLUDE_ERROR_DESCRIPTION
+  const prefix = opt.log_prefix ?? DEFAULT_LOG_PREFIX
 
   const validateClaim: onRequestHookHandler = (request, reply, done) => {
-    const claims = request.requestContext.get('access_token_claims') as
-      | Claims
-      | undefined
+    const claims = request.session.get('claims')
 
     if (!claims) {
       const error_description = `request context has no access token claims`
-      request.log.warn(`${log_prefix}${error_description}`)
+      request.log.warn(`${prefix}${error_description}`)
 
       const { code, body } = unauthorized({
         error_description,
@@ -34,7 +41,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     if (!assertion.op && !assertion.value) {
       if (!claims[key]) {
         const error_description = `request context has no claim '${key}'`
-        request.log.warn(`${log_prefix}${error_description}`)
+        request.log.warn(`${prefix}${error_description}`)
 
         const { code, body } = unauthorized({
           error_description,
@@ -48,20 +55,32 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     }
 
     const op = assertion.op || '=='
-    const actual = claims[key]
+    const actual = claims[key] as string | number | boolean
 
-    let given
+    let given: Value
     if (typeof assertion.value === 'function') {
       request.log.debug(
-        `${log_prefix}the value provided for validating claim '${key}' is a function. Invoking it now.`
+        `${prefix}the value provided for validating claim '${key}' is a function. Invoking it now.`
       )
       given = assertion.value()
     } else {
       given = assertion.value
     }
     request.log.debug(
-      `${log_prefix}validating claim '${key}': ${actual} ${op} ${given}`
+      `${prefix}validate claim '${key}': ${actual} ${op} ${given}`
     )
+
+    if (given === undefined) {
+      const error_description = `Invalid assertion on claim '${key}'. The value given for the assertion is (or resolved to) undefined.`
+      request.log.warn(`${prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, body)
+    }
 
     // I think HTTP 403 Forbidden is the right status code to use here.
     // https://micropub.spec.indieweb.org/#error-response
@@ -70,7 +89,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '==': {
         if (actual !== given) {
           const error_description = `claim '${key}' is '${actual}', but it should be '${given}'`
-          request.log.warn(`${log_prefix}${error_description}`)
+          request.log.warn(`${prefix}${error_description}`)
 
           const { code, body } = forbidden({
             error_description,
@@ -86,7 +105,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '!=': {
         if (actual === given) {
           const error_description = `claim '${key}' is '${actual}', but it should not be '${given}'`
-          request.log.warn(`${log_prefix}${error_description}`)
+          request.log.warn(`${prefix}${error_description}`)
 
           const { code, body } = forbidden({
             error_description,
@@ -102,7 +121,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '<': {
         if (actual >= given) {
           const error_description = `claim '${key}' is '${actual}', but it should be less than '${given}'`
-          request.log.warn(`${log_prefix}${error_description}`)
+          request.log.warn(`${prefix}${error_description}`)
 
           const { code, body } = forbidden({
             error_description,
@@ -118,7 +137,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '<=': {
         if (actual > given) {
           const error_description = `claim '${key}' is '${actual}', but it should be less than or equal to '${given}'`
-          request.log.warn(`${log_prefix}${error_description}`)
+          request.log.warn(`${prefix}${error_description}`)
 
           const { code, body } = forbidden({
             error_description,
@@ -134,7 +153,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '>': {
         if (actual <= given) {
           const error_description = `claim '${key}' is '${actual}', but it should be greater than '${given}'`
-          request.log.warn(`${log_prefix}${error_description}`)
+          request.log.warn(`${prefix}${error_description}`)
 
           const { code, body } = forbidden({
             error_description,
@@ -150,7 +169,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '>=': {
         if (actual < given) {
           const error_description = `claim '${key}' is '${actual}', but it should be greater than or equal to '${given}'`
-          request.log.warn(`${log_prefix}${error_description}`)
+          request.log.warn(`${prefix}${error_description}`)
 
           const { code, body } = forbidden({
             error_description,
@@ -165,7 +184,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
 
       default: {
         const message = `received unknown operation '${assertion.op}' (ignored)`
-        request.log.warn(`${log_prefix}${message}`)
+        request.log.warn(`${prefix}${message}`)
         return done()
       }
     }

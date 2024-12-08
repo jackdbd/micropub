@@ -2,13 +2,14 @@ import { fileURLToPath } from 'node:url'
 import type { ValidateFunction } from 'ajv'
 import { table } from 'table'
 import type { TSchema } from '@sinclair/typebox'
+import * as DEFAULT from '../src/defaults.js'
 
 const __filename = fileURLToPath(import.meta.url)
 
 export const DEFAULT_ISSUER = __filename
 export const DEFAULT_EXPIRATION = '5 minutes'
 
-const jwks_private = process.env.JWKS
+const jwks_private = DEFAULT.JWKS
 if (!jwks_private) {
   throw new Error('JWKS not set')
 }

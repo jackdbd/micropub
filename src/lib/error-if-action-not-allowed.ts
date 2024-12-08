@@ -1,5 +1,4 @@
 import { FastifyRequest } from 'fastify'
-import { Claims } from './fastify-hooks/interfaces.js'
 import { insufficientScope, unauthorized } from './micropub/error-responses.js'
 
 export interface Config {
@@ -14,9 +13,7 @@ export const defErrorIfActionNotAllowed = (config: Config) => {
     // Consider passing this getter as a configuration option. For example, one
     // might prefer storing/retrieving the claims from a session cookie.
     // The type definition should be: () => Claims | undefined
-    const claims = request.requestContext.get('access_token_claims') as
-      | Claims
-      | undefined
+    const claims = request.session.get('claims')
 
     if (!claims) {
       const error_description = `request context has no access token claims`
@@ -28,7 +25,7 @@ export const defErrorIfActionNotAllowed = (config: Config) => {
       })
     }
 
-    const scopes = (claims.scope as string).split(' ')
+    const scopes = claims.scope.split(' ')
     request.log.debug(`${log_prefix}access token scopes: ${scopes.join(' ')}`)
 
     // The Micropub server MUST require the bearer token to include at least one
