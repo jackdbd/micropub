@@ -1,6 +1,6 @@
 import type { onRequestHookHandler } from 'fastify'
 import { msToUTCString } from '../date.js'
-import { isExpired } from '../token/utils.js'
+import { isExpired } from '../token/index.js'
 
 export interface Options {
   include_error_description?: boolean
@@ -29,7 +29,7 @@ export const defLogIatAndExpClaims = (options?: Options) => {
       `access token issued by ${claims.iss} at UNIX timestamp ${claims.iat} (${iat_utc})`
     ]
 
-    const expired = isExpired({ exp: claims.exp })
+    const expired = isExpired(claims.exp)
     if (expired) {
       messages.push(`expired at UNIX timestamp ${claims.exp} (${exp_utc})`)
     } else {

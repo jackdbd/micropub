@@ -74,14 +74,14 @@ describe('isExpired', () => {
     const now = unixTimestampInSeconds()
     const token = { exp: now - 1 }
 
-    assert.ok(isExpired(token))
+    assert.ok(isExpired(token.exp))
   })
 
   it('returns false when the `exp` claim is of 1 second into the future', () => {
     const now = unixTimestampInSeconds()
     const token = { exp: now + 1 }
 
-    assert.ok(!isExpired(token))
+    assert.ok(!isExpired(token.exp))
   })
 })
 

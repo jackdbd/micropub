@@ -1,13 +1,17 @@
 import * as jose from 'jose'
-// import { type JWKSPublicURL } from '../schemas/jwks.js'
+import { type JWKSPublicURL } from '../schemas/jwks.js'
 
 export interface VerifyConfig {
   issuer: string
-  jwks_url: URL
+  // jwks_url: URL
+  jwks_url: JWKSPublicURL
   jwt: string
   max_token_age: string
 }
 
+/**
+ * Verifies a JSON Web Token.
+ */
 export const verify = async <P extends jose.JWTPayload = jose.JWTPayload>(
   config: VerifyConfig
 ) => {

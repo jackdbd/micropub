@@ -1,6 +1,9 @@
 import * as jose from 'jose'
 import { nanoid } from 'nanoid'
 
+/**
+ * Picks a random key ID (kid) from a list of JSON Web Key (JWK).
+ */
 export const randomKid = (keys: jose.JWK[]) => {
   const i = Math.floor(Math.random() * keys.length)
   const kid = keys[i].kid
@@ -41,18 +44,27 @@ export interface SignConfig {
   jwks: { keys: jose.JWK[] }
 
   /**
-   * Key ID to use for signing the JWT. It should be a JWK from the JWKS.
+   * Key ID that will be used to sign the JWT. It should be a JSON Web Key (JWK)
+   * from a JSON Web Key Set (JWKS).
    */
   kid: string
 
   payload: jose.JWTPayload
 }
 
+/**
+ * Creates a JSON Web Token, signs it, then returns it to the caller.
+ *
+ * The JWT returned by this function:
+ * 1. includes the payload provided by the caller;
+ * 2. is signed using the private Key ID (`kid`) found in the JWKS provided;
+ * 3. includes, in the protected header, information related to the JWK used to
+ * sign the JWT.
+ */
 export const sign = async (config: SignConfig) => {
-  // const { algorithm, expiration, issuer, payload, secret } = config
   const { expiration: exp, issuer: iss, jwks, kid, payload } = config
 
-  const jwk = jwks.keys.find((k: any) => k.kid === kid)
+  const jwk = jwks.keys.find((k) => k.kid === kid)
   if (!jwk) {
     return { error: new Error(`JWKS has no JWK with kid=${kid}`) }
   }

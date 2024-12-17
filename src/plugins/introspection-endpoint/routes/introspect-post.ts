@@ -124,7 +124,7 @@ export const defIntrospectPost = (config: Config) => {
     // determine whether or not the token has expired.
     let expired = false
     if (exp) {
-      expired = isExpired({ exp })
+      expired = isExpired(exp)
     }
 
     // RFC7662 says that if the token can be revoked after it was issued, the

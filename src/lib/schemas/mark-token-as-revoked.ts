@@ -17,15 +17,19 @@ export const options = Type.Object({
 
 export type Options = Static<typeof options>
 
+const DESCRIPTION = `Mark a token as revoked using the \`jti\` claim of the token itself.
+When revoking a token, you can provide an optional \`revocation_reason\`.`
+
 const markTokenAsRevoked_ = Type.Function(
   [jti, Type.Optional(options)],
-  result_promise
+  result_promise,
+  {
+    $id: 'mark-token-as-revoked!',
+    description: DESCRIPTION
+  }
 )
 
 export type MarkTokenAsRevoked = Static<typeof markTokenAsRevoked_>
-
-const DESCRIPTION = `Mark a token as revoked using the \`jti\` claim of the token itself.
-When revoking a token, you can provide an optional \`revocation_reason\`.`
 
 export const markTokenAsRevoked = Type.Any({
   description: DESCRIPTION

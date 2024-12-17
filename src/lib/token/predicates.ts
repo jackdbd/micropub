@@ -1,9 +1,5 @@
 import { unixTimestampInSeconds } from '../date.js'
 
-interface ExpiredConfig {
-  exp: number
-}
-
-export const isExpired = ({ exp }: ExpiredConfig) => {
+export const isExpired = (exp: number) => {
   return exp - unixTimestampInSeconds() < 0 ? true : false
 }
