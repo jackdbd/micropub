@@ -104,7 +104,7 @@ curl "${BASE_URL}/micropub" \
 
 ## Deploy
 
-The CI takes care of deploying the app to Fly.io every time a new commit gets pushed in the `main` branch of the remote repository.
+The CI takes care of deploying the app to Fly.io every time a new commit gets pushed to the `main` branch of the remote repository.
 
 Whenever you need to update secrets on Fly.io, use these commands (see `devenv.nix`):
 

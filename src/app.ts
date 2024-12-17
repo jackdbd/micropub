@@ -179,6 +179,10 @@ export async function defFastify(config: Config) {
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
 
+  fastify.setNotFoundHandler((_request, reply) => {
+    return reply.notFound()
+  })
+
   fastify.register(fastifyRequestContext, {
     // defaultStoreValues: {
     //   user: { id: 'system' }
