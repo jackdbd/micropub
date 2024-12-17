@@ -41,37 +41,26 @@ import token from './plugins/token-endpoint/index.js'
 import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
 import { tap } from './nunjucks/filters.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
 // Token storage - Filesystem backend //////////////////////////////////////////
-// import {
-//   defAddToIssuedTokens,
-//   defMarkTokenAsRevoked,
-//   defIsBlacklisted
-// } from './lib/fs-storage/index.js'
-
-// const assets_dir = path.join(__dirname, '..', 'assets')
-// const filepath = path.join(assets_dir, 'issued-access-tokens.json')
-// const addToIssuedTokens = defAddToIssuedTokens({ filepath })
-// const isBlacklisted = defIsBlacklisted({ filepath })
-// const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
-////////////////////////////////////////////////////////////////////////////////
-
-// Token storage - In-memory backend ///////////////////////////////////////////
-import { defAtom } from '@thi.ng/atom'
-import { IssueTable } from './lib/token-storage-interface/index.js'
 import {
   defAddToIssuedTokens,
   defMarkTokenAsRevoked,
-  defIsBlacklisted
-} from './lib/in-memory-storage/index.js'
-
-const atom = defAtom<IssueTable>({})
-const addToIssuedTokens = defAddToIssuedTokens({ atom })
-const isBlacklisted = defIsBlacklisted({ atom })
-const markTokenAsRevoked = defMarkTokenAsRevoked({ atom })
+  defIsBlacklisted,
+  init
+} from './lib/fs-storage/index.js'
 ////////////////////////////////////////////////////////////////////////////////
+
+// Token storage - In-memory backend ///////////////////////////////////////////
+// import {
+//   defAddToIssuedTokens,
+//   defMarkTokenAsRevoked,
+//   defIsBlacklisted,
+//   init
+// } from './lib/in-memory-storage/index.js'
+////////////////////////////////////////////////////////////////////////////////
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const NAME = 'app'
 const PREFIX = `${NAME} `
@@ -161,6 +150,23 @@ export async function defFastify(config: Config) {
     use_development_error_handler,
     use_secure_flag_for_session_cookie
   } = config
+
+  // Token storage - Filesystem backend ////////////////////////////////////////
+  const filepath = await init({
+    dirpath: path.join(__dirname, '..', 'assets'),
+    filename: 'issued-access-tokens.json'
+  })
+  const addToIssuedTokens = defAddToIssuedTokens({ filepath })
+  const isBlacklisted = defIsBlacklisted({ filepath })
+  const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Token storage - In-memory backend /////////////////////////////////////////
+  // const atom = await init()
+  // const addToIssuedTokens = defAddToIssuedTokens({ atom })
+  // const isBlacklisted = defIsBlacklisted({ atom })
+  // const markTokenAsRevoked = defMarkTokenAsRevoked({ atom })
+  //////////////////////////////////////////////////////////////////////////////
 
   const fastify = Fastify({
     logger: {

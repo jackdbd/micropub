@@ -112,7 +112,7 @@ export const defTokenPost = (config: Config) => {
         expires_in,
         me,
         payload: claims,
-        refresh_token: nanoid(), // TODO: the jwt itself should (?) contain a refresh token
+        refresh_token: nanoid(),
         scope,
         token_type: 'Bearer'
       })

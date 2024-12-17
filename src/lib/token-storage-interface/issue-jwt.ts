@@ -62,7 +62,7 @@ export const defIssueJWT = (config: Config) => {
     }
 
     // We need to decode the token we have just issued because we need to store
-    // a few of its claims in the issuelist.
+    // a few of its claims in the issue table.
     const { error: decode_error, value: claims } =
       await safeDecode<AccessTokenClaims>(jwt)
 
@@ -77,7 +77,11 @@ export const defIssueJWT = (config: Config) => {
     }
 
     return {
-      value: { message: `Token signed and added to the issuelist`, jwt, claims }
+      value: {
+        message: `Token signed and added to the issue table`,
+        jwt,
+        claims
+      }
     }
   }
 

@@ -36,7 +36,7 @@ export const defTokenGet = (config: TokenGetConfig) => {
     const { error, value: claims } = await safeDecode(access_token)
 
     if (error) {
-      const error_description = `failed to decode token: ${error.message}`
+      const error_description = `failed to decode access token: ${error.message}`
       request.log.warn(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidToken({
@@ -49,11 +49,13 @@ export const defTokenGet = (config: TokenGetConfig) => {
 
     request.log.debug(claims, `${log_prefix}claims decoded from access token`)
 
+    const refresh_token = request.session.get('refresh_token')
+
     return reply.successResponse(200, {
-      title: 'Access token',
+      title: 'Token',
       description: 'Token endpoint success page',
       summary: 'The current session contains this access token.',
-      payload: { jwt: access_token, claims }
+      payload: { access_token, claims, refresh_token }
     })
   }
 

@@ -122,7 +122,20 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
 
   fastify.post(
     '/token',
-    // { onRequest:[], schema: token_post_request },
+    {
+      // onRequest: [],
+      // onSend: [
+      //   (_request, _reply, payload, done) => {
+      //     done()
+      //   }
+      // ]
+      // onResponse: [
+      //   (request, _reply, done) => {
+      //     done()
+      //   }
+      // ]
+      // schema: token_post_request
+    },
     defTokenPost({
       authorization_endpoint,
       include_error_description,
