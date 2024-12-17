@@ -48,7 +48,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
     includeErrorDescription: include_error_description,
     isBlacklisted,
     me,
-    publishedUrlToStoreLocation,
+    publishedUrlToStorageLocation,
     syndicators,
     update
   } = config
@@ -126,7 +126,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
       get,
       include_error_description,
       prefix,
-      publishedUrlToStoreLocation,
+      publishedUrlToStorageLocation,
       syndicators,
       update
     })

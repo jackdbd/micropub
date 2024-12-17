@@ -356,7 +356,7 @@ export async function defFastify(config: Config) {
     includeErrorDescription,
     isBlacklisted,
     me,
-    publishedUrlToStoreLocation: github.publishedUrlToStoreLocation,
+    publishedUrlToStorageLocation: github.publishedUrlToStorageLocation,
     syndicators: { [uid]: telegram_syndicator },
     reportAllAjvErrors,
     update: github.update

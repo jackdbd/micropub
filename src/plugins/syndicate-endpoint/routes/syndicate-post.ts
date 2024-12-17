@@ -9,7 +9,7 @@ import {
 } from '../../../lib/micropub/index.js'
 import type {
   Get,
-  PublishedUrlToStoreLocation,
+  PublishedUrlToStorageLocation,
   Update,
   UpdatePatch
 } from '../../../lib/schemas/index.js'
@@ -18,7 +18,7 @@ export interface Config {
   get: Get
   include_error_description: boolean
   prefix: string
-  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
+  publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   syndicators: { [uid: string]: Syndicator }
   update: Update
 }
@@ -26,14 +26,7 @@ export interface Config {
 const parser = new XMLParser()
 
 export const defSyndicatePost = (config: Config) => {
-  const {
-    get,
-    include_error_description,
-    prefix,
-    // publishedUrlToStoreLocation,
-    syndicators,
-    update
-  } = config
+  const { get, include_error_description, prefix, syndicators, update } = config
 
   const syndicatePost: RouteHandler = async (request, reply) => {
     // TODO: decide what request body to expect. For example:
@@ -55,7 +48,7 @@ export const defSyndicatePost = (config: Config) => {
     // const me_url = obj.feed.entry.id
 
     // TODO: do this for each post in the feed
-    // const loc = publishedUrlToStoreLocation(me_url)
+    // const loc = publishedUrlToStorageLocation(me_url)
 
     // ====================================================================== //
     // Testing a bookmark-of

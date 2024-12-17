@@ -57,9 +57,9 @@ export {
 } from './mark-token-as-revoked.js'
 
 export {
-  publishedUrlToStoreLocation,
-  type PublishedUrlToStoreLocation
-} from './published-url-to-store-location.js'
+  publishedUrlToStorageLocation,
+  type PublishedUrlToStorageLocation
+} from './published-url-to-storage-location.js'
 
 export { revokeAllTokens, type RevokeAllTokens } from './revoke-all-tokens.js'
 

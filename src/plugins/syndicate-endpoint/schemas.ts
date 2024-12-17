@@ -4,14 +4,14 @@ import {
   me,
   get,
   isBlacklisted,
-  publishedUrlToStoreLocation,
+  publishedUrlToStorageLocation,
   report_all_ajv_errors,
   update
 } from '../../lib/schemas/index.js'
 import type {
   Get,
   IsBlacklisted,
-  PublishedUrlToStoreLocation,
+  PublishedUrlToStorageLocation,
   Update
 } from '../../lib/schemas/index.js'
 import {
@@ -30,7 +30,7 @@ export const options = Type.Object({
   }),
   isBlacklisted,
   me,
-  publishedUrlToStoreLocation,
+  publishedUrlToStorageLocation,
   reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,
     default: DEFAULT_REPORT_ALL_AJV_ERRORS
@@ -42,6 +42,6 @@ export const options = Type.Object({
 export interface Options extends Static<typeof options> {
   get: Get
   isBlacklisted: IsBlacklisted
-  publishedUrlToStoreLocation: PublishedUrlToStoreLocation
+  publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   update: Update
 }
