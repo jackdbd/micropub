@@ -21,10 +21,9 @@ const onSubmit = (event) => {
 }
 
 const main = () => {
-  const id = 'auth-form'
-  const form = document.getElementById('auth-form')
+  const form = document.getElementById('sign-in-form')
   if (form) {
-    form.addEventListener('submit', onSubmit, { aaa: 'foo' })
+    form.addEventListener('submit', onSubmit, { once: true, passive: false })
   } else {
     alert(`id ${id} not found on this page`)
   }

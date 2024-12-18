@@ -1,11 +1,14 @@
 // TODO: use a short-lived access token (e.g. 3600 seconds) and a long-lived
 // refresh token.
-export const ACCESS_TOKEN_EXPIRATION = '72 hours'
+// export const ACCESS_TOKEN_EXPIRATION = '72 hours'
+export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
 // export const ACCESS_TOKEN_EXPIRATION = '3600 seconds' // this is quite common
 
 export const AUTHORIZATION_CALLBACK_ROUTE = '/auth/callback'
 
-export const AUTHORIZATION_ENDPOINT = 'https://indieauth.com/auth'
+export const AUTHORIZATION_CODE_EXPIRATION = '60 seconds'
+
+// export const AUTHORIZATION_ENDPOINT = 'https://indieauth.com/auth'
 
 export const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 
@@ -21,7 +24,8 @@ export const GITHUB_OWNER = process.env.GITHUB_OWNER
 export const GITHUB_REPO = process.env.GITHUB_REPO
 export const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 
-export const INCLUDE_ERROR_DESCRIPTION = false
+export const INCLUDE_ERROR_DESCRIPTION = true
+// export const INCLUDE_ERROR_DESCRIPTION = false
 
 export const JWKS = process.env.JWKS
 
@@ -38,6 +42,9 @@ export const MEDIA_PUBLIC_BASE_URL = 'https://content.giacomodebidda.com/'
 // 10MB might be enough for a photo or an audio file, but not for a video.
 // TODO: try setting this to 1 byte to test error handling in media endpoint.
 export const MULTIPART_FORMDATA_MAX_FILESIZE = 10_000_000
+
+// export const REFRESH_TOKEN_EXPIRATION = '7 days'
+export const REFRESH_TOKEN_EXPIRATION = '30 days'
 
 export const REPORT_ALL_AJV_ERRORS =
   process.env.NODE_ENV === 'development' ? true : false

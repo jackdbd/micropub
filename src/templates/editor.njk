@@ -13,6 +13,13 @@
     <input type="hidden" name="h" value="entry" />
   </form>
 
+  <form id="bookmark-of-form" action="{{ submit_endpoint }}" method="post">
+    <label for="bookmark-of">Bookmark of:</label>
+    <input id="bookmark-of" type="url" name="bookmark-of" placeholder="URL you want to bookmark" />
+    <p><button type="submit">Bookmark</button></p>
+    <input type="hidden" name="h" value="entry" />
+  </form>
+
   <form id="like-of-form" action="{{ submit_endpoint }}" method="post">
     <label for="like-of">Like of:</label>
     <input id="like-of" type="url" name="like-of" placeholder="URL you like" />

@@ -58,6 +58,7 @@ const syndicate_to: SyndicateToItem[] = [
 export interface Config {
   access_token_expiration: string
   authorization_callback_route: string
+  authorization_code_expiration: string
   authorization_endpoint: string
   base_url: string
   cloudflare_account_id: string
@@ -80,6 +81,12 @@ export interface Config {
   include_error_description: boolean
 
   indieauth_client_id: string
+  indieauth_client_logo_uri: string
+  indieauth_client_name: string
+  indieauth_client_uri: string
+  indieauth_client_redirect_uris: string[]
+
+  introspection_endpoint: string
 
   issuer: string
 
@@ -107,7 +114,9 @@ export interface Config {
   micropub_endpoint: string
   multipart_form_data_max_file_size: number
   port: number
+  refresh_token_expiration: string
   report_all_ajv_errors: boolean
+  revocation_endpoint: string
   secure_session_expiration: number
   secure_session_key_one_buf: string
   secure_session_key_two_buf: string
@@ -120,6 +129,7 @@ export interface Config {
   token_endpoint: string
   use_development_error_handler: boolean
   use_secure_flag_for_session_cookie: boolean
+  userinfo_endpoint: string
   NODE_ENV: string
 }
 
@@ -169,15 +179,39 @@ export const defConfig = async (): Promise<Config> => {
   // localhost, otherwise we will have mixed content errors.
   const base_url = process.env.BASE_URL || `http://localhost:${port}`
 
-  const indieauth_client_id = base_url
+  const authorization_callback_route = DEFAULT.AUTHORIZATION_CALLBACK_ROUTE
+
+  // Example of IndieAuth/Micropub client: https://indiebookclub.biz/id
+  const indieauth_client_id = `${base_url}/id`
+  const indieauth_client_logo_uri = 'https://indiebookclub.biz/images/book.svg'
+  const indieauth_client_name = 'Zephyr'
+  const indieauth_client_uri = base_url
+  const indieauth_client_redirect_uris = [
+    `${base_url}${authorization_callback_route}`
+  ]
+
   const issuer = base_url
 
   // ENDPOINTS /////////////////////////////////////////////////////////////////
-  // const token_endpoint = 'https://tokens.indieauth.com/token'
-  const token_endpoint = `${base_url}/token`
-  const micropub_endpoint = `${base_url}/micropub`
+  const authorization_endpoint = `${base_url}/auth`
+
+  // It seems that indielogin.com is just for authentication. The tokens
+  // generated when I authenticate with indielogin.com have no scopes.
+  // const authorization_endpoint = 'https://indielogin.com/auth'
+
+  // The tokens generated when I authenticate with indieauth.com have the scopes
+  // I set in the sign-in form.
+  // const authorization_endpoint = 'https://indieauth.com/auth'
+
+  const introspection_endpoint = `${base_url}/introspect`
   const media_endpoint = `${base_url}/media`
+  const micropub_endpoint = `${base_url}/micropub`
+  const revocation_endpoint = `${base_url}/revoke`
   const submit_endpoint = `${base_url}/submit`
+  const token_endpoint = `${base_url}/token`
+  // const token_endpoint = 'https://tokens.indieauth.com/token'
+  const userinfo_endpoint = `${base_url}/userinfo`
+
   //////////////////////////////////////////////////////////////////////////////
 
   // In some environments (e.g. Fly.io) we need to set JWKS as an escaped JSON
@@ -189,10 +223,11 @@ export const defConfig = async (): Promise<Config> => {
   }
 
   return {
-    authorization_callback_route: DEFAULT.AUTHORIZATION_CALLBACK_ROUTE,
-    authorization_endpoint: DEFAULT.AUTHORIZATION_ENDPOINT,
-    base_url,
     access_token_expiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
+    authorization_callback_route,
+    authorization_code_expiration: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
+    authorization_endpoint,
+    base_url,
     cloudflare_account_id: DEFAULT.CLOUDFLARE_ACCOUNT_ID!,
     cloudflare_r2_access_key_id: DEFAULT.CLOUDFLARE_R2_ACCESS_KEY_ID!,
     cloudflare_r2_bucket_name: DEFAULT.CLOUDFLARE_R2_BUCKET_NAME!,
@@ -203,6 +238,11 @@ export const defConfig = async (): Promise<Config> => {
     host: process.env.HOST || '0.0.0.0',
     include_error_description: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
     indieauth_client_id,
+    indieauth_client_logo_uri,
+    indieauth_client_name,
+    indieauth_client_uri,
+    indieauth_client_redirect_uris,
+    introspection_endpoint,
     issuer,
     jwks,
     jwks_url: new URL(DEFAULT.JWKS_PUBLIC_URL),
@@ -213,7 +253,9 @@ export const defConfig = async (): Promise<Config> => {
     micropub_endpoint,
     multipart_form_data_max_file_size: DEFAULT.MULTIPART_FORMDATA_MAX_FILESIZE,
     port,
+    refresh_token_expiration: DEFAULT.REFRESH_TOKEN_EXPIRATION,
     report_all_ajv_errors: DEFAULT.REPORT_ALL_AJV_ERRORS,
+    revocation_endpoint,
     secure_session_expiration: DEFAULT.SECURE_SESSION_EXPIRATION,
     secure_session_key_one_buf: DEFAULT.SECURE_SESSION_KEY_ONE!,
     secure_session_key_two_buf: DEFAULT.SECURE_SESSION_KEY_TWO!,
@@ -228,6 +270,7 @@ export const defConfig = async (): Promise<Config> => {
     use_development_error_handler: DEFAULT.SHOULD_USE_DEVELOPMENT_ERROR_HANDLER,
     use_secure_flag_for_session_cookie:
       DEFAULT.SHOULD_USE_SECURE_FLAG_FOR_SESSION_COOKIE,
+    userinfo_endpoint,
     NODE_ENV: process.env.NODE_ENV || 'production'
   }
 }

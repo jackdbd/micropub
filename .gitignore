@@ -28,6 +28,7 @@ assets/schemas-docs/
 
 assets/issued-access-tokens.json
 assets/issued-refresh-tokens.json
+assets/issued-authorization-codes.json
 
 secrets/*
 !secrets/README.md

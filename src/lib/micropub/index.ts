@@ -48,6 +48,8 @@ export type {
   Publication
 } from './publication.js'
 
+export { media_endpoint, micropub_endpoint } from './schemas.js'
+
 export type {
   ClientError as ClientErrorStatusCode,
   DeleteSuccess as DeleteSuccessStatusCode,

@@ -17,7 +17,7 @@ import type {
 export interface Config {
   get: Get
   include_error_description: boolean
-  prefix: string
+  log_prefix: string
   publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   syndicators: { [uid: string]: Syndicator }
   update: Update
@@ -26,7 +26,8 @@ export interface Config {
 const parser = new XMLParser()
 
 export const defSyndicatePost = (config: Config) => {
-  const { get, include_error_description, prefix, syndicators, update } = config
+  const { get, include_error_description, log_prefix, syndicators, update } =
+    config
 
   const syndicatePost: RouteHandler = async (request, reply) => {
     // TODO: decide what request body to expect. For example:
@@ -44,7 +45,7 @@ export const defSyndicatePost = (config: Config) => {
     const obj = parser.parse(xml)
 
     const feed_title = obj.feed.title
-    request.log.debug(`${prefix}Feed title: ${feed_title}`)
+    request.log.debug(`${log_prefix}Feed title: ${feed_title}`)
     // const me_url = obj.feed.entry.id
 
     // TODO: do this for each post in the feed
@@ -78,7 +79,7 @@ export const defSyndicatePost = (config: Config) => {
     if (result.error) {
       const title = 'Syndication error'
       const error_description = `The post published at ${loc.website} is not stored at ${loc.store}.`
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
         error_description,

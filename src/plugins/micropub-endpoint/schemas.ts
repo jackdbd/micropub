@@ -1,11 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
 import {
-  h_card,
-  h_cite,
-  h_entry,
-  h_event
-} from '../../lib/microformats2/index.js'
-import {
   create,
   deleteContentOrMedia,
   isBlacklisted,
@@ -44,37 +38,51 @@ export const options = Type.Object(
         default: DEFAULT_AUTHORIZATION_ENDPOINT
       })
     ),
+
     authorizationCallbackRoute: Type.Optional(
       Type.String({ default: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE })
     ),
+
     baseUrl: Type.String(),
+
     clientId: Type.String(),
+
     codeChallengeMethod: Type.Optional(
       Type.String({ default: DEFAULT_CODE_CHALLENGE_METHOD })
     ),
+
     codeVerifierLength: Type.Optional(
       Type.Number({ default: DEFAULT_CODE_VERIFIER_LENGTH })
     ),
+
     create,
+
     delete: deleteContentOrMedia,
+
     includeErrorDescription: Type.Optional(
       Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
     ),
+
     isBlacklisted,
+
     logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
+
     me,
+
     mediaEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'media endpoint'
       })
     ),
+
     micropubEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'micropub endpoint'
       })
     ),
+
     multipartFormDataMaxFileSize: Type.Optional(
       Type.Number({
         title: 'multipart/form-data max file size',
@@ -83,17 +91,21 @@ export const options = Type.Object(
         minimum: 0
       })
     ),
+
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
       default: DEFAULT_REPORT_ALL_AJV_ERRORS
     }),
+
     submitEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
         title: 'submit endpoint'
       })
     ),
+
     syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
+
     tokenEndpoint: Type.Optional(
       Type.String({
         format: 'uri',
@@ -102,7 +114,9 @@ export const options = Type.Object(
         default: DEFAULT_TOKEN_ENDPOINT
       })
     ),
+
     undelete: Type.Optional(undelete),
+
     update
   },
   {
@@ -119,34 +133,3 @@ export interface Options extends Static<typeof options> {
   undelete?: Undelete
   update: Update
 }
-
-export const micropub_get_request = Type.Object(
-  { query: Type.Object({ q: Type.String() }) },
-  {
-    $id: 'micropub-get-request',
-    title: 'micropub GET request',
-    description: 'GET request hitting a micropub endpoint',
-    additionalProperties: true
-  }
-)
-
-export type MicropubGetRequest = Static<typeof micropub_get_request>
-
-export const micropub_post_request = Type.Object(
-  {
-    body: Type.Union([
-      Type.Ref(h_card),
-      Type.Ref(h_cite),
-      Type.Ref(h_entry),
-      Type.Ref(h_event)
-    ])
-  },
-  {
-    $id: 'micropub-post-request',
-    title: 'micropub POST request',
-    description: 'POST request hitting a micropub endpoint',
-    additionalProperties: true
-  }
-)
-
-export type MicropubPostRequest = Static<typeof micropub_post_request>

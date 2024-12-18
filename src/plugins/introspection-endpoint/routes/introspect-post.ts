@@ -9,41 +9,47 @@ import {
 import type { IsBlacklisted } from '../../../lib/schemas/index.js'
 import { isExpired, safeDecode, verify } from '../../../lib/token/index.js'
 import { conformResult } from '../../../lib/validators.js'
-import { introspect_post_response_body } from '../schemas.js'
+import { introspect_post_response_body } from './schemas.js'
 
 export interface Config {
   ajv: Ajv
-  expiration: string
   include_error_description: boolean
   isBlacklisted: IsBlacklisted
   issuer: string
   jwks_url: any // URL
-  prefix: string
+  log_prefix: string
+  max_token_age?: string
 }
 
 interface RequestBody {
   token: string
+  token_type_hint?: 'access_token' | 'refresh_token'
 }
 
 interface RouteGeneric extends RouteGenericInterface {
   Body: RequestBody
 }
 
+/**
+ * Introspects a token.
+ *
+ * @see [OAuth 2.0 Token Introspection (RFC7662)](https://www.rfc-editor.org/rfc/rfc7662)
+ */
 export const defIntrospectPost = (config: Config) => {
   const {
     ajv,
-    expiration,
     include_error_description,
     isBlacklisted,
     issuer,
     jwks_url,
-    prefix
+    log_prefix,
+    max_token_age
   } = config
 
   const introspectPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
       const error_description = 'Request has no body'
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
         error_description,
@@ -57,11 +63,28 @@ export const defIntrospectPost = (config: Config) => {
       })
     }
 
-    const { token: jwt } = request.body
+    const { token: jwt, token_type_hint } = request.body
+
+    // TODO: allow to introspect refresh tokens?
+    if (token_type_hint === 'refresh_token') {
+      const error_description = `Introspecting refresh tokens is not supported by this introspection endpoint.`
+      request.log.warn(`${log_prefix}${error_description}`)
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Token introspection failed',
+        description: 'Introspection endpoint error page'
+      })
+    }
 
     if (!jwt) {
       const error_description = 'The `token` parameter is missing'
-      request.log.warn(`${prefix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidToken({
         error_description,
@@ -88,7 +111,7 @@ export const defIntrospectPost = (config: Config) => {
       issuer,
       jwks_url,
       jwt,
-      max_token_age: expiration
+      max_token_age
     })
 
     const { error: decode_error, value: decoded_claims } = await safeDecode(jwt)
@@ -103,7 +126,7 @@ export const defIntrospectPost = (config: Config) => {
         // Having a verify_error is fine. E.g. if the token in the request body
         // is expired, we get a verify_error but NOT a decode_error.
         const error_description = decode_error.message
-        request.log.warn(`${prefix}${error_description}`)
+        request.log.warn(`${log_prefix}${error_description}`)
 
         const { code, body } = invalidToken({
           error_description,
@@ -132,12 +155,14 @@ export const defIntrospectPost = (config: Config) => {
     // taken place.
     let blacklisted = false
     if (jti) {
-      request.log.debug(`${prefix}check whether token ID ${jti} is blacklisted`)
+      request.log.debug(
+        `${log_prefix}check whether token ID ${jti} is blacklisted`
+      )
       const { error: black_err, value } = await isBlacklisted(jti)
 
       if (black_err) {
         const error_description = `cannot determine whether token ID ${jti} is blacklisted or not: ${black_err.message}`
-        request.log.error(`${prefix}${error_description}`)
+        request.log.error(`${log_prefix}${error_description}`)
 
         const { code, body } = serverError({
           error: 'is_blacklisted_error',
@@ -160,7 +185,7 @@ export const defIntrospectPost = (config: Config) => {
     const response_body = { ...claims, active }
 
     const { error: conform_error } = conformResult(
-      { prefix },
+      { prefix: log_prefix },
       ajv,
       introspect_post_response_body,
       response_body

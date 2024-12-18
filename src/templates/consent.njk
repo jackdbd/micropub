@@ -1,0 +1,15 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<div>
+  <p><img src="{{ logo_uri }}" alt="{{ client_name }}'s logo" height="35"> <a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> wants to access resources on <a href="{{ me }}" target="_blank" rel="noopener noreferrer">{{ me }}</a></p>
+
+  {# <p>In order to authorize <a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a>, authenticate yourself using any one of the following providers:</p>
+  <ul class="cluster list-style:none" data-align="start">
+    <li><a href="/auth/start?me={{ me }}&amp;provider=indieauth&amp;redirect_uri={{ redirect_uri }}"><strong>IndieAuth</strong></a></li>
+    <li><a href="/auth/start?me={{ me }}&amp;provider=github&amp;redirect_uri={{ redirect_uri }}"><strong>github.com/jackdbd</strong></a></li>
+  </ul> #}
+
+  {% include "consent-form.njk" %}
+</div>
+{% endblock %}

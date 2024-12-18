@@ -20,9 +20,9 @@ import { Action } from './lib/schemas/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/claims.js'
 
-import youch from './plugins/youch/index.js'
+import auth from './plugins/authorization-endpoint/index.js'
 import errorHandler from './plugins/error-handler/index.js'
-import indieauth from './plugins/indieauth/index.js'
+import indieauthClient from './plugins/indieauth-client/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
 import type { NoScopeResponseOptions } from './plugins/micropub-endpoint/decorators/request.js'
@@ -37,33 +37,39 @@ import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
 import token from './plugins/token-endpoint/index.js'
+import youch from './plugins/youch/index.js'
 
 import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
 import { tap } from './nunjucks/filters.js'
 
 // Token storage - Filesystem backend //////////////////////////////////////////
-import {
-  defAddToIssuedTokens,
-  defMarkTokenAsRevoked,
-  defIsBlacklisted,
-  init
-} from './lib/fs-storage/index.js'
+// import {
+//   defAddToIssuedCodes,
+//   defAddToIssuedTokens,
+//   defIsBlacklisted,
+//   defMarkAuthorizationCodeAsUsed,
+//   defMarkTokenAsRevoked,
+//   init
+// } from './lib/fs-storage/index.js'
 ////////////////////////////////////////////////////////////////////////////////
 
 // Token storage - In-memory backend ///////////////////////////////////////////
-// import {
-//   defAddToIssuedTokens,
-//   defMarkTokenAsRevoked,
-//   defIsBlacklisted,
-//   init
-// } from './lib/in-memory-storage/index.js'
+import {
+  defAddToIssuedCodes,
+  defAddToIssuedTokens,
+  defMarkAuthorizationCodeAsUsed,
+  defMarkTokenAsRevoked,
+  defIsBlacklisted,
+  initCodesStorage,
+  initTokensStorage
+} from './lib/in-memory-storage/index.js'
 ////////////////////////////////////////////////////////////////////////////////
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const NAME = 'app'
-const PREFIX = `${NAME} `
+const LOG_PREFIX = `${NAME} `
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -116,6 +122,7 @@ export async function defFastify(config: Config) {
   const {
     access_token_expiration,
     authorization_callback_route: authorizationCallbackRoute,
+    authorization_code_expiration,
     authorization_endpoint: authorizationEndpoint,
     base_url: baseUrl,
     cloudflare_account_id,
@@ -127,6 +134,11 @@ export async function defFastify(config: Config) {
     github_token,
     include_error_description: includeErrorDescription,
     indieauth_client_id,
+    indieauth_client_logo_uri,
+    indieauth_client_name,
+    indieauth_client_redirect_uris,
+    indieauth_client_uri,
+    introspection_endpoint: introspectionEndpoint,
     issuer,
     jwks,
     jwks_url,
@@ -136,7 +148,9 @@ export async function defFastify(config: Config) {
     media_public_base_url,
     micropub_endpoint: micropubEndpoint,
     multipart_form_data_max_file_size: multipartFormDataMaxFileSize,
+    refresh_token_expiration,
     report_all_ajv_errors: reportAllAjvErrors,
+    revocation_endpoint: revocationEndpoint,
     secure_session_expiration,
     secure_session_key_one_buf,
     secure_session_key_two_buf,
@@ -149,23 +163,45 @@ export async function defFastify(config: Config) {
     token_endpoint: tokenEndpoint,
     use_development_error_handler,
     use_secure_flag_for_session_cookie
+    // userinfo_endpoint
   } = config
 
-  // Token storage - Filesystem backend ////////////////////////////////////////
-  const filepath = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'issued-access-tokens.json'
+  // Authorization code storage - Filesystem backend ///////////////////////////
+  // const filepath_codes = await init({
+  //   dirpath: path.join(__dirname, '..', 'assets'),
+  //   filename: 'issued-authorization-codes.json'
+  // })
+  // const addToIssuedCodes = defAddToIssuedCodes({ filepath: filepath_codes })
+  // const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
+  //   filepath: filepath_codes
+  // })
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Authorization code storage - In-memory backend ////////////////////////////
+  const atom_codes = await initCodesStorage()
+  const addToIssuedCodes = defAddToIssuedCodes({ atom: atom_codes })
+  const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
+    atom: atom_codes
   })
-  const addToIssuedTokens = defAddToIssuedTokens({ filepath })
-  const isBlacklisted = defIsBlacklisted({ filepath })
-  const markTokenAsRevoked = defMarkTokenAsRevoked({ filepath })
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Token storage - Filesystem backend ////////////////////////////////////////
+  // const filepath_tokens = await init({
+  //   dirpath: path.join(__dirname, '..', 'assets'),
+  //   filename: 'issued-access-tokens.json'
+  // })
+  // const addToIssuedTokens = defAddToIssuedTokens({ filepath: filepath_tokens })
+  // const isBlacklisted = defIsBlacklisted({ filepath: filepath_tokens })
+  // const markTokenAsRevoked = defMarkTokenAsRevoked({
+  //   filepath: filepath_tokens
+  // })
   //////////////////////////////////////////////////////////////////////////////
 
   // Token storage - In-memory backend /////////////////////////////////////////
-  // const atom = await init()
-  // const addToIssuedTokens = defAddToIssuedTokens({ atom })
-  // const isBlacklisted = defIsBlacklisted({ atom })
-  // const markTokenAsRevoked = defMarkTokenAsRevoked({ atom })
+  const atom_tokens = await initTokensStorage()
+  const addToIssuedTokens = defAddToIssuedTokens({ atom: atom_tokens })
+  const isBlacklisted = defIsBlacklisted({ atom: atom_tokens })
+  const markTokenAsRevoked = defMarkTokenAsRevoked({ atom: atom_tokens })
   //////////////////////////////////////////////////////////////////////////////
 
   const fastify = Fastify({
@@ -215,7 +251,7 @@ export async function defFastify(config: Config) {
       sessionName,
       expiry: secure_session_expiration
     },
-    `${PREFIX}secure session created`
+    `${LOG_PREFIX}secure session created`
   )
 
   fastify.register(fastifyCsrf, {
@@ -236,23 +272,33 @@ export async function defFastify(config: Config) {
 
   fastify.register(responseDecorators)
 
-  fastify.register(token, {
-    addToIssuedTokens,
-    authorizationEndpoint,
-    expiration: access_token_expiration,
+  fastify.register(auth, {
+    accessTokenExpiration: access_token_expiration,
+    addToIssuedCodes,
+    authorizationCodeExpiration: authorization_code_expiration,
     includeErrorDescription,
-    isBlacklisted,
-    issuer,
-    jwks,
+    markAuthorizationCodeAsUsed,
+    refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors
   })
 
+  fastify.register(indieauthClient, {
+    authorizationEndpoint,
+    clientId: indieauth_client_id,
+    clientName: indieauth_client_name,
+    clientUri: indieauth_client_uri,
+    includeErrorDescription,
+    logoUri: indieauth_client_logo_uri,
+    reportAllAjvErrors,
+    redirectUris: indieauth_client_redirect_uris,
+    revocationEndpoint
+  })
+
   fastify.register(introspection, {
-    expiration: access_token_expiration,
     includeErrorDescription,
     isBlacklisted,
     issuer,
-    jwks_url,
+    jwksUrl: jwks_url,
     reportAllAjvErrors
   })
 
@@ -260,10 +306,23 @@ export async function defFastify(config: Config) {
     includeErrorDescription,
     isBlacklisted,
     issuer,
-    jwks_url,
+    jwksUrl: jwks_url,
     markTokenAsRevoked,
     maxTokenAge: access_token_expiration,
     me,
+    reportAllAjvErrors
+  })
+
+  fastify.register(token, {
+    accessTokenExpiration: access_token_expiration,
+    addToIssuedTokens,
+    authorizationEndpoint,
+    includeErrorDescription,
+    isBlacklisted,
+    introspectionEndpoint,
+    issuer,
+    jwks,
+    refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors
   })
 
@@ -272,14 +331,6 @@ export async function defFastify(config: Config) {
     isBlacklisted,
     me,
     reportAllAjvErrors
-  })
-
-  fastify.register(indieauth, {
-    authorizationCallbackRoute,
-    authorizationEndpoint,
-    baseUrl,
-    clientId: indieauth_client_id,
-    me
   })
 
   const domain = me.split('https://').at(-1)?.replace('/', '') as string
@@ -385,7 +436,7 @@ export async function defFastify(config: Config) {
         // const globals = gg.map(({ name }) => name).join(', ')
 
         fastify.log.debug(
-          `${PREFIX}configured nunjucks environment. Filters: ${filters}`
+          `${LOG_PREFIX}configured nunjucks environment. Filters: ${filters}`
         )
       }
     }
@@ -397,6 +448,7 @@ export async function defFastify(config: Config) {
 
   // === ROUTES ============================================================= //
   fastify.get('/', async (_request, reply) => {
+    // request.log.warn(request.session.data(), `${LOG_PREFIX}session_data`)
     return reply.view('home.njk', {
       title: 'Home page',
       description: 'Home page',

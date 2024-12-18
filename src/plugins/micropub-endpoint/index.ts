@@ -37,10 +37,9 @@ import { defMicropubPost } from './routes/micropub-post.js'
 import { defSubmit } from './routes/submit-post.js'
 import {
   micropub_get_request,
-  micropub_post_request,
-  options as options_schema,
-  type Options
-} from './schemas.js'
+  micropub_post_request
+} from './routes/schemas.js'
+import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
   authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
@@ -60,7 +59,8 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: prefix, reportAllAjvErrors: all_ajv_errors } = config
+  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
+
   // TODO: can I get an existing Ajv instance somehow? Should I?
   // Do NOT use allErrors in production
   // https://ajv.js.org/security.html#security-risks-of-trusted-schemas
@@ -84,7 +84,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     'uuid'
   ])
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
     authorizationCallbackRoute: auth_callback,
@@ -108,7 +108,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   // === PLUGINS ============================================================ //
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
-  fastify.log.debug(`${prefix}registered plugin: formbody`)
+  fastify.log.debug(`${log_prefix}registered plugin: formbody`)
 
   // Parse multipart/form-data requests
   // https://github.com/fastify/fastify-multipart
@@ -117,45 +117,47 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       fileSize: multipartFormDataMaxFileSize
     }
   })
-  fastify.log.debug(`${prefix}registered plugin: multipart`)
+  fastify.log.debug(`${log_prefix}registered plugin: multipart`)
 
   fastify.register(responseDecorators)
-  fastify.log.debug(`${prefix}registered plugin: responseDecorators`)
+  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
   fastify.decorateRequest('noScopeResponse', noScopeResponse)
-  fastify.log.debug(`${prefix}decorateRequest: noScopeResponse`)
+  fastify.log.debug(`${log_prefix}decorateRequest: noScopeResponse`)
 
   const micropubResponse = defMicropubResponse({
     create,
     include_error_description,
-    prefix
+    prefix: log_prefix
   })
 
   const dependencies = ['errorResponse']
   fastify.decorateReply('micropubResponse', micropubResponse, dependencies)
-  fastify.log.debug(`${prefix}decorated fastify.reply with micropubResponse`)
+  fastify.log.debug(
+    `${log_prefix}decorated fastify.reply with micropubResponse`
+  )
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
 
   const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   const logIatAndExpClaims = defLogIatAndExpClaims({
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -164,19 +166,19 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateClaimJti = defValidateClaim(
     { claim: 'jti' },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
       isBlacklisted,
-      log_prefix: prefix
+      log_prefix
     })
 
   const validateGetRequest = defValidateGetRequest({
@@ -187,16 +189,24 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   // === ROUTES ============================================================= //
   fastify.get(
     auth_callback,
+    {
+      onRequest: [],
+      onResponse: [],
+      schema: { querystring: {}, response: {} }
+    },
     defAuthCallback({
       client_id,
       include_error_description,
-      prefix,
+      log_prefix,
       redirect_uri: `${base_url}${auth_callback}`,
       token_endpoint
     })
   )
 
-  fastify.get('/editor', defEditor({ prefix, submit_endpoint: submitEndpoint }))
+  fastify.get(
+    '/editor',
+    defEditor({ log_prefix, submit_endpoint: submitEndpoint })
+  )
 
   fastify.get(
     '/micropub',
@@ -221,10 +231,10 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       ajv,
       delete: deleteContent,
       include_error_description,
+      log_prefix,
       me,
       media_endpoint,
       micropub_endpoint,
-      prefix,
       undelete,
       update
     })
@@ -234,7 +244,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   fastify.get('/created', postCreated)
 
-  fastify.post('/submit', defSubmit({ micropub_endpoint, prefix }))
+  fastify.post('/submit', defSubmit({ log_prefix, micropub_endpoint }))
 
   done()
 }

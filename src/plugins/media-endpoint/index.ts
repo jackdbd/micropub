@@ -40,11 +40,11 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: prefix, reportAllAjvErrors: all_ajv_errors } = config
+  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
 
   const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
     delete: deleteMedia,
@@ -58,39 +58,39 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
   fastify.log.debug(
-    `${prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+    `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
 
   fastify.register(multipart, { limits: { fileSize } })
   fastify.log.debug(
-    `${prefix}registered plugin: multipart (for parsing multipart/form-data)`
+    `${log_prefix}registered plugin: multipart (for parsing multipart/form-data)`
   )
 
   fastify.register(responseDecorators)
-  fastify.log.debug(`${NAME} registered plugin: responseDecorators`)
+  fastify.log.debug(`${log_prefix} registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
 
   const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   const logIatAndExpClaims = defLogIatAndExpClaims({
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -99,25 +99,25 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateClaimJti = defValidateClaim(
     { claim: 'jti' },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateScopeMedia = defValidateScope({
     scope: 'media',
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
       isBlacklisted,
-      log_prefix: prefix,
+      log_prefix,
       report_all_ajv_errors: all_ajv_errors
     })
 

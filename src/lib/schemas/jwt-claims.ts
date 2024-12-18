@@ -29,9 +29,3 @@ export const me = Type.String({
   format: 'uri',
   title: 'me'
 })
-
-export const scope = Type.String({
-  description: `Scope values. See [RFC8693 scope claim](https://www.rfc-editor.org/rfc/rfc8693.html#name-scope-scopes-claim)`,
-  minLength: 1,
-  title: 'JWT scope claim'
-})

@@ -1,5 +1,5 @@
 meta {
-  name: obtain authorization code
+  name: get authorization code
   type: http
   seq: 1
 }
@@ -19,6 +19,10 @@ params:query {
   code_challenge_method: {{code_challenge_method}}
   scope: {{scope}}
   me: {{me}}
+}
+
+headers {
+  Accept: text/html
 }
 
 script:post-response {

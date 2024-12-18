@@ -14,6 +14,7 @@ import { defIssueJWT } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 
+import { defConfigGet } from './routes/token-config-get.js'
 import { defTokenGet } from './routes/token-get.js'
 import { defTokenPost } from './routes/token-post.js'
 import { options as options_schema, type Options } from './schemas.js'
@@ -21,14 +22,18 @@ import {
   DEFAULT_ACCESS_TOKEN_EXPIRATION,
   DEFAULT_AUTHORIZATION_ENDPOINT,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_LOG_PREFIX,
+  DEFAULT_REFRESH_TOKEN_EXPIRATION,
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
 
 const defaults: Partial<Options> = {
+  accessTokenExpiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
   authorizationEndpoint: DEFAULT_AUTHORIZATION_ENDPOINT,
-  expiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  logPrefix: DEFAULT_LOG_PREFIX,
+  refreshTokenExpiration: DEFAULT_REFRESH_TOKEN_EXPIRATION,
   reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
 }
 
@@ -38,43 +43,52 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   done
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
-  const prefix = `${NAME} `
 
-  const report_all_ajv_errors = config.reportAllAjvErrors
-  const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
+
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
+    accessTokenExpiration: access_token_expiration,
     addToIssuedTokens,
     authorizationEndpoint: authorization_endpoint,
-    expiration,
     includeErrorDescription: include_error_description,
+    introspectionEndpoint: introspection_endpoint,
     isBlacklisted,
     issuer,
-    jwks
+    jwks,
+    refreshTokenExpiration: refresh_token_expiration
   } = config
+
+  fastify.log.debug(
+    `${log_prefix}access token expiration: ${access_token_expiration}`
+  )
+  fastify.log.debug(
+    `${log_prefix}refresh token expiration: ${refresh_token_expiration}`
+  )
 
   // === PLUGINS ============================================================ //
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
-  fastify.log.debug(`${prefix}registered plugin: formbody`)
+  fastify.log.debug(`${log_prefix}registered plugin: formbody`)
 
   fastify.register(responseDecorators)
-  fastify.log.debug(`${prefix}registered plugin: responseDecorators`)
+  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
 
   const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   // const validateClaimMe = defValidateClaim(
@@ -88,25 +102,27 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateAccessTokenNotBlacklisted =
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
       isBlacklisted,
-      log_prefix: prefix,
-      report_all_ajv_errors
+      log_prefix,
+      report_all_ajv_errors: all_ajv_errors
     })
 
+  // === ROUTES ============================================================= //
   const issueJWT = defIssueJWT({
     addToIssuedTokens,
-    expiration,
+    expiration: access_token_expiration,
     issuer,
     jwks
   })
 
-  // === ROUTES ============================================================= //
+  fastify.get('/token/config', defConfigGet(config))
+
   fastify.get(
     '/token',
     {
@@ -117,7 +133,11 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       ]
       // schema: token_get_request
     },
-    defTokenGet({ include_error_description, log_prefix: prefix })
+    defTokenGet({
+      include_error_description,
+      introspection_endpoint,
+      log_prefix
+    })
   )
 
   fastify.post(
@@ -140,7 +160,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       authorization_endpoint,
       include_error_description,
       issueJWT,
-      log_prefix: prefix
+      log_prefix
     })
   )
 

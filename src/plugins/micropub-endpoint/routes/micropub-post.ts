@@ -32,10 +32,10 @@ export interface MicropubPostConfig {
   ajv: Ajv
   delete: DeleteContentOrMedia
   include_error_description: boolean
+  log_prefix: string
   me: string
   media_endpoint: string
   micropub_endpoint: string
-  prefix: string
   undelete?: Undelete
   update: Update
 }
@@ -77,10 +77,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     ajv,
     delete: deleteContent,
     include_error_description,
+    log_prefix,
     // me,
     media_endpoint,
     micropub_endpoint,
-    prefix,
     undelete,
     update
   } = config
@@ -95,7 +95,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
   const multipartRequestBody = defMultipartRequestBody({
     media_endpoint,
     micropub_endpoint,
-    prefix: `${prefix}multipart `
+    prefix: `${log_prefix}multipart `
   })
 
   const micropubPost: RouteHandler<PostRouteGeneric> = async (
@@ -120,7 +120,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
     if (!request_body) {
       const error_description = 'Request has no body.'
-      request.log.error(`${prefix}${error_description}`)
+      request.log.error(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
         error_description,
@@ -144,7 +144,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
       if (error) {
         const error_description = error.message
-        request.log.error({ request_body }, `${prefix}${error_description}`)
+        request.log.error({ request_body }, `${log_prefix}${error_description}`)
 
         const { code, body } = invalidRequest({
           error_description,
@@ -230,13 +230,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               include_error_description
             })
             request.log.error(
-              `${prefix}${body.error}: ${body.error_description}`
+              `${log_prefix}${body.error}: ${body.error_description}`
             )
             return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, summary, payload } = value
-            request.log.info(`${prefix}${summary}`)
+            request.log.info(`${log_prefix}${summary}`)
 
             return reply.successResponse(code, {
               title: 'Delete success',
@@ -251,7 +251,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           if (!undelete) {
             const error_description =
               'undelete not supported by this Micropub server.'
-            request.log.error(`${prefix}${error_description}`)
+            request.log.error(`${log_prefix}${error_description}`)
 
             const { code, body } = invalidRequest({
               error_description,
@@ -268,13 +268,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               include_error_description
             })
             request.log.error(
-              `${prefix}${body.error}: ${body.error_description}`
+              `${log_prefix}${body.error}: ${body.error_description}`
             )
             return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, summary, payload } = value
-            request.log.info(`${prefix}${summary}`)
+            request.log.info(`${log_prefix}${summary}`)
 
             return reply.successResponse(code, {
               title: 'Undelete success',
@@ -295,13 +295,13 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
               include_error_description
             })
             request.log.error(
-              `${prefix}${body.error}: ${body.error_description}`
+              `${log_prefix}${body.error}: ${body.error_description}`
             )
             return reply.errorResponse(code, body)
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, payload, summary } = value
-            request.log.info(patch, `${prefix}${summary}`)
+            request.log.info(patch, `${log_prefix}${summary}`)
 
             return reply.successResponse(code, {
               title: 'Update success',
@@ -325,7 +325,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
         default: {
           const error_description = `Action '${action}' is not supported by this Micropub server.`
-          request.log.error({ action, jf2 }, `${prefix}${error_description}`)
+          request.log.error(
+            { action, jf2 },
+            `${log_prefix}${error_description}`
+          )
 
           const { code, body } = invalidRequest({
             error_description,
@@ -359,7 +362,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
       default: {
         const error_description = `Post h=${jf2.h} is not supported by this Micropub server.`
-        request.log.error({ action, jf2 }, `${prefix}${error_description}`)
+        request.log.error({ action, jf2 }, `${log_prefix}${error_description}`)
 
         const { code, body } = invalidRequest({
           error_description,

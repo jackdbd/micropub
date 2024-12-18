@@ -1,0 +1,8 @@
+<ul class="cluster list-style:none scopes" data-align="start">
+{% for scope in scopes | sort %}
+  <li>
+    <input type="checkbox" id="scope-{{ scope }}" name="scope" value="{{ scope }}" checked />
+    <label for="scope-{{ scope }}">{{ scope }}</label>
+  </li>
+{% endfor %}
+</ul>

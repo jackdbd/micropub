@@ -13,17 +13,19 @@ import {
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
-  DEFAULT_ACCESS_TOKEN_EXPIRATION,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  DEFAULT_LOG_PREFIX,
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
+import { defConfigGet } from './routes/introspection-config-get.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
+// import { introspect_post_response_body } from './routes/schemas.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  expiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
+  logPrefix: DEFAULT_LOG_PREFIX,
   reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
 }
 
@@ -33,42 +35,41 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
   done
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
-  const prefix = `${NAME} `
 
-  const report_all_ajv_errors = config.reportAllAjvErrors
-  const ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
+
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
-    expiration,
     includeErrorDescription: include_error_description,
     isBlacklisted,
     issuer,
-    jwks_url
+    jwksUrl: jwks_url
   } = config
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
   fastify.log.debug(
-    `${prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+    `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
 
   fastify.register(responseDecorators)
-  fastify.log.debug(`${prefix}registered plugin: responseDecorators`)
+  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
 
   const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
     include_error_description,
-    log_prefix: prefix
+    log_prefix
   })
 
   // Should I check whether the token from the Authorization header matches an
@@ -86,12 +87,12 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   const validateClaimJti = defValidateClaim(
     { claim: 'jti' },
-    { include_error_description, log_prefix: prefix }
+    { include_error_description, log_prefix }
   )
 
   // TODO: re-read RFC7662 and decide which scope to check
@@ -105,11 +106,13 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     defValidateAccessTokenNotBlacklisted({
       include_error_description,
       isBlacklisted,
-      log_prefix: prefix,
-      report_all_ajv_errors
+      log_prefix,
+      report_all_ajv_errors: all_ajv_errors
     })
 
   // === ROUTES ============================================================= //
+  fastify.get('/introspect/config', defConfigGet(config))
+
   fastify.post(
     '/introspect',
     {
@@ -119,15 +122,16 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
         validateClaimJti,
         validateAccessTokenNotBlacklisted
       ]
+      // schema: { response: { 200: introspect_post_response_body } }
     },
     defIntrospectPost({
       ajv,
-      expiration,
       include_error_description,
       isBlacklisted,
       issuer,
       jwks_url,
-      prefix
+      log_prefix
+      // max_token_age
     })
   )
 

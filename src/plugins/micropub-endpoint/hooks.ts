@@ -6,7 +6,7 @@ import { insufficientScope, invalidRequest } from '../../lib/micropub/index.js'
 import type { Action } from '../../lib/schemas/index.js'
 
 import { NAME } from './constants.js'
-import { micropub_get_request } from './schemas.js'
+import { micropub_get_request } from './routes/schemas.js'
 
 const PREFIX = `${NAME}/hooks `
 

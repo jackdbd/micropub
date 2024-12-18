@@ -6,7 +6,7 @@ export interface VerifyConfig {
   // jwks_url: URL
   jwks_url: JWKSPublicURL
   jwt: string
-  max_token_age: string
+  max_token_age?: string
 }
 
 /**
