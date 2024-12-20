@@ -10,13 +10,9 @@ import {
   logo_uri,
   redirect_uris
 } from '../../lib/indieauth/index.js'
-import {
-  authorization_endpoint,
-  revocation_endpoint
-} from '../../lib/oauth2/index.js'
+import { revocation_endpoint } from '../../lib/oauth2/index.js'
 import { code_verifier_length } from '../../lib/pkce/index.js'
 import {
-  DEFAULT_AUTHORIZATION_ENDPOINT,
   DEFAULT_CODE_VERIFIER_LENGTH,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_LOG_PREFIX,
@@ -26,11 +22,6 @@ import {
 
 export const options = Type.Object(
   {
-    authorizationEndpoint: Type.Optional({
-      ...authorization_endpoint,
-      default: DEFAULT_AUTHORIZATION_ENDPOINT
-    }),
-
     clientId: client_id,
 
     clientName: client_name,
@@ -61,6 +52,9 @@ export const options = Type.Object(
       default: DEFAULT_REPORT_ALL_AJV_ERRORS
     }),
 
+    // TODO: no, this should be either retrieved from the IndieAuth server
+    // metadata, or not used at all by this Fastify plugin. Probably it should
+    // be used somewhere else.
     revocationEndpoint: Type.Optional(revocation_endpoint)
   },
   {

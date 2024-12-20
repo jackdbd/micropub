@@ -283,7 +283,6 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(indieauthClient, {
-    authorizationEndpoint,
     clientId: indieauth_client_id,
     clientName: indieauth_client_name,
     clientUri: indieauth_client_uri,

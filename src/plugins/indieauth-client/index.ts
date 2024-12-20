@@ -7,7 +7,6 @@ import { client_metadata } from '../../lib/indieauth/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
-  DEFAULT_AUTHORIZATION_ENDPOINT,
   DEFAULT_CODE_VERIFIER_LENGTH,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_LOG_PREFIX,
@@ -23,7 +22,6 @@ import { options as options_schema, type Options } from './schemas.js'
 import { auth_start_get_request_querystring } from './routes/schemas.js'
 
 const defaults: Partial<Options> = {
-  authorizationEndpoint: DEFAULT_AUTHORIZATION_ENDPOINT,
   codeVerifierLength: DEFAULT_CODE_VERIFIER_LENGTH,
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   logoUri: DEFAULT_LOGO_URI,
@@ -47,7 +45,6 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
-    authorizationEndpoint: authorization_endpoint,
     clientId: client_id,
     clientName: client_name,
     clientUri: client_uri,
@@ -95,7 +92,6 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     auth_start_path,
     { schema: { querystring: auth_start_get_request_querystring } },
     defAuthStartGet({
-      authorization_endpoint,
       code_verifier_length,
       include_error_description,
       log_prefix,

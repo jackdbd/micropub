@@ -10,10 +10,6 @@ import { invalidRequest } from '../../../lib/micropub/error-responses.js'
 import type { AuthStartGetRequestQuerystring } from './schemas.js'
 
 export interface Config {
-  // TODO: authorization_endpoint is fetched from the IndieAuth server metadata.
-  // It should NOT be a configuration parameter of this plugin. This is just a
-  // temporary workaround to test this Fastify app.
-  authorization_endpoint: string
   code_verifier_length: number
   include_error_description: boolean
   log_prefix: string
@@ -34,7 +30,6 @@ export interface Config {
  */
 export const defAuthStartGet = (config: Config) => {
   const {
-    authorization_endpoint,
     code_verifier_length,
     include_error_description,
     log_prefix,
@@ -91,12 +86,8 @@ export const defAuthStartGet = (config: Config) => {
     request.log.debug(`${log_prefix}retrieved IndieAuth server metadata`)
     request.log.warn(server_metadata, `${log_prefix} IndieAuth server metadata`)
 
-    // TODO: authorization_endpoint is fetched from the IndieAuth server metadata.
-    // It should NOT be a configuration parameter of this plugin. This is just a
-    // temporary workaround to test this Fastify app.
-
     const {
-      //   authorization_endpoint,
+      authorization_endpoint,
       //   authorization_response_iss_parameter_supported,
       code_challenge_methods_supported,
       //   issuer,

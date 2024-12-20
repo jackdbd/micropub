@@ -1,5 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
 import {
+  authorization_endpoint,
+  token_endpoint
+} from '../../lib/oauth2/index.js'
+import {
   create,
   deleteContentOrMedia,
   isBlacklisted,
@@ -30,14 +34,11 @@ import {
 
 export const options = Type.Object(
   {
-    authorizationEndpoint: Type.Optional(
-      Type.String({
-        format: 'uri',
-        title: 'authorization endpoint',
-        description: `Micropub clients that want to post to a user's Micropub endpoint need to obtain authorization from the user in order to get an access token.`,
-        default: DEFAULT_AUTHORIZATION_ENDPOINT
-      })
-    ),
+    authorizationEndpoint: Type.Optional({
+      ...authorization_endpoint,
+      default: DEFAULT_AUTHORIZATION_ENDPOINT,
+      description: `Micropub clients that want to post to a user's Micropub endpoint need to obtain authorization from the user in order to get an access token.`
+    }),
 
     authorizationCallbackRoute: Type.Optional(
       Type.String({ default: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE })
@@ -106,14 +107,11 @@ export const options = Type.Object(
 
     syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
 
-    tokenEndpoint: Type.Optional(
-      Type.String({
-        format: 'uri',
-        title: 'token endpoint',
-        description: `Micropub clients will be able to obtain an access token from this endpoint after you have granted authorization. The Micropub client will then use this access token when making requests to your Micropub endpoint.`,
-        default: DEFAULT_TOKEN_ENDPOINT
-      })
-    ),
+    tokenEndpoint: Type.Optional({
+      ...token_endpoint,
+      description: `Micropub clients will be able to obtain an access token from this endpoint after you have granted authorization. The Micropub client will then use this access token when making requests to your Micropub endpoint.`,
+      default: DEFAULT_TOKEN_ENDPOINT
+    }),
 
     undelete: Type.Optional(undelete),
 
