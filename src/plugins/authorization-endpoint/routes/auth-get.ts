@@ -1,8 +1,10 @@
-import crypto from 'node:crypto'
-import type { RouteHandler } from 'fastify'
+import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import ms, { StringValue } from 'ms'
 import { unixTimestampInMs } from '../../../lib/date.js'
-import { clientMetadata } from '../../../lib/indieauth/index.js'
+import {
+  authorizationResponseUrl,
+  clientMetadata
+} from '../../../lib/indieauth/index.js'
 import {
   invalidRequest,
   serverError
@@ -15,26 +17,30 @@ export interface Config {
   authorization_code_expiration: string
   include_error_description: boolean
   issueCode: IssueCode
+  /**
+   * Issuer identifier. This is optional in OAuth 2.0 servers, but required in
+   * IndieAuth servers. If specified, it will be included as the `iss` query
+   * parameter in the authorization response.
+   *
+   * See also the `authorization_response_iss_parameter_supported` parameter in
+   * [IndieAuth Server Metadata](https://indieauth.spec.indieweb.org/#indieauth-server-metadata).
+   */
+  issuer?: string
   log_prefix: string
   refresh_token_expiration: string
 }
 
-// On IndieLogin, the consent screen is shown when visiting this URL:
-// https://indieauth.com/auth?
-// response_type=code
-// me=https%3A%2F%2Fgiacomodebidda.com%2F
-// redirect_uri=https%3A%2F%2Findielogin.com%2Fredirect%2Findieauth
-// client_id=https%3A%2F%2Findielogin.com%2Fid
-// state=f37cb16f048c49d9c5214588
-// code_challenge=pgm2udX8Hvv9keE-yrcSfyP3sPHBK2j5ijy5qsB8jf0
-// code_challenge_method=S256
-
-// When clicking the GitHub authentication, IndieLogin redirects here:
+// IndieLogin.com, when choosing the GitHub as the authentication provider
+// (RelMeAuth), redirects the user here:
 // https://indieauth.com/auth/start?
 // me=https%3A%2F%2Fgiacomodebidda.com%2F
 // provider=github
 // profile=https%3A%2F%2Fgithub.com%2Fjackdbd
 // redirect_uri=https%3A%2F%2Findielogin.com%2Fredirect%2Findieauth
+
+interface RouteGeneric extends RouteGenericInterface {
+  Querystring: AuthGetRequestQuerystring
+}
 
 /**
  * Authorizes a client and issues a single-use authorization code.
@@ -56,21 +62,19 @@ export const defAuthGet = (config: Config) => {
     authorization_code_expiration,
     include_error_description,
     issueCode,
+    issuer,
     log_prefix,
     refresh_token_expiration
   } = config
 
-  const authGet: RouteHandler<{
-    Querystring: AuthGetRequestQuerystring
-  }> = async (request, reply) => {
+  const authGet: RouteHandler<RouteGeneric> = async (request, reply) => {
     const {
       client_id,
       code_challenge,
       code_challenge_method,
       me,
       response_type,
-      scope,
-      state
+      scope
     } = request.query
 
     if (response_type !== 'code') {
@@ -108,7 +112,7 @@ export const defAuthGet = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    request.log.debug(client_metadata, 'IndieAuth client metadata')
+    request.log.debug(client_metadata, 'retrieved IndieAuth client metadata')
     const { client_name, client_uri, logo_uri, redirect_uris } = client_metadata
 
     if (!redirect_uris) {
@@ -127,13 +131,6 @@ export const defAuthGet = (config: Config) => {
       })
     }
 
-    // if (redirect_uris.length > 1) {
-    //   request.log.warn(
-    //     { redirect_uris },
-    //     `${log_prefix}Client ${client_id} has more than one redirect URI. Using the first one.`
-    //   )
-    // }
-
     const redirect_uri = redirect_uris.find(
       (uri) => uri === request.query.redirect_uri
     )
@@ -150,46 +147,44 @@ export const defAuthGet = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    request.log.warn(
-      { registered_by_client: redirect_uris, given_by_you: redirect_uri },
-      `${log_prefix}redirect URLs`
-    )
+    // TODO: the authorization code should be generated AFTER the user has
+    // approved the request.
 
-    // TODO: read specs on how to create an authorization code
-    const code = crypto.randomBytes(12).toString('hex')
-    // const now = unixTimestampInMs()
-    // const seconds = ms(authorization_code_expiration) / 1000
+    const { code, iss, state } = authorizationResponseUrl({
+      iss: issuer,
+      redirect_uri,
+      state: request.query.state
+    })
+
     const exp =
       (unixTimestampInMs() + ms(authorization_code_expiration as StringValue)) /
       1000
+
     const result = await issueCode({ code, exp })
     request.log.warn(result, `${log_prefix}issued authorization code`)
 
-    request.log.debug(`${log_prefix}render consent screen`)
-    // client is a IndieAuth/Micropub client
-
-    return reply.view('consent.njk', {
+    const data = {
       access_token_expiration,
       authorization_code_expiration,
-      // authorization_endpoint,
-      // authorization_response_iss_parameter_supported,
       client_id,
       client_name,
       client_uri,
-      code,
       code_challenge,
       code_challenge_method,
       description: 'User consent screen',
-      // issuer,
+      code,
+      iss,
       logo_uri,
       me,
       redirect_uri,
       refresh_token_expiration,
-      response_type: 'code',
       scopes: scope.split(' '),
       state,
       title: 'Consent'
-    })
+    }
+
+    request.log.debug(data, `${log_prefix}render consent.njk with this data`)
+    return reply.view('consent.njk', data)
   }
 
   return authGet

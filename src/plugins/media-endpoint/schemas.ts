@@ -1,9 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
+import { me } from '../../lib/indieauth/index.js'
 import {
   deleteContentOrMedia,
   include_error_description,
   isBlacklisted,
-  me,
   report_all_ajv_errors,
   uploadMedia
 } from '../../lib/schemas/index.js'

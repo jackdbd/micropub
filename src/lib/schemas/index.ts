@@ -47,7 +47,7 @@ export {
 
 export { jwt } from './jwt.js'
 
-export { exp, iat, iss, jti, me } from './jwt-claims.js'
+export { exp, iat, iss, jti } from './jwt-claims.js'
 
 export { location, type Location } from './location.js'
 

@@ -3,7 +3,7 @@ import assert from 'node:assert'
 import { serverMetadata } from '../../dist/lib/indieauth/index.js'
 
 describe('serverMetadata', () => {
-  it('retrieves the IndieAuth server metadata from my site', async () => {
+  it('retrieves the authorization server metadata from my site', async () => {
     const metadata_endpoint =
       'https://giacomodebidda.com/.well-known/oauth-authorization-server'
 

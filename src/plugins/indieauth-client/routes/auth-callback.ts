@@ -11,78 +11,95 @@ export interface Config {
   include_error_description: boolean
   log_prefix: string
   redirect_uri: string
-  // session_key: string // default 'access_token'
-  // also, 'state' and 'code_verifier' could be configuration parameters
-  token_endpoint: string
+  token_endpoint?: string
 }
 
 /**
- * Authorization callback.
+ * Authorization callback for the IndieAuth flow.
  *
  * @see [Authorization - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization)
+ * @see [Authorization Response - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization-response)
  */
 export const defAuthCallback = (config: Config) => {
-  const {
-    client_id,
-    include_error_description,
-    log_prefix,
-    redirect_uri,
-    token_endpoint
-  } = config
+  const { client_id, include_error_description, log_prefix, redirect_uri } =
+    config
 
   const callback: RouteHandler<{
     Querystring: AuthCallbackQuerystring
   }> = async (request, reply) => {
-    // TODO: I think I need to implement indieauth-metadata to receive `iss` in
-    // the query string from the authorization endpoint.
-    // https://indieauth.spec.indieweb.org/#authorization-response
-    const { iss } = request.query
+    const session_data = { code_verifier: '', issuer: '', state: '' }
+    type SessionKey = keyof typeof session_data
+    for (const key of Object.keys(session_data) as SessionKey[]) {
+      const value = request.session.get(key)
+      if (value) {
+        session_data[key] = value
+      } else {
+        const error_description = `Key '${key}' not found in session or it is undefined.`
+        request.log.error(`${log_prefix}${error_description}`)
 
-    request.log.warn(
-      request.query,
-      `${log_prefix}query string. It should have: code, state, iss (optional)`
+        const { code, body } = invalidRequest({
+          error_description,
+          include_error_description
+        })
+
+        return reply.errorResponse(code, {
+          ...body,
+          title: 'Authentication error',
+          description: 'Authentication error page'
+        })
+      }
+    }
+
+    const query_data = { code: '', iss: '', state: '' }
+    type QueryKey = keyof typeof query_data
+    for (const key of Object.keys(query_data) as QueryKey[]) {
+      const value = request.query[key]
+      if (value) {
+        query_data[key] = value
+      } else {
+        const error_description = `Key '${key}' not found in query string or it is undefined.`
+        request.log.error(`${log_prefix}${error_description}`)
+
+        const { code, body } = invalidRequest({
+          error_description,
+          include_error_description
+        })
+
+        return reply.errorResponse(code, {
+          ...body,
+          title: 'Authentication error',
+          description: 'Authentication error page'
+        })
+      }
+    }
+
+    // The client MUST verify 'iss' and 'state', as mentioned here:
+    // https://indieauth.spec.indieweb.org/#authorization-response
+
+    if (session_data.issuer !== query_data.iss) {
+      const error_description = `Parameter 'iss' found in query string does not match key 'issuer' found in session.`
+      request.log.error(
+        { query_string: query_data.iss, session: session_data.issuer },
+        `${log_prefix}${error_description}`
+      )
+
+      const { code, body } = invalidRequest({
+        error_description,
+        include_error_description
+      })
+
+      return reply.errorResponse(code, {
+        ...body,
+        title: 'Authentication error',
+        description: 'Authentication error page'
+      })
+    }
+
+    request.log.debug(
+      `${log_prefix}issuer verified: 'iss' in query string matches 'issuer' found in session`
     )
 
-    // TODO: Upon the redirect back to the client, the client MUST verify the things
-    // mentioned here:
-    // https://indieauth.spec.indieweb.org/#authorization-response
-    request.log.warn(`${log_prefix}verify iss ${iss}`)
-
-    if (!request.query.code) {
-      const error_description = `Key 'code' was not found in query string or it is undefined.`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Authentication error',
-        description: 'Authentication error page'
-      })
-    }
-
-    const state_from_session = request.session.get('state')
-
-    if (!state_from_session) {
-      const error_description = `Key 'state' was not found in session or it is undefined.`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Authentication error',
-        description: 'Authentication error page'
-      })
-    }
-
-    if (state_from_session !== request.query.state) {
+    if (session_data.state !== query_data.state) {
       const error_description = `Parameter 'state' found in query string does not match key 'state' found in session.`
       request.log.error(`${log_prefix}${error_description}`)
 
@@ -99,13 +116,31 @@ export const defAuthCallback = (config: Config) => {
     }
 
     request.log.debug(
-      `${log_prefix}state (CSRF token) found in query string matches state found in session`
+      `${log_prefix}state (CSRF token) verified: 'state' in query string matches 'state' found in session`
     )
 
-    const code_verifier = request.session.get('code_verifier')
+    // After the client validates the state parameter, the client makes a POST
+    // request to the token endpoint to exchange the authorization code for an
+    // access token.
+    // https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code
+    let token_endpoint = config.token_endpoint
+    if (!token_endpoint) {
+      request.log.debug(
+        `${log_prefix}token_endpoint not provided in config. Trying to find it in the session.`
+      )
+      token_endpoint = request.session.get('token_endpoint')
+    }
 
-    if (!code_verifier) {
-      const error_description = `Key 'code_verifier' was not found in session or it is undefined.`
+    // TODO: implement this behavior.
+    // Once the client has obtained an authorization code, it can redeem it for
+    // an access token OR the user's final profile URL.
+    // This means that not knowing the token endpoint here should NOT result in
+    // an error. It should mean that the client can ONLY authenticate the user,
+    // and not authorize him/her.
+    // https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code
+
+    if (!token_endpoint) {
+      const error_description = `Token endpoint not set. It was neither provided in the configuration, nor it was found in the session.`
       request.log.error(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
@@ -120,10 +155,6 @@ export const defAuthCallback = (config: Config) => {
       })
     }
 
-    // After the IndieAuth client validates the state parameter, the client
-    // makes a POST request to the token endpoint to exchange the authorization
-    // code for an access token.
-
     const response = await fetch(token_endpoint, {
       method: 'POST',
       headers: {
@@ -132,8 +163,8 @@ export const defAuthCallback = (config: Config) => {
       },
       body: new URLSearchParams({
         client_id,
-        code: request.query.code,
-        code_verifier,
+        code: query_data.code,
+        code_verifier: session_data.code_verifier,
         grant_type: 'authorization_code',
         redirect_uri
       })
@@ -159,7 +190,6 @@ export const defAuthCallback = (config: Config) => {
     let refresh_token: string | undefined
     try {
       const res_body = await response.json()
-      // console.log('=== token endpoint response body in auth-callback ===', res_body)
       access_token = res_body.access_token
       refresh_token = res_body.refresh_token
     } catch (err) {
@@ -198,15 +228,11 @@ export const defAuthCallback = (config: Config) => {
     }
 
     request.session.set('access_token', access_token)
-    request.log.debug(
-      `${log_prefix}set access token in session key 'access_token'`
-    )
+    request.log.debug(`${log_prefix}set access token in session`)
 
     if (refresh_token) {
       request.session.set('refresh_token', refresh_token)
-      request.log.debug(
-        `${log_prefix}set refresh token in session key 'refresh_token'`
-      )
+      request.log.debug(`${log_prefix}set refresh token in session`)
     }
 
     request.log.debug(

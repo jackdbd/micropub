@@ -14,6 +14,7 @@ import {
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
+import { defAuthCallback } from './routes/auth-callback.js'
 import { defAuthStartGet } from './routes/auth-start.js'
 import { defIdGet } from './routes/id-get.js'
 import { defLogin } from './routes/login-get.js'
@@ -45,14 +46,19 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
+    authorizationEndpoint: authorization_endpoint,
+    authorizationCallbackRoute: auth_callback_path,
+    authorizationStartRoute: auth_start_path,
     clientId: client_id,
     clientName: client_name,
     clientUri: client_uri,
     codeVerifierLength: code_verifier_length,
     includeErrorDescription: include_error_description,
+    issuer,
     logoUri: logo_uri,
     redirectUris: redirect_uris,
-    revocationEndpoint: revocation_endpoint
+    revocationEndpoint: revocation_endpoint,
+    tokenEndpoint: token_endpoint
   } = config
 
   // client ID and redirect URI of the GitHub OAuth app used to authenticate users
@@ -80,22 +86,40 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  // This is a route available on this IndieAuth client
-  const auth_start_path = '/auth/start'
+  const redirect_uri = redirect_uris[0] // `${base_url}${auth_callback_path}`
 
-  // This should be a URL I think, so the login form can be independent from
-  // the IndieAuth client.
+  fastify.get(
+    auth_callback_path,
+    {
+      onRequest: [],
+      onResponse: [],
+      schema: { querystring: {}, response: {} }
+    },
+    defAuthCallback({
+      client_id,
+      include_error_description,
+      log_prefix,
+      redirect_uri,
+      token_endpoint
+    })
+  )
+
+  // auth_start_path is a route available on this IndieAuth/Micropub client, but
+  // the login page could be hosted somewhere else, so we could do:
   // const auth_start_endpoint = `${base_url}${auth_start_path}`
+
   const auth_start_endpoint = auth_start_path
 
   fastify.get(
     auth_start_path,
     { schema: { querystring: auth_start_get_request_querystring } },
     defAuthStartGet({
+      authorization_endpoint,
       code_verifier_length,
       include_error_description,
+      issuer,
       log_prefix,
-      redirect_uri: redirect_uris[0] // `${base_url}${auth_callback}`
+      redirect_uri
     })
   )
 
@@ -108,7 +132,7 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
       client_uri,
       log_prefix,
       logo_uri,
-      redirect_uris // [`${base_url}${auth_callback}`]
+      redirect_uris
     })
   )
 

@@ -49,6 +49,7 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     addToIssuedCodes,
     authorizationCodeExpiration: authorization_code_expiration,
     includeErrorDescription: include_error_description,
+    issuer,
     markAuthorizationCodeAsUsed,
     refreshTokenExpiration: refresh_token_expiration
   } = config
@@ -88,6 +89,7 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
       access_token_expiration,
       authorization_code_expiration,
       include_error_description,
+      issuer,
       issueCode,
       log_prefix,
       refresh_token_expiration

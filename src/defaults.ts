@@ -1,14 +1,14 @@
-// TODO: use a short-lived access token (e.g. 3600 seconds) and a long-lived
-// refresh token.
-// export const ACCESS_TOKEN_EXPIRATION = '72 hours'
 export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
 // export const ACCESS_TOKEN_EXPIRATION = '3600 seconds' // this is quite common
+// export const ACCESS_TOKEN_EXPIRATION = '72 hours'
 
 export const AUTHORIZATION_CALLBACK_ROUTE = '/auth/callback'
 
 export const AUTHORIZATION_CODE_EXPIRATION = '60 seconds'
 
 // export const AUTHORIZATION_ENDPOINT = 'https://indieauth.com/auth'
+
+export const AUTHORIZATION_START_ROUTE = '/auth/start'
 
 export const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 
@@ -65,3 +65,5 @@ export const SHOULD_USE_SOFT_DELETE = false
 
 export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 export const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN
+
+// export const TOKEN_ENDPOINT = 'https://tokens.indieauth.com/token'

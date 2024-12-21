@@ -51,7 +51,7 @@ const revoke = async (config: RevokeConfig) => {
 export interface Config {
   include_error_description: boolean
   log_prefix: string
-  revocation_endpoint: string
+  revocation_endpoint?: string
 }
 
 /**
@@ -61,17 +61,37 @@ export interface Config {
  * @see [Token Revocation Request - IndieAuth spec](https://indieauth.spec.indieweb.org/#token-revocation-request)
  */
 export const defLogout = (config: Config) => {
-  const { include_error_description, log_prefix, revocation_endpoint } = config
+  const { include_error_description, log_prefix } = config
 
   const logout: RouteHandler = async (request, reply) => {
     request.log.info(`${log_prefix}Logging out`)
 
     // TODO: is it better to delete the session first and then revoke the
-    // tokens, or the other way around?
+    // tokens, or the other way around? See if the specs say anything about it.
 
     // There is no need to log that we are deleting the session, because
     // fastify-session already logs it for us.
     request.session.delete()
+
+    let revocation_endpoint = config.revocation_endpoint
+    if (!revocation_endpoint) {
+      request.log.debug(
+        `${log_prefix}revocation_endpoint not provided in config. Trying to find it in the session.`
+      )
+      revocation_endpoint = request.session.get('revocation_endpoint')
+    }
+
+    // As described in [RFC7009], the revocation endpoint responds with HTTP 200
+    // for both the case where the token was successfully revoked, or if the
+    // submitted token was invalid.
+    // https://indieauth.spec.indieweb.org/#token-revocation
+    // I am not sure whether to consider not having a revocation endpoint an
+    // error condition or not. For now I am simply logging a warning.
+    if (!revocation_endpoint) {
+      const warning = `Revocation endpoint not set. It was neither provided in the configuration, nor it was found in the session.`
+      request.log.warn(`${log_prefix}${warning}`)
+      return reply.redirect('/')
+    }
 
     const access_token = request.session.get('access_token')
     const refresh_token = request.session.get('refresh_token')
@@ -97,7 +117,7 @@ export const defLogout = (config: Config) => {
         const error_description = error.message
         request.log.warn(`${log_prefix}${error_description}`)
 
-        // At the moment my revocation endpoint does not support revoking
+        // TODO: at the moment my revocation endpoint does not support revoking
         // refresh tokens. For now I simply log a warning and continue.
 
         // const { code, body } = invalidRequest({

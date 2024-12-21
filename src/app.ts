@@ -108,9 +108,14 @@ declare module '@fastify/secure-session' {
     claims: AccessTokenClaims
     code_challenge: string
     code_verifier: string
+    introspection_endpoint: string
+    issuer: string
     refresh_token: string
     scope: string
     state: string
+    revocation_endpoint: string
+    token_endpoint: string
+    userinfo_endpoint: string
   }
 }
 
@@ -124,7 +129,7 @@ export async function defFastify(config: Config) {
     authorization_callback_route: authorizationCallbackRoute,
     authorization_code_expiration,
     authorization_endpoint: authorizationEndpoint,
-    base_url: baseUrl,
+    authorization_start_route: authorizationStartRoute,
     cloudflare_account_id,
     cloudflare_r2_access_key_id,
     cloudflare_r2_bucket_name,
@@ -133,11 +138,11 @@ export async function defFastify(config: Config) {
     github_repo,
     github_token,
     include_error_description: includeErrorDescription,
-    indieauth_client_id,
-    indieauth_client_logo_uri,
-    indieauth_client_name,
-    indieauth_client_redirect_uris,
-    indieauth_client_uri,
+    indieauth_client_id: clientId,
+    indieauth_client_logo_uri: logoUri,
+    indieauth_client_name: clientName,
+    indieauth_client_redirect_uris: redirectUris,
+    indieauth_client_uri: clientUri,
     introspection_endpoint: introspectionEndpoint,
     issuer,
     jwks,
@@ -163,8 +168,11 @@ export async function defFastify(config: Config) {
     token_endpoint: tokenEndpoint,
     use_development_error_handler,
     use_secure_flag_for_session_cookie
-    // userinfo_endpoint
+    // userinfo_endpoint: userinfoEndpoint
   } = config
+
+  // console.log(`=== app config ===`)
+  // console.log(config)
 
   // Authorization code storage - Filesystem backend ///////////////////////////
   // const filepath_codes = await init({
@@ -277,20 +285,26 @@ export async function defFastify(config: Config) {
     addToIssuedCodes,
     authorizationCodeExpiration: authorization_code_expiration,
     includeErrorDescription,
+    issuer,
     markAuthorizationCodeAsUsed,
     refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors
   })
 
   fastify.register(indieauthClient, {
-    clientId: indieauth_client_id,
-    clientName: indieauth_client_name,
-    clientUri: indieauth_client_uri,
+    authorizationCallbackRoute,
+    authorizationEndpoint,
+    authorizationStartRoute,
+    clientId,
+    clientName,
+    clientUri,
     includeErrorDescription,
-    logoUri: indieauth_client_logo_uri,
+    issuer,
+    logoUri,
     reportAllAjvErrors,
-    redirectUris: indieauth_client_redirect_uris,
-    revocationEndpoint
+    redirectUris,
+    revocationEndpoint,
+    tokenEndpoint
   })
 
   fastify.register(introspection, {
@@ -380,9 +394,6 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(micropub, {
-    authorizationCallbackRoute,
-    baseUrl,
-    clientId: indieauth_client_id,
     create: github.create,
     delete: github.delete,
     includeErrorDescription,
@@ -394,7 +405,6 @@ export async function defFastify(config: Config) {
     reportAllAjvErrors,
     submitEndpoint,
     syndicateTo: syndicate_to,
-    tokenEndpoint,
     undelete: github.undelete,
     update: github.update
   })

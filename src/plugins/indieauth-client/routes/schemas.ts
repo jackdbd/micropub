@@ -1,6 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { client_id } from '../../../lib/indieauth/index.js'
-import { me } from '../../../lib/schemas/index.js'
+import { client_id, me } from '../../../lib/indieauth/index.js'
 
 export const consent_get_request_querystring = Type.Object({
   me

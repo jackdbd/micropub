@@ -23,9 +23,3 @@ export const jti = Type.String({
   minLength: 1,
   title: 'JWT jti claim'
 })
-
-export const me = Type.String({
-  description: `URL of the user's website. IndieAuth extends OAuth 2.0 Token Introspection [RFC7662] by adding that the introspection response MUST include an additional parameter, me.`,
-  format: 'uri',
-  title: 'me'
-})

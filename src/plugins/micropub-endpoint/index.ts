@@ -16,9 +16,6 @@ import type { SyndicateToItem } from '../../lib/micropub/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import {
-  DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
-  DEFAULT_CODE_CHALLENGE_METHOD,
-  DEFAULT_CODE_VERIFIER_LENGTH,
   DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_LOG_PREFIX,
   DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
@@ -29,7 +26,6 @@ import { defMicropubResponse } from './decorators/reply.js'
 import { noScopeResponse } from './decorators/request.js'
 import { defValidateGetRequest } from './hooks.js'
 import { postAccepted } from './routes/accepted-get.js'
-import { defAuthCallback } from './routes/auth-callback.js'
 import { postCreated } from './routes/created-get.js'
 import { defEditor } from './routes/editor-get.js'
 import { defMicropubGet } from './routes/micropub-get.js'
@@ -42,9 +38,6 @@ import {
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  authorizationCallbackRoute: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
-  codeChallengeMethod: DEFAULT_CODE_CHALLENGE_METHOD,
-  codeVerifierLength: DEFAULT_CODE_VERIFIER_LENGTH,
   includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT_LOG_PREFIX,
   multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
@@ -87,9 +80,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
-    authorizationCallbackRoute: auth_callback,
-    baseUrl: base_url,
-    clientId: client_id,
     create,
     delete: deleteContent,
     includeErrorDescription: include_error_description,
@@ -100,7 +90,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     multipartFormDataMaxFileSize,
     submitEndpoint,
     syndicateTo: syndicate_to,
-    tokenEndpoint: token_endpoint,
     undelete,
     update
   } = config
@@ -187,22 +176,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  fastify.get(
-    auth_callback,
-    {
-      onRequest: [],
-      onResponse: [],
-      schema: { querystring: {}, response: {} }
-    },
-    defAuthCallback({
-      client_id,
-      include_error_description,
-      log_prefix,
-      redirect_uri: `${base_url}${auth_callback}`,
-      token_endpoint
-    })
-  )
-
   fastify.get(
     '/editor',
     defEditor({ log_prefix, submit_endpoint: submitEndpoint })

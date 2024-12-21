@@ -10,10 +10,33 @@ import {
   token_endpoint
 } from '../oauth2/index.js'
 
+/**
+ * Issuer identifier of the authorization server.
+ *
+ * The issuer identifier is a URL that uses the "https" scheme and has no
+ * query or fragment components as defined in RFC9207. It MUST also be a
+ * prefix of the indieauth-metadata URL.
+ *
+ * @see [Issuer Identifier](https://indieauth.spec.indieweb.org/#issuer-identifier)
+ * @see [OAuth 2.0 Authorization Server Issuer Identification](https://www.rfc-editor.org/rfc/rfc9207)
+ */
 export const issuer = Type.String({
-  description: `The authorization server's issuer identifier. It's a URL that uses the "https" scheme and has no query or fragment components.`,
+  description: `The authorization server's issuer identifier. It's a URL that uses the "https" scheme and has no query or fragment components. It MUST also be a prefix of the indieauth-metadata URL.`,
   format: 'uri',
   title: 'Issuer'
+})
+
+/**
+ * Profile URL.
+ *
+ * The client SHOULD provide the "me" query string parameter to the
+ * authorization endpoint, either the exact value the user entered, or the value
+ * after applying [URL Canonicalization](https://indieauth.spec.indieweb.org/#url-canonicalization).
+ */
+export const me = Type.String({
+  description: `Profile URL`,
+  format: 'uri',
+  title: 'me'
 })
 
 export const jwks_uri = Type.String({
@@ -131,48 +154,94 @@ const authorization_response_iss_parameter_supported = Type.Boolean({
   default: false
 })
 
+/**
+ * [IndieAuth Server Metadata](https://indieauth.spec.indieweb.org/#indieauth-server-metadata)
+ */
 export const server_metadata = Type.Object({
   authorization_endpoint,
+
+  /**
+   * Boolean parameter indicating whether the authorization server provides the
+   * `iss` parameter.
+   */
   authorization_response_iss_parameter_supported: Type.Optional(
     authorization_response_iss_parameter_supported
   ),
+
+  /**
+   * JSON array containing a list of Proof Key for Code Exchange (PKCE) code
+   * challenge methods supported by this authorization server.
+   */
   code_challenge_methods_supported: Type.Optional(
     code_challenge_methods_supported
   ),
+
   grant_types_supported: Type.Optional(grant_types_supported),
+
   introspection_endpoint: Type.Optional(introspection_endpoint),
+
   introspection_endpoint_auth_methods_supported: Type.Optional(
     introspection_endpoint_auth_methods_supported
   ),
+
   introspection_endpoint_auth_signing_alg_values_supported: Type.Optional(
     introspection_endpoint_auth_signing_alg_values_supported
   ),
+
+  /**
+   * The authorization server's issuer identifier. It's a URL that uses the
+   * "https" scheme and has no query or fragment components.
+   */
   issuer,
+
   jwks_uri: Type.Optional(jwks_uri),
+
   op_policy_uri: Type.Optional(op_policy_uri),
+
   op_tos_uri: Type.Optional(op_tos_uri),
+
   registration_endpoint: Type.Optional(registration_endpoint),
+
   response_modes_supported: Type.Optional(response_modes_supported),
-  response_types_supported,
+
+  response_types_supported: Type.Optional(response_types_supported),
+
   revocation_endpoint: Type.Optional(revocation_endpoint),
+
   revocation_endpoint_auth_methods_supported: Type.Optional(
     revocation_endpoint_auth_methods_supported
   ),
+
   revocation_endpoint_auth_signing_alg_values_supported: Type.Optional(
     revocation_endpoint_auth_signing_alg_values_supported
   ),
+
+  /**
+   * JSON array containing a list of the OAuth 2.0 "scope" values that this
+   * authorization server supports.
+   */
   scopes_supported: Type.Optional(scopes_supported),
-  service_documentation,
+
+  service_documentation: Type.Optional(service_documentation),
+
   token_endpoint,
+
   token_endpoint_auth_methods_supported: Type.Optional(
     token_endpoint_auth_methods_supported
   ),
+
   token_endpoint_auth_signing_alg_values_supported: Type.Optional(
     token_endpoint_auth_signing_alg_values_supported
   ),
-  ui_locales_supported: Type.Optional(ui_locales_supported)
+
+  ui_locales_supported: Type.Optional(ui_locales_supported),
+
+  userinfo_endpoint: Type.Optional(userinfo_endpoint)
 })
 
+/**
+ * [IndieAuth Server Metadata](https://indieauth.spec.indieweb.org/#indieauth-server-metadata)
+ */
 export type ServerMetadata = Static<typeof server_metadata>
 
 export const client_id = Type.String({

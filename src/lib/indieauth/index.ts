@@ -1,4 +1,6 @@
-export { authorizationUrl } from './authorization-url.js'
+export { authorizationRequestUrl } from './authorization-request-url.js'
+
+export { authorizationResponseUrl } from './authorization-response-url.js'
 
 export { clientMetadata } from './client-metadata.js'
 
@@ -18,6 +20,7 @@ export {
   issuer,
   jwks_uri,
   logo_uri,
+  me,
   redirect_uri,
   redirect_uris,
   registration_endpoint,

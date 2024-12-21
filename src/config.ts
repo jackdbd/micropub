@@ -59,8 +59,8 @@ export interface Config {
   access_token_expiration: string
   authorization_callback_route: string
   authorization_code_expiration: string
+  authorization_start_route: string
   authorization_endpoint: string
-  base_url: string
   cloudflare_account_id: string
   cloudflare_r2_access_key_id: string
   cloudflare_r2_bucket_name: string
@@ -88,6 +88,16 @@ export interface Config {
 
   introspection_endpoint: string
 
+  /**
+   * Issuer identifier of the authorization server.
+   *
+   * The issuer identifier is a URL that uses the "https" scheme and has no
+   * query or fragment components as defined in RFC9207. It MUST also be a
+   * prefix of the indieauth-metadata URL.
+   *
+   * @see [Issuer Identifier](https://indieauth.spec.indieweb.org/#issuer-identifier)
+   * @see [OAuth 2.0 Authorization Server Issuer Identification](https://www.rfc-editor.org/rfc/rfc9207)
+   */
   issuer: string
 
   /**
@@ -180,6 +190,7 @@ export const defConfig = async (): Promise<Config> => {
   const base_url = process.env.BASE_URL || `http://localhost:${port}`
 
   const authorization_callback_route = DEFAULT.AUTHORIZATION_CALLBACK_ROUTE
+  const authorization_start_route = DEFAULT.AUTHORIZATION_START_ROUTE
 
   // Example of IndieAuth/Micropub client: https://indiebookclub.biz/id
   const indieauth_client_id = `${base_url}/id`
@@ -226,8 +237,8 @@ export const defConfig = async (): Promise<Config> => {
     access_token_expiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
     authorization_callback_route,
     authorization_code_expiration: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
+    authorization_start_route,
     authorization_endpoint,
-    base_url,
     cloudflare_account_id: DEFAULT.CLOUDFLARE_ACCOUNT_ID!,
     cloudflare_r2_access_key_id: DEFAULT.CLOUDFLARE_R2_ACCESS_KEY_ID!,
     cloudflare_r2_bucket_name: DEFAULT.CLOUDFLARE_R2_BUCKET_NAME!,

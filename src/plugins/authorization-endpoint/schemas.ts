@@ -5,6 +5,7 @@ import {
   type AddToIssuedCodes,
   type MarkCodeAsUsed
 } from '../../lib/authorization-code-storage-interface/index.js'
+import { issuer } from '../../lib/indieauth/index.js'
 import {
   include_error_description,
   report_all_ajv_errors
@@ -48,6 +49,15 @@ export const options = Type.Object(
       ...include_error_description,
       default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
     }),
+
+    /**
+     * Issuer identifier. This is optional in OAuth 2.0 servers, but required in
+     * IndieAuth servers.
+     *
+     * See also the `authorization_response_iss_parameter_supported` parameter in
+     * [IndieAuth Server Metadata](https://indieauth.spec.indieweb.org/#indieauth-server-metadata).
+     */
+    issuer: Type.Optional(issuer),
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
 

@@ -1,11 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
+import { issuer, me } from '../../lib/indieauth/index.js'
 import {
   include_error_description,
   isBlacklisted,
-  iss,
   jwks_url,
   markTokenAsRevoked,
-  me,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
 import type {
@@ -26,7 +25,7 @@ export const options = Type.Object({
 
   isBlacklisted,
 
-  issuer: iss,
+  issuer,
 
   jwksUrl: jwks_url,
 

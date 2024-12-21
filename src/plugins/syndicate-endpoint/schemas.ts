@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
+import { me } from '../../lib/indieauth/index.js'
 import {
   include_error_description,
-  me,
   get,
   isBlacklisted,
   publishedUrlToStorageLocation,
