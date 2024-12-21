@@ -94,10 +94,6 @@ export const defAuthStartGet = (config: Config) => {
     }
 
     request.log.debug(`${log_prefix}retrieved authorization server metadata`)
-    request.log.warn(
-      server_metadata,
-      `${log_prefix}authorization server metadata`
-    )
 
     const {
       authorization_response_iss_parameter_supported,
@@ -109,31 +105,34 @@ export const defAuthStartGet = (config: Config) => {
       userinfo_endpoint
     } = server_metadata
 
+    // const prefix = `${log_prefix}OAuth Client ID Metadata Document published at ${metadata_endpoint}`
+    const prefix = `${log_prefix}server metadata`
+
     if (introspection_endpoint) {
       request.session.set('introspection_endpoint', introspection_endpoint)
       request.log.debug(
-        `${log_prefix}OAuth Client ID Metadata Document published at ${metadata_endpoint} includes 'introspection_endpoint'. Set it in session.`
+        `${prefix}includes 'introspection_endpoint'. Set it in session.`
       )
     }
 
     if (revocation_endpoint) {
       request.session.set('revocation_endpoint', revocation_endpoint)
       request.log.debug(
-        `${log_prefix}OAuth Client ID Metadata Document published at ${metadata_endpoint} includes 'revocation_endpoint'. Set it in session.`
+        `${prefix}includes 'introspection_endpoint'. Set it in session.`
       )
     }
 
     if (token_endpoint) {
       request.session.set('token_endpoint', token_endpoint)
       request.log.debug(
-        `${log_prefix}OAuth Client ID Metadata Document published at ${metadata_endpoint} includes 'token_endpoint'. Set it in session.`
+        `${prefix}includes 'introspection_endpoint'. Set it in session.`
       )
     }
 
     if (userinfo_endpoint) {
       request.session.set('userinfo_endpoint', userinfo_endpoint)
       request.log.debug(
-        `${log_prefix}OAuth Client ID Metadata Document published at ${metadata_endpoint} includes 'userinfo_endpoint'. Set it in session.`
+        `${prefix}includes 'introspection_endpoint'. Set it in session.`
       )
     }
 
@@ -184,12 +183,6 @@ export const defAuthStartGet = (config: Config) => {
       request.log.warn(`${log_prefix}${warning}`)
     }
 
-    // const before = {
-    //   code_verifier: request.session.get('code_verifier'),
-    //   state: request.session.get('state')
-    // }
-    // request.log.warn(before, `${log_prefix}SESSION BEFORE`)
-
     const state = reply.generateCsrf()
     request.session.set('state', state)
     request.log.debug(
@@ -214,33 +207,26 @@ export const defAuthStartGet = (config: Config) => {
       `The state (CSRF token) returned by authorization URL does not match the generated state`
     )
 
-    request.session.set('code_verifier', auth.code_verifier)
-    request.log.debug(
-      `${log_prefix}generated code verifier (for PKCE code challenge) and set it in session`
-    )
-
     assert.strictEqual(
       auth.code_verifier.length,
       code_verifier_length,
       `The code verifier length returned by authorization URL is ${auth.code_verifier.length}, when it should be ${code_verifier_length}`
     )
 
-    // Since the authorization endpoint supports the "iss" parameter, the client
-    // MUST verify that the "iss" value received in the redirect URI matches the
-    // "issuer" value found in the OAuth Client ID Metadata Document
+    request.session.set('code_verifier', auth.code_verifier)
+    request.log.debug(
+      `${log_prefix}generated code verifier (for PKCE code challenge) and set it in session`
+    )
+
+    // Since the authorization endpoint supports the "iss" parameter (optional
+    // in OAuth 2.0 servers, but required in IndieAuth servers), the client MUST
+    // verify that the "iss" value received in the redirect URI matches the
+    // "issuer" value found in the OAuth Client ID Metadata Document.
     // https://indieauth.spec.indieweb.org/#authorization-response
     if (authorization_response_iss_parameter_supported && issuer) {
       request.session.set('issuer', issuer)
-      request.log.debug(
-        `${log_prefix}the redirect URI from the authorization endpoint ${authorization_endpoint} should include iss=${issuer}. Set expected issuer in session`
-      )
+      request.log.debug(`${log_prefix}set expected issuer in session`)
     }
-
-    // const after = {
-    //   code_verifier: request.session.get('code_verifier'),
-    //   state: request.session.get('state')
-    // }
-    // request.log.warn(after, `${log_prefix}SESSION AFTER`)
 
     return reply.redirect(auth.redirect_url)
   }

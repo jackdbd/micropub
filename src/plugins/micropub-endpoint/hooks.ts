@@ -2,8 +2,11 @@ import Ajv from 'ajv'
 import type { preHandlerHookHandler } from 'fastify'
 
 import { hasScope } from '../../lib/fastify-request-predicates/index.js'
-import { insufficientScope, invalidRequest } from '../../lib/micropub/index.js'
-import type { Action } from '../../lib/schemas/index.js'
+import {
+  type Action,
+  insufficientScope,
+  invalidRequest
+} from '../../lib/micropub/index.js'
 
 import { NAME } from './constants.js'
 import { micropub_get_request } from './routes/schemas.js'

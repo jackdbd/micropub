@@ -1,9 +1,12 @@
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
 import type { RouteHandler } from 'fastify'
 import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
-import { invalidRequest, serverError } from '../../../lib/micropub/index.js'
+import {
+  type Action,
+  invalidRequest,
+  serverError
+} from '../../../lib/micropub/index.js'
 import type {
-  Action,
   DeleteContentOrMedia,
   UploadMedia
 } from '../../../lib/schemas/index.js'
@@ -31,10 +34,10 @@ interface Config {
  * that was created in the HTTP Location header, and respond with HTTP 201
  * Created. The response body is left undefined.
  *
- * @see https://micropub.spec.indieweb.org/#media-endpoint
- * @see https://micropub.spec.indieweb.org/#request
- * @see https://www.w3.org/TR/micropub/#response-3
- * @see https://micropub.spec.indieweb.org/#uploading-files
+ * @see [Media Endpoint](https://micropub.spec.indieweb.org/#media-endpoint)
+ * @see [Request to the Media Endpoint](https://micropub.spec.indieweb.org/#request)
+ * @see [Response from the Media Endpoint](https://www.w3.org/TR/micropub/#response-3)
+ * @see [Uploading Files](https://micropub.spec.indieweb.org/#uploading-files)
  */
 export const defMediaPost = (config: Config) => {
   const { delete: deleteMedia, include_error_description, upload } = config

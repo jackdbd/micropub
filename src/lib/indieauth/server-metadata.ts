@@ -1,3 +1,4 @@
+import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
 import { canonicalUrl } from './url-canonicalization.js'
 import type { ServerMetadata } from './schemas.js'
 
@@ -25,8 +26,8 @@ export const serverMetadata = async (metadata_endpoint: string) => {
   }
 
   if (!response.ok) {
-    const details = `${response.statusText} (${response.status})`
-    return { error: new Error(`Failed to fetch ${url}: ${details}`) }
+    const msg = await errorMessageFromJSONResponse(response)
+    return { error: new Error(`Failed to fetch ${url}: ${msg}`) }
   }
 
   try {

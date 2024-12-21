@@ -1,3 +1,4 @@
+import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
 import { linkHeaderToLinkHref } from './parse-link-header.js'
 import { htmlToLinkHref } from './parse-link-html.js'
 import { canonicalUrl } from './url-canonicalization.js'
@@ -25,8 +26,8 @@ export const metadataEndpoint = async (me: string) => {
   }
 
   if (!response.ok) {
-    const details = `${response.statusText} (${response.status})`
-    return { error: new Error(`Failed to fetch ${url}: ${details}`) }
+    const msg = await errorMessageFromJSONResponse(response)
+    return { error: new Error(`Failed to fetch ${url}: ${msg}`) }
   }
 
   // TODO: follow redirects

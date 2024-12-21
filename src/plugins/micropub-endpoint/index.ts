@@ -25,12 +25,8 @@ import {
 import { defMicropubResponse } from './decorators/reply.js'
 import { noScopeResponse } from './decorators/request.js'
 import { defValidateGetRequest } from './hooks.js'
-import { postAccepted } from './routes/accepted-get.js'
-import { postCreated } from './routes/created-get.js'
-import { defEditor } from './routes/editor-get.js'
 import { defMicropubGet } from './routes/micropub-get.js'
 import { defMicropubPost } from './routes/micropub-post.js'
-import { defSubmit } from './routes/submit-post.js'
 import {
   micropub_get_request,
   micropub_post_request
@@ -88,7 +84,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
     multipartFormDataMaxFileSize,
-    submitEndpoint,
     syndicateTo: syndicate_to,
     undelete,
     update
@@ -177,11 +172,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   // === ROUTES ============================================================= //
   fastify.get(
-    '/editor',
-    defEditor({ log_prefix, submit_endpoint: submitEndpoint })
-  )
-
-  fastify.get(
     '/micropub',
     { preHandler: [validateGetRequest], schema: micropub_get_request },
     defMicropubGet({ media_endpoint, syndicate_to })
@@ -212,12 +202,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       update
     })
   )
-
-  fastify.get('/accepted', postAccepted)
-
-  fastify.get('/created', postCreated)
-
-  fastify.post('/submit', defSubmit({ log_prefix, micropub_endpoint }))
 
   done()
 }

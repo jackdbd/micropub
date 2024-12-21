@@ -1,8 +1,6 @@
 import type { RouteHandler } from 'fastify'
-import {
-  invalidRequest,
-  type ErrorResponseBody
-} from '../../../lib/micropub/index.js'
+import { invalidRequest } from '../../../lib/micropub/index.js'
+import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 
 interface RevokeConfig {
   /**
@@ -37,11 +35,8 @@ const revoke = async (config: RevokeConfig) => {
   })
 
   if (!response.ok) {
-    const err_res_body: ErrorResponseBody = await response.json()
-    const details =
-      err_res_body.error_description ??
-      `${response.statusText} (${response.status})`
-    return { error: new Error(`Cannot revoke ${token_type_hint}: ${details}`) }
+    const msg = await errorMessageFromJSONResponse(response)
+    return { error: new Error(`Cannot revoke ${token_type_hint}: ${msg}`) }
   }
 
   // On success, the revocation endpoint responds with HTTP 204 No Content.

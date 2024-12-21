@@ -6,9 +6,12 @@ import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { rfc3339 } from '../../../lib/date.js'
 import { hasScope } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
-import { invalidRequest, normalizeJf2 } from '../../../lib/micropub/index.js'
+import {
+  type Action,
+  invalidRequest,
+  normalizeJf2
+} from '../../../lib/micropub/index.js'
 import type {
-  Action,
   DeleteContentOrMedia,
   Undelete,
   Update,

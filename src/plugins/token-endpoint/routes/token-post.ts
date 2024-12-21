@@ -1,11 +1,16 @@
-import type { RouteHandler } from 'fastify'
+import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
 import { invalidRequest, serverError } from '../../../lib/micropub/index.js'
+import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type {
   TokenPostConfig as Config,
   TokenPostRequestBody
 } from './schemas.js'
+
+interface RouteGeneric extends RouteGenericInterface {
+  Body: TokenPostRequestBody
+}
 
 /**
  * Verifies the authorization code and issues an access token.
@@ -23,17 +28,25 @@ export const defTokenPost = (config: Config) => {
   // OAuth 2.0 Access Token Request
   // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
 
-  // The token endpoint needs to verify that the authorization code is valid,
-  // and that it was issued for the matching client_id and redirect_uri,
-  // contains at least one scope, and checks that the provided code_verifier
-  // hashes to the same value as given in the code_challenge in the original
-  // authorization request.
+  // The token endpoint needs to verify that:
+  //
+  // 1. the authorization code is valid (does it simply mean not expired?)
+  // 2. the authorization code was issued for the matching client_id and
+  //    redirect_uri (so it needs access to the storage where authorization
+  //    codes are stored)
+  // 3. the authorization code contains at least one scope (so it needs access
+  //    to the storage where authorization codes are stored)
+  // 4. the provided code_verifier hashes to the same value as given in the
+  //    code_challenge in the original authorization request. But how is this
+  //    possible? The IndieAuth client and the token endpoint could be on
+  //    different servers! Do I need to store the code challenge where the
+  //    authorization codes are stored?
+  //
   // https://indieauth.spec.indieweb.org/#access-token-response
+  // I think that all except the last one of these checks are done at the /auth
+  // endpoint (POST /auth).
 
-  const tokenPost: RouteHandler<{ Body: TokenPostRequestBody }> = async (
-    request,
-    reply
-  ) => {
+  const tokenPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     const { client_id, code, code_verifier, grant_type, redirect_uri } =
       request.body
 
@@ -49,17 +62,16 @@ export const defTokenPost = (config: Config) => {
       return reply.errorResponse(code, body)
     }
 
-    request.log.warn(
-      { code_verifier },
-      `${log_prefix}TODO: check that the provided code_verifier hashes to the same value as given in the code_challenge in the original authorization request`
-    )
-
     request.log.debug(
       `${log_prefix}POST to ${authorization_endpoint} to verify authorization code`
     )
 
+    request.log.warn(
+      `${log_prefix}TODO: verify that 'code_verifier' hashes to the same value as given in the code_challenge in the original authorization request`
+    )
+
     // https://indieweb.org/obtaining-an-access-token#Verifying_the_authorization_code
-    const auth_response = await fetch(authorization_endpoint, {
+    const response = await fetch(authorization_endpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -74,8 +86,9 @@ export const defTokenPost = (config: Config) => {
       })
     })
 
-    if (!auth_response.ok) {
-      const error_description = `Could not verify authorization code (${auth_response.status})`
+    if (!response.ok) {
+      const msg = await errorMessageFromJSONResponse(response)
+      const error_description = `Could not verify authorization code: ${msg}`
       request.log.warn(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
@@ -90,9 +103,13 @@ export const defTokenPost = (config: Config) => {
       `${log_prefix}the authorization endpoint ${authorization_endpoint} verified the authorization code`
     )
 
+    // After the authorization server verifies that the redirect_uri, client_id
+    // match the code given, the response will include the "me" and "scope"
+    // values.
+    // https://indieweb.org/obtaining-an-access-token#Verifying_the_authorization_code
     let auth_res_body: { me: string; scope: string }
     try {
-      auth_res_body = await auth_response.json()
+      auth_res_body = await response.json()
     } catch (err: any) {
       const error_description = `Failed to parse the JSON response received from the authorization endpoint: ${err.message}`
       request.log.error(`${log_prefix}${error_description}`)
@@ -126,6 +143,10 @@ export const defTokenPost = (config: Config) => {
 
       return reply.errorResponse(code, body)
     }
+
+    // If the authorization code was issued with no scope, the token endpoint
+    // MUST NOT issue an access token.
+    // https://indieauth.spec.indieweb.org/#access-token-response
 
     // if (!scope) {
     //   const error_description = `Response body from authorization endpoint does not include 'scope'`

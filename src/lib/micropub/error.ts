@@ -1,3 +1,4 @@
+import type { ErrorResponse as ErrorResponseBody } from '../oauth2/index.js'
 import type { ClientError as ClientErrorCode } from './status-codes.js'
 
 export type ClientErrorType =
@@ -18,20 +19,6 @@ export type ServerErrorType =
   | 'upload_failed'
   | 'delete_failed'
   | 'undelete_failed'
-
-export interface ErrorResponseBody {
-  // This might be too strict. Users would probably need to cast generic strings
-  // to this type.
-  // error: ClientErrorType | ServerErrorType
-  error: string
-
-  /**
-   * A human-readable description of the error. This is meant to assist the
-   * Micropub client developer in understanding the error. This is NOT meant to
-   * be shown to the end user.
-   */
-  error_description?: string
-}
 
 /**
  * @see https://micropub.spec.indieweb.org/#error-response

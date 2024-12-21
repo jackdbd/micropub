@@ -1,5 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
 import { me } from '../../lib/indieauth/index.js'
+import { media_endpoint, micropub_endpoint } from '../../lib/micropub/index.js'
 import {
   create,
   deleteContentOrMedia,
@@ -39,19 +40,9 @@ export const options = Type.Object(
 
     me,
 
-    mediaEndpoint: Type.Optional(
-      Type.String({
-        format: 'uri',
-        title: 'media endpoint'
-      })
-    ),
+    mediaEndpoint: Type.Optional(media_endpoint),
 
-    micropubEndpoint: Type.Optional(
-      Type.String({
-        format: 'uri',
-        title: 'micropub endpoint'
-      })
-    ),
+    micropubEndpoint: Type.Optional(micropub_endpoint),
 
     multipartFormDataMaxFileSize: Type.Optional(
       Type.Number({
@@ -66,13 +57,6 @@ export const options = Type.Object(
       ...report_all_ajv_errors,
       default: DEFAULT_REPORT_ALL_AJV_ERRORS
     }),
-
-    submitEndpoint: Type.Optional(
-      Type.String({
-        format: 'uri',
-        title: 'submit endpoint'
-      })
-    ),
 
     syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
 

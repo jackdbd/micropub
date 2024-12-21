@@ -16,6 +16,7 @@ export interface Config {
  * Verifies the authorization code and marks it as used.
  *
  * @see [Redeeming the Authorization Code - IndieAuth spec](https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code)
+ * @see [Verifying the authorization code - indieweb.org](https://indieweb.org/obtaining-an-access-token#Verifying_the_authorization_code)
  */
 export const defAuthPost = (config: Config) => {
   const { include_error_description, log_prefix, markAuthorizationCodeAsUsed } =
@@ -26,8 +27,18 @@ export const defAuthPost = (config: Config) => {
     reply
   ) => {
     request.log.warn(
-      { body: request.body, params: request.params, query: request.query },
-      `${log_prefix}TODO: verify that authorization code was issued for this client_id`
+      { body: request.body, query: request.query },
+      `${log_prefix}TODO: verify authorization code`
+    )
+
+    request.log.warn(`${log_prefix}TODO: verify that 'code' is not expired`)
+
+    request.log.warn(
+      `${log_prefix}TODO: verify that 'code' was issued for 'client_id' and 'redirect_uri'`
+    )
+
+    request.log.warn(
+      `${log_prefix}TODO: verify that 'code' was issued with at least one scope`
     )
 
     const { client_id, code } = request.body
@@ -51,12 +62,6 @@ export const defAuthPost = (config: Config) => {
       value,
       `${log_prefix}marked authorization code as used by client ${client_id}`
     )
-
-    // const { client_id, code, redirect_uri } = request.body
-    // request.log.warn(request.body, `${log_prefix}request body`)
-
-    // 'Content-Type': 'application/x-www-form-urlencoded'
-    // URLSearchParams({ client_id, code, redirect_uri })
 
     return reply.code(200).send({ me: ME, scope: SCOPE })
   }

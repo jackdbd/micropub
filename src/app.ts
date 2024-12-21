@@ -14,11 +14,11 @@ import type { Environment } from 'nunjucks'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
-import type { ErrorResponseBody } from './lib/micropub/index.js'
+import type { Action } from './lib/micropub/index.js'
+import type { ErrorResponse as ErrorResponseBody } from './lib/oauth2/index.js'
 import { defR2 } from './lib/r2-storage/client.js'
-import { Action } from './lib/schemas/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
-import type { AccessTokenClaims } from './lib/token/claims.js'
+import type { AccessTokenClaims } from './lib/token/index.js'
 
 import auth from './plugins/authorization-endpoint/index.js'
 import errorHandler from './plugins/error-handler/index.js'
@@ -301,9 +301,11 @@ export async function defFastify(config: Config) {
     includeErrorDescription,
     issuer,
     logoUri,
+    micropubEndpoint,
     reportAllAjvErrors,
     redirectUris,
     revocationEndpoint,
+    submitEndpoint,
     tokenEndpoint
   })
 
@@ -403,7 +405,6 @@ export async function defFastify(config: Config) {
     micropubEndpoint,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    submitEndpoint,
     syndicateTo: syndicate_to,
     undelete: github.undelete,
     update: github.update

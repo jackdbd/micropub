@@ -3,7 +3,8 @@ import {
   invalidRequest,
   serverError,
   unauthorized
-} from '../../../lib/micropub/error-responses.js'
+} from '../../../lib/micropub/index.js'
+import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type { AuthCallbackQuerystring } from '../../authorization-endpoint/routes/schemas.js'
 
 export interface Config {
@@ -15,7 +16,8 @@ export interface Config {
 }
 
 /**
- * Authorization callback for the IndieAuth flow.
+ * Authorization callback for the IndieAuth flow. Users will be redirected here
+ * by the authorization endpoint after they approve the authorization request.
  *
  * @see [Authorization - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization)
  * @see [Authorization Response - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization-response)
@@ -138,6 +140,8 @@ export const defAuthCallback = (config: Config) => {
     // an error. It should mean that the client can ONLY authenticate the user,
     // and not authorize him/her.
     // https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code
+    // See how it's implemented here:
+    // https://github.com/simonw/datasette-indieauth
 
     if (!token_endpoint) {
       const error_description = `Token endpoint not set. It was neither provided in the configuration, nor it was found in the session.`
@@ -171,7 +175,8 @@ export const defAuthCallback = (config: Config) => {
     })
 
     if (!response.ok) {
-      const error_description = `Failed to exchange authorization code for access token.`
+      const msg = await errorMessageFromJSONResponse(response)
+      const error_description = `Failed to exchange authorization code for access token: ${msg}`
       request.log.error(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({

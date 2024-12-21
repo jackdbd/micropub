@@ -1,7 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
+import { jwt, jti } from '../jwt/index.js'
 import { failure } from './failure.js'
-import { jwt } from './jwt.js'
-import { jti } from './jwt-claims.js'
 import { options } from './mark-token-as-revoked.js'
 
 const success = Type.Object({

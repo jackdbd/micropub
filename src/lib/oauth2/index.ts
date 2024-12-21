@@ -1,3 +1,7 @@
+export { errorMessageFromJSONResponse } from './error-message-from-response.js'
+
+export type { ErrorType, ErrorResponse } from './error-response.js'
+
 export {
   authorization_code,
   authorization_endpoint,

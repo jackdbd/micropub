@@ -1,6 +1,5 @@
 import type { FastifyRequest } from 'fastify'
-import { insufficientScope } from '../../../lib/micropub/index.js'
-import { Action } from '../../../lib/schemas/index.js'
+import { type Action, insufficientScope } from '../../../lib/micropub/index.js'
 import { NAME } from '../constants.js'
 
 const PREFIX = `${NAME}/decorators/request `

@@ -1,7 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
+import { exp, jti, jwt } from '../jwt/index.js'
 import { failure } from './failure.js'
-import { jwt } from './jwt.js'
-import { exp, jti } from './jwt-claims.js'
 
 const success = Type.Object({
   error: Type.Optional(Type.Undefined()),

@@ -1,9 +1,6 @@
 import type { RouteHandler } from 'fastify'
-import {
-  invalidRequest,
-  unauthorized
-} from '../../../lib/micropub/error-responses.js'
-import { ErrorResponseBody } from '../../../lib/micropub/error.js'
+import { invalidRequest, unauthorized } from '../../../lib/micropub/index.js'
+import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 
 export interface TokenGetConfig {
   include_error_description: boolean
@@ -58,14 +55,9 @@ export const defTokenGet = (config: TokenGetConfig) => {
     })
 
     if (!response.ok) {
-      const err_res_body: ErrorResponseBody = await response.json()
-
-      const details =
-        err_res_body.error_description ??
-        `${response.statusText} (${response.status})`
-
-      const error_description = `Cannot introspect ${token_type_hint}: ${details}`
-      request.log.warn(`${log_prefix}${error_description}`)
+      const msg = await errorMessageFromJSONResponse(response)
+      const error_description = `Cannot introspect ${token_type_hint}: ${msg}`
+      request.log.error(`${log_prefix}${error_description}`)
 
       const { code, body } = invalidRequest({
         error_description,

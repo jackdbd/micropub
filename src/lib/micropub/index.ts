@@ -1,8 +1,4 @@
-export type {
-  ClientErrorResponse,
-  ClientErrorType,
-  ErrorResponseBody
-} from './error.js'
+export type { ClientErrorResponse, ClientErrorType } from './error.js'
 
 export {
   forbidden,
@@ -48,7 +44,12 @@ export type {
   Publication
 } from './publication.js'
 
-export { media_endpoint, micropub_endpoint } from './schemas.js'
+export {
+  action,
+  type Action,
+  media_endpoint,
+  micropub_endpoint
+} from './schemas.js'
 
 export type {
   ClientError as ClientErrorStatusCode,

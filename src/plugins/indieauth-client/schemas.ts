@@ -4,11 +4,6 @@ import {
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
 import {
-  authorization_endpoint,
-  revocation_endpoint,
-  token_endpoint
-} from '../../lib/oauth2/index.js'
-import {
   client_id,
   client_name,
   client_uri,
@@ -16,6 +11,12 @@ import {
   logo_uri,
   redirect_uris
 } from '../../lib/indieauth/index.js'
+import { micropub_endpoint } from '../../lib/micropub/index.js'
+import {
+  authorization_endpoint,
+  revocation_endpoint,
+  token_endpoint
+} from '../../lib/oauth2/index.js'
 import { code_verifier_length } from '../../lib/pkce/index.js'
 import {
   DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
@@ -85,6 +86,8 @@ export const options = Type.Object(
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
 
+    micropubEndpoint: micropub_endpoint,
+
     redirectUris: redirect_uris,
 
     reportAllAjvErrors: Type.Optional({
@@ -104,6 +107,10 @@ export const options = Type.Object(
      */
     revocationEndpoint: Type.Optional(revocation_endpoint),
 
+    submitEndpoint: Type.String({
+      format: 'uri',
+      title: 'submit endpoint'
+    }),
     /**
      * Token endpoint URL. If not provided, the one found in the OAuth Client ID
      * Metadata Document during

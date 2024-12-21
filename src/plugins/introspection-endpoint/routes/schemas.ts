@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import { me } from '../../../lib/indieauth/index.js'
+import { exp, iat, iss, jti } from '../../../lib/jwt/index.js'
 import { scope } from '../../../lib/oauth2/index.js'
-import { exp, iat, iss, jti } from '../../../lib/schemas/index.js'
 
 const active = Type.Boolean({
   description: `Boolean indicator of whether or not the presented token is currently active.`,

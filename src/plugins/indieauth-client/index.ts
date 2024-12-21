@@ -16,9 +16,13 @@ import {
 } from './constants.js'
 import { defAuthCallback } from './routes/auth-callback.js'
 import { defAuthStartGet } from './routes/auth-start.js'
+import { defEditor } from './routes/editor-get.js'
 import { defIdGet } from './routes/id-get.js'
 import { defLogin } from './routes/login-get.js'
 import { defLogout } from './routes/logout-get.js'
+import { postAccepted } from './routes/post-accepted-get.js'
+import { postCreated } from './routes/post-created-get.js'
+import { defSubmit } from './routes/submit-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 import { auth_start_get_request_querystring } from './routes/schemas.js'
 
@@ -56,8 +60,10 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     includeErrorDescription: include_error_description,
     issuer,
     logoUri: logo_uri,
+    micropubEndpoint: micropub_endpoint,
     redirectUris: redirect_uris,
     revocationEndpoint: revocation_endpoint,
+    submitEndpoint: submit_endpoint,
     tokenEndpoint: token_endpoint
   } = config
 
@@ -122,6 +128,14 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
       redirect_uri
     })
   )
+
+  fastify.get('/editor', defEditor({ log_prefix, submit_endpoint }))
+
+  fastify.get('/accepted', postAccepted)
+
+  fastify.get('/created', postCreated)
+
+  fastify.post('/submit', defSubmit({ log_prefix, micropub_endpoint }))
 
   fastify.get(
     '/id',
