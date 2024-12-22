@@ -1,5 +1,9 @@
 import { FastifyRequest } from 'fastify'
 import { insufficientScope, unauthorized } from './micropub/error-responses.js'
+// import {
+//   InsufficientScopeError,
+//   UnauthorizedError
+// } from '../lib/fastify-errors/index.js'
 
 export interface Config {
   include_error_description: boolean
@@ -34,6 +38,11 @@ export const defErrorIfActionNotAllowed = (config: Config) => {
     if (scopes.length < 1) {
       const error_description = `access token has no scopes`
       request.log.warn(`${log_prefix}${error_description}`)
+
+      // return new InsufficientScopeError({
+      //   error_description,
+      //   error_uri: 'https://micropub.spec.indieweb.org/#error-response'
+      // })
 
       return insufficientScope({
         error_description,

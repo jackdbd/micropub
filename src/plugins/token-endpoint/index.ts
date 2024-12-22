@@ -27,6 +27,11 @@ import {
   DEFAULT_REPORT_ALL_AJV_ERRORS,
   NAME
 } from './constants.js'
+import {
+  ForbiddenError,
+  InsufficientScopeError,
+  UnauthorizedError
+} from '../../lib/fastify-errors/index.js'
 
 const defaults: Partial<Options> = {
   accessTokenExpiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
@@ -77,11 +82,15 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.register(responseDecorators)
   fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
-  fastify.setErrorHandler(function (error, request, reply) {
+  fastify.setErrorHandler<
+    ForbiddenError | UnauthorizedError | InsufficientScopeError
+  >(function (error, request, reply) {
     // `this` is the fastify instance
-    const code = reply.statusCode
+    const code = error.statusCode || reply.statusCode
     if (code >= 400 && code < 500) {
-      request.log.warn(`${log_prefix}${error.message} (status: ${code})`)
+      request.log.warn(
+        `${log_prefix}${error.error}: ${error.error_description} (status: ${code})`
+      )
     }
 
     // TODO: maybe redirect only if client Accept header is text/html

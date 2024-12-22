@@ -4,6 +4,13 @@ export { authorizationResponseUrl } from './authorization-response-url.js'
 
 export { clientMetadata } from './client-metadata.js'
 
+export {
+  error_response,
+  error_type,
+  type ErrorResponse,
+  type ErrorType
+} from './error-response.js'
+
 export { metadataEndpoint } from './metadata-endpoint.js'
 
 export { linkHeaderToLinkHref } from './parse-link-header.js'

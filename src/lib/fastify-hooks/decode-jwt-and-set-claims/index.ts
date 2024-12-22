@@ -1,4 +1,5 @@
 import type { onRequestAsyncHookHandler } from 'fastify'
+import { UnauthorizedError } from '../../fastify-errors/index.js'
 import type { AccessTokenClaims } from '../../token/claims.js'
 import { safeDecode } from '../../token/decode.js'
 import {
@@ -33,13 +34,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       if (!hval) {
         const details = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
         const error_description = `Request has no access token. ${details}`
-
-        // TODO: use https://github.com/fastify/fastify-error
-        reply.code(401)
-        const err = new Error(error_description)
-        err.name = 'Unauthorized'
-        // throw err
-        throw { error: 'Unauthorized', error_description }
+        throw new UnauthorizedError({ error_description })
       }
 
       // The value of a request header can be an array. This typically happens
@@ -48,22 +43,14 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       // return an HTTP 401 error.
       if (Array.isArray(hval)) {
         const error_description = `Request header '${hkey}' is an array.`
-
-        reply.code(401)
-        const err = new Error(error_description)
-        err.name = 'Unauthorized'
-        throw err
+        throw new UnauthorizedError({ error_description })
       }
 
       const splits = hval.split(' ')
 
       if (splits.length !== 2) {
         const error_description = `Request header '${hkey}' has no '${header_key}' value.`
-
-        reply.code(401)
-        const err = new Error(error_description)
-        err.name = 'Unauthorized'
-        throw err
+        throw new UnauthorizedError({ error_description })
       }
 
       access_token = splits.at(1)
@@ -85,11 +72,7 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
 
     if (error) {
       const error_description = `Error while decoding access token: ${error.message}`
-
-      reply.code(401)
-      const err = new Error(error_description)
-      err.name = 'Unauthorized'
-      throw err
+      throw new UnauthorizedError({ error_description })
     }
 
     // TODO: make it another configuration parameter. Maybe it should 'claims' by default.

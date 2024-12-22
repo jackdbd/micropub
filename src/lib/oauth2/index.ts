@@ -1,17 +1,31 @@
+export {
+  authorization_endpoint,
+  introspection_endpoint,
+  revocation_endpoint,
+  token_endpoint
+} from './endpoints.js'
+
 export { errorMessageFromJSONResponse } from './error-message-from-response.js'
 
-export type { ErrorType, ErrorResponse } from './error-response.js'
+export {
+  error_description,
+  error_response,
+  error_type,
+  error_uri,
+  type ErrorDescription,
+  type ErrorResponse,
+  type ErrorResponseLoose,
+  type ErrorType,
+  type ErrorUri
+} from './error-response.js'
+
+export { grant_type } from './grant_type.js'
 
 export {
   authorization_code,
-  authorization_endpoint,
-  grant_type,
-  introspection_endpoint,
   redirect_uri,
   response_mode,
   response_type,
-  revocation_endpoint,
   scope,
-  state,
-  token_endpoint
+  state
 } from './schemas.js'
