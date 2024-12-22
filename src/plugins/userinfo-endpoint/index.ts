@@ -57,10 +57,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
-    include_error_description,
-    log_prefix
-  })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },

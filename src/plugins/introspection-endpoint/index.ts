@@ -67,10 +67,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
-    include_error_description,
-    log_prefix
-  })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
 
   // Should I check whether the token from the Authorization header matches an
   // expected a `me` claim?

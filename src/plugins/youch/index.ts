@@ -140,7 +140,8 @@ const fastifyYouch: FastifyPluginCallback<PluginOptions> = (
       youch.toggleShowAllFrames()
     }
 
-    const status = error.statusCode || request.raw.statusCode || 500
+    const status =
+      error.statusCode || reply.statusCode || request.raw.statusCode || 500
 
     if (clientAcceptsHtml(request)) {
       return youch

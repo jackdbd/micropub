@@ -1,11 +1,9 @@
 import type { onRequestAsyncHookHandler } from 'fastify'
-import { unauthorized } from '../../micropub/error-responses.js'
 import type { AccessTokenClaims } from '../../token/claims.js'
 import { safeDecode } from '../../token/decode.js'
 import {
   DEFAULT_HEADER,
   DEFAULT_HEADER_KEY,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
   DEFAULT_LOG_PREFIX,
   // DEFAULT_REPORT_ALL_AJV_ERRORS,
   DEFAULT_SESSION_KEY
@@ -14,8 +12,6 @@ import { type Options } from './schemas.js'
 
 export const defDecodeJwtAndSetClaims = (options?: Options) => {
   const opt = options ?? {}
-  const include_error_description =
-    opt.include_error_description ?? DEFAULT_INCLUDE_ERROR_DESCRIPTION
   const hkey = opt.header ? opt.header.toLowerCase() : DEFAULT_HEADER
   const header_key = opt.header_key ?? DEFAULT_HEADER_KEY
   const log_prefix = opt.log_prefix ?? DEFAULT_LOG_PREFIX
@@ -35,17 +31,15 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       const hval = request.headers[hkey.toLowerCase()]
 
       if (!hval) {
-        request.log.warn(
-          `${log_prefix}request has no access token in session key ${session_key}, and it has no ${hkey} header`
-        )
-        const error_description = `Request has no access token.`
+        const details = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
+        const error_description = `Request has no access token. ${details}`
 
-        const { code, body } = unauthorized({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, body)
+        // TODO: use https://github.com/fastify/fastify-error
+        reply.code(401)
+        const err = new Error(error_description)
+        err.name = 'Unauthorized'
+        // throw err
+        throw { error: 'Unauthorized', error_description }
       }
 
       // The value of a request header can be an array. This typically happens
@@ -53,46 +47,36 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
       // (e.g. Set-Cookie). I don't think this is a case I should handle, so I
       // return an HTTP 401 error.
       if (Array.isArray(hval)) {
-        const error_description = `Request header ${hkey} is an array.`
-        request.log.warn(`${log_prefix}${error_description}`)
+        const error_description = `Request header '${hkey}' is an array.`
 
-        const { code, body } = unauthorized({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, body)
+        reply.code(401)
+        const err = new Error(error_description)
+        err.name = 'Unauthorized'
+        throw err
       }
 
       const splits = hval.split(' ')
 
       if (splits.length !== 2) {
-        const error_description = `Request header ${hkey} has no ${header_key} value.`
-        request.log.warn(`${log_prefix}${error_description}`)
+        const error_description = `Request header '${hkey}' has no '${header_key}' value.`
 
-        const { code, body } = unauthorized({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, body)
+        reply.code(401)
+        const err = new Error(error_description)
+        err.name = 'Unauthorized'
+        throw err
       }
 
       access_token = splits.at(1)
     }
 
     if (!access_token) {
-      const error_description = `Access token not set.`
-      request.log.warn(
-        `${log_prefix}access token not found, neither in session key ${session_key}, nor in request header ${hkey} (key ${header_key})`
-      )
+      const details = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
+      const error_description = `Request has no access token. ${details}`
 
-      const { code, body } = unauthorized({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      reply.code(401)
+      const err = new Error(error_description)
+      err.name = 'Unauthorized'
+      throw err
     }
 
     const { error, value: claims } = await safeDecode<AccessTokenClaims>(
@@ -101,14 +85,11 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
 
     if (error) {
       const error_description = `Error while decoding access token: ${error.message}`
-      request.log.warn(`${log_prefix}${error_description}`)
 
-      const { code, body } = unauthorized({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      reply.code(401)
+      const err = new Error(error_description)
+      err.name = 'Unauthorized'
+      throw err
     }
 
     // TODO: make it another configuration parameter. Maybe it should 'claims' by default.

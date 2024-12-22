@@ -77,6 +77,26 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.register(responseDecorators)
   fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
+  fastify.setErrorHandler(function (error, request, reply) {
+    // `this` is the fastify instance
+    const code = reply.statusCode
+    if (code >= 400 && code < 500) {
+      request.log.warn(`${log_prefix}${error.message} (status: ${code})`)
+    }
+
+    // TODO: maybe redirect only if client Accept header is text/html
+    if (code === 401) {
+      return reply.redirect('/login', 302)
+    }
+
+    return reply.view('error.njk', {
+      title: error.name,
+      description: 'Some error description',
+      error: error.name,
+      error_description: error.message
+    })
+  })
+
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
@@ -86,10 +106,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
-    include_error_description,
-    log_prefix
-  })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
 
   // const validateClaimMe = defValidateClaim(
   //   { claim: 'me', op: '==', value: me },
@@ -131,7 +148,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
         validateClaimExp,
         validateAccessTokenNotBlacklisted
       ]
-      // schema: token_get_request
     },
     defTokenGet({
       include_error_description,
@@ -143,17 +159,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/token',
     {
-      // onRequest: [],
-      // onSend: [
-      //   (_request, _reply, payload, done) => {
-      //     done()
-      //   }
-      // ]
-      // onResponse: [
-      //   (request, _reply, done) => {
-      //     done()
-      //   }
-      // ]
       // schema: token_post_request
     },
     defTokenPost({

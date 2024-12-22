@@ -78,10 +78,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({
-    include_error_description,
-    log_prefix
-  })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
 
   const logIatAndExpClaims = defLogIatAndExpClaims({
     include_error_description,

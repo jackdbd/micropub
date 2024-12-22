@@ -25,7 +25,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     const claims = request.session.get('claims')
 
     if (!claims) {
-      const error_description = `request context has no access token claims`
+      const error_description = `No access token claims in session`
       request.log.warn(`${prefix}${error_description}`)
 
       const { code, body } = unauthorized({
@@ -40,7 +40,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
 
     if (!assertion.op && !assertion.value) {
       if (!claims[key]) {
-        const error_description = `request context has no claim '${key}'`
+        const error_description = `No claim '${key}' in session`
         request.log.warn(`${prefix}${error_description}`)
 
         const { code, body } = unauthorized({
