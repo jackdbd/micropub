@@ -15,15 +15,8 @@ import {
 import type { SyndicateToItem } from '../../lib/micropub/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
+import { DEFAULT, NAME } from './constants.js'
 import { defMicropubResponse } from './decorators/reply.js'
-import { noScopeResponse } from './decorators/request.js'
 import { defValidateGetRequest } from './hooks.js'
 import { defMicropubGet } from './routes/micropub-get.js'
 import { defMicropubPost } from './routes/micropub-post.js'
@@ -34,10 +27,9 @@ import {
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS,
+  logPrefix: DEFAULT.LOG_PREFIX,
+  multipartFormDataMaxFileSize: DEFAULT.MULTIPART_FORMDATA_MAX_FILE_SIZE,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS,
   syndicateTo: [] as SyndicateToItem[]
 }
 
@@ -48,46 +40,35 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
-
-  // TODO: can I get an existing Ajv instance somehow? Should I?
-  // Do NOT use allErrors in production
-  // https://ajv.js.org/security.html#security-risks-of-trusted-schemas
-  // We need these extra formats to fully support fluent-json-schema
-  // https://github.com/ajv-validator/ajv-formats#formats
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), [
-    'date',
-    'date-time',
-    'duration',
-    'email',
-    'hostname',
-    'ipv4',
-    'ipv6',
-    'json-pointer',
-    'regex',
-    'relative-json-pointer',
-    'time',
-    'uri',
-    'uri-reference',
-    'uri-template',
-    'uuid'
-  ])
-
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
-
   const {
     create,
     delete: deleteContent,
-    includeErrorDescription: include_error_description,
     isBlacklisted,
+    logPrefix: log_prefix,
     me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
     multipartFormDataMaxFileSize,
+    reportAllAjvErrors: report_all_ajv_errors,
     syndicateTo: syndicate_to,
     undelete,
     update
   } = config
+
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), [
+      'date',
+      'date-time',
+      'duration',
+      'email',
+      'uri'
+    ])
+  }
+
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   // === PLUGINS ============================================================ //
   // Parse application/x-www-form-urlencoded requests
@@ -107,14 +88,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
-  fastify.decorateRequest('noScopeResponse', noScopeResponse)
-  fastify.log.debug(`${log_prefix}decorateRequest: noScopeResponse`)
-
-  const micropubResponse = defMicropubResponse({
-    create,
-    include_error_description,
-    prefix: log_prefix
-  })
+  const micropubResponse = defMicropubResponse({ create, prefix: log_prefix })
 
   const dependencies = ['errorResponse']
   fastify.decorateReply('micropubResponse', micropubResponse, dependencies)
@@ -129,16 +103,13 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ ajv })
 
-  const logIatAndExpClaims = defLogIatAndExpClaims({
-    include_error_description,
-    log_prefix
-  })
+  const logIatAndExpClaims = defLogIatAndExpClaims({ ajv })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -147,25 +118,15 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
-  const validateClaimJti = defValidateClaim(
-    { claim: 'jti' },
-    { include_error_description, log_prefix }
-  )
+  const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({
-      include_error_description,
-      isBlacklisted,
-      log_prefix
-    })
+    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
 
-  const validateGetRequest = defValidateGetRequest({
-    ajv,
-    include_error_description
-  })
+  const validateGetRequest = defValidateGetRequest({ ajv })
 
   // === ROUTES ============================================================= //
   fastify.get(
@@ -190,7 +151,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     defMicropubPost({
       ajv,
       delete: deleteContent,
-      include_error_description,
       log_prefix,
       me,
       media_endpoint,

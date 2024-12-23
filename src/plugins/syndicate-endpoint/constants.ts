@@ -1,7 +1,6 @@
 export const NAME = '@jackdbd/fastify-syndicator'
 
-export const DEFAULT_INCLUDE_ERROR_DESCRIPTION = false
-
-export const DEFAULT_LOG_PREFIX = 'syndicator '
-
-export const DEFAULT_REPORT_ALL_AJV_ERRORS = false
+export const DEFAULT = {
+  LOG_PREFIX: 'syndicator ',
+  REPORT_ALL_AJV_ERRORS: false
+}

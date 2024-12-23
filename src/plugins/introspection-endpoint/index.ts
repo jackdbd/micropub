@@ -12,21 +12,15 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
+import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/introspection-config-get.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
 // import { introspect_post_response_body } from './routes/schemas.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
 const introspectionEndpoint: FastifyPluginCallback<Options> = (
@@ -36,18 +30,19 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
+  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
+    config
 
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  }
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
-  const {
-    includeErrorDescription: include_error_description,
-    isBlacklisted,
-    issuer,
-    jwksUrl: jwks_url
-  } = config
+  const { isBlacklisted, issuer, jwksUrl: jwks_url } = config
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
@@ -67,13 +62,13 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ ajv })
 
   // Should I check whether the token from the Authorization header matches an
   // expected a `me` claim?
   // const validateClaimMe = defValidateClaim(
   //   { claim: 'me', op: '==', value: me },
-  //   { include_error_description, log_prefix: prefix }
+  //   { ajv }
   // )
 
   // The access token provided in the Authorization header (which may differ
@@ -84,28 +79,16 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
-  const validateClaimJti = defValidateClaim(
-    { claim: 'jti' },
-    { include_error_description, log_prefix }
-  )
+  const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   // TODO: re-read RFC7662 and decide which scope to check
-  // const validateScopeMedia = defValidateScope({
-  //   scope: 'introspect',
-  //   include_error_description,
-  //   log_prefix: prefix
-  // })
+  // const validateScopeMedia = defValidateScope({ scope: 'introspect' })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({
-      include_error_description,
-      isBlacklisted,
-      log_prefix,
-      report_all_ajv_errors: all_ajv_errors
-    })
+    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
 
   // === ROUTES ============================================================= //
   fastify.get('/introspect/config', defConfigGet(config))
@@ -123,7 +106,6 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     },
     defIntrospectPost({
       ajv,
-      include_error_description,
       isBlacklisted,
       issuer,
       jwks_url,

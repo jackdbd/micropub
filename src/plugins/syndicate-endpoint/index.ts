@@ -13,20 +13,14 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
+import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/syndication-config-get.js'
 import { defSyndicatePost } from './routes/syndicate-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
 const fastifySyndicator: FastifyPluginCallback<Options> = (
@@ -36,15 +30,20 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
+  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
+    config
 
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  }
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
     get,
-    includeErrorDescription: include_error_description,
     isBlacklisted,
     me,
     publishedUrlToStorageLocation,
@@ -70,16 +69,13 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ ajv })
 
-  const logIatAndExpClaims = defLogIatAndExpClaims({
-    include_error_description,
-    log_prefix
-  })
+  const logIatAndExpClaims = defLogIatAndExpClaims({ ajv })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -88,21 +84,13 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
-  const validateClaimJti = defValidateClaim(
-    { claim: 'jti' },
-    { include_error_description, log_prefix }
-  )
+  const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({
-      include_error_description,
-      isBlacklisted,
-      log_prefix,
-      report_all_ajv_errors: all_ajv_errors
-    })
+    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
 
   // === ROUTES ============================================================= //
   fastify.get('/syndication/config', defConfigGet(config))
@@ -122,7 +110,6 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
     },
     defSyndicatePost({
       get,
-      include_error_description,
       log_prefix,
       publishedUrlToStorageLocation,
       syndicators,

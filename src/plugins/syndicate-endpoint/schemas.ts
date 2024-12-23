@@ -1,39 +1,30 @@
 import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import { me } from '../../lib/indieauth/index.js'
 import {
-  include_error_description,
   get,
+  type Get,
   isBlacklisted,
+  type IsBlacklisted,
   publishedUrlToStorageLocation,
+  type PublishedUrlToStorageLocation,
   report_all_ajv_errors,
-  update
+  update,
+  type Update
 } from '../../lib/schemas/index.js'
-import type {
-  Get,
-  IsBlacklisted,
-  PublishedUrlToStorageLocation,
-  Update
-} from '../../lib/schemas/index.js'
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS
-} from './constants.js'
+import { DEFAULT } from './constants.js'
 
 // import type { Syndicator } from '../../lib/micropub/index.js'
 // syndicators: { [uid: string]: Syndicator }
 
 export const options = Type.Object({
-  get,
+  ajv: Type.Optional(Type.Any()),
 
-  includeErrorDescription: Type.Optional({
-    ...include_error_description,
-    default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
-  }),
+  get,
 
   isBlacklisted,
 
-  logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
+  logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
   me,
 
@@ -41,7 +32,7 @@ export const options = Type.Object({
 
   reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,
-    default: DEFAULT_REPORT_ALL_AJV_ERRORS
+    default: DEFAULT.REPORT_ALL_AJV_ERRORS
   }),
 
   syndicators: Type.Any(),
@@ -50,6 +41,7 @@ export const options = Type.Object({
 })
 
 export interface Options extends Static<typeof options> {
+  ajv?: Ajv
   get: Get
   isBlacklisted: IsBlacklisted
   publishedUrlToStorageLocation: PublishedUrlToStorageLocation

@@ -1,12 +1,12 @@
 import assert from 'node:assert'
 import type { RouteHandler } from 'fastify'
+import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
 import {
   authorizationRequestUrl,
   canonicalUrl,
   metadataEndpoint,
   serverMetadata
 } from '../../../lib/indieauth/index.js'
-import { invalidRequest } from '../../../lib/micropub/error-responses.js'
 import type { AuthStartGetRequestQuerystring } from './schemas.js'
 
 export interface Config {
@@ -16,7 +16,7 @@ export interface Config {
    */
   authorization_endpoint?: string
   code_verifier_length: number
-  include_error_description: boolean
+
   /**
    * Issuer identifier. If not provided, the one found in the OAuth Client ID
    * Metadata Document will be used.
@@ -39,12 +39,7 @@ export interface Config {
  * @see [Authorization - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization)
  */
 export const defAuthStartGet = (config: Config) => {
-  const {
-    code_verifier_length,
-    include_error_description,
-    log_prefix,
-    redirect_uri
-  } = config
+  const { code_verifier_length, log_prefix, redirect_uri } = config
 
   const authStartGet: RouteHandler<{
     Querystring: AuthStartGetRequestQuerystring
@@ -61,15 +56,9 @@ export const defAuthStartGet = (config: Config) => {
       const error_description = `Found no IndieAuth metadata endpoint for site ${me}.`
       const original = metadata_endpoint_error.message
       request.log.warn(`${log_prefix}${error_description} ${original}`)
-
       // Should I return HTTP 400? See IndieAuth Discovery spec (and OAuth 2.0
       // Discovery).
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(
@@ -82,15 +71,9 @@ export const defAuthStartGet = (config: Config) => {
       const error_description = `No authorization server metadata for site ${me}.`
       const original = server_metadata_error.message
       request.log.warn(`${log_prefix}${error_description} ${original}`)
-
       // Should I return HTTP 400? See IndieAuth Discovery spec (and OAuth 2.0
       // Discovery).
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(`${log_prefix}retrieved authorization server metadata`)
@@ -145,14 +128,7 @@ export const defAuthStartGet = (config: Config) => {
     // https://indieauth.spec.indieweb.org/#authorization-request
     if (!code_challenge_methods_supported) {
       const error_description = `The OAuth Client ID Metadata Document published at ${metadata_endpoint} does not include 'code_challenge_methods_supported'. This is a problem, since all IndieAuth clients MUST use PKCE.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     // The "code_challenge_method" value must be set either to "S256" or a value
@@ -168,14 +144,7 @@ export const defAuthStartGet = (config: Config) => {
 
     if (!code_challenge_method) {
       const error_description = `The OAuth Client ID Metadata Document published at ${metadata_endpoint} does not include '${expected_code_challenge_method}' in 'code_challenge_methods_supported'. This is a problem, since all IndieAuth clients MUST use PKCE and the authorization endpoint expects clients to use '${expected_code_challenge_method}' for the code challenge.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     if (!scopes_supported) {

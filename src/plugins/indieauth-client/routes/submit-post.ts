@@ -1,5 +1,6 @@
 import type { RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
+import { UnauthorizedError } from '../../../lib/fastify-errors/index.js'
 
 export interface Config {
   log_prefix: string
@@ -13,12 +14,11 @@ export const defSubmit = (config: Config) => {
     const access_token = request.session.get('access_token')
 
     if (!access_token) {
-      request.log.debug(
-        `${log_prefix}key 'access_token' not found in session or it is undefined`
-      )
-      request.log.debug(`${log_prefix}redirect to /login`)
-      return reply.redirect('/login')
+      const error_description = `Access token not found in session.`
+      throw new UnauthorizedError({ error_description })
     }
+
+    request.log.debug(`${log_prefix}access token extracted from session`)
 
     const response = await fetch(micropub_endpoint, {
       method: 'POST',

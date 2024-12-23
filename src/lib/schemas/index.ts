@@ -12,7 +12,7 @@ export {
   type DeleteContentOrMedia
 } from './delete-content-or-media.js'
 
-export { include_error_description, report_all_ajv_errors } from './flags.js'
+export { report_all_ajv_errors } from './flags.js'
 
 export { get, type Get } from './get-content.js'
 

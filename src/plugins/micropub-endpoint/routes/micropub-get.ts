@@ -7,7 +7,7 @@ export interface Config {
 }
 
 /**
- * https://micropub.spec.indieweb.org/#configuration
+ * [Configuration](https://micropub.spec.indieweb.org/#configuration) of this Micropub endpoint.
  */
 export const defMicropubGet = (config: Config) => {
   const { media_endpoint, syndicate_to } = config

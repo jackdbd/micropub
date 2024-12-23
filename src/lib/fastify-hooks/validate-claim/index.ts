@@ -1,39 +1,59 @@
+import type { Session, SessionData } from '@fastify/secure-session'
+import { applyToDefaults } from '@hapi/hoek'
+import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
+import type { JWTPayload } from 'jose'
 import {
-  forbidden,
-  invalidRequest,
-  unauthorized
-} from '../../micropub/error-responses.js'
-import type { Assertion, Value } from './interfaces.js'
+  ForbiddenError,
+  InvalidRequestError,
+  UnauthorizedError
+} from '../../fastify-errors/index.js'
+import { throwIfDoesNotConform } from '../../validators.js'
+import { DEFAULT } from './constants.js'
 import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX
-} from './constants.js'
+  options as options_schema,
+  type Assertion,
+  type Options,
+  type Value
+} from './schemas.js'
 
-export interface Options {
-  include_error_description?: boolean
-  log_prefix?: string
+const defaults: Partial<Options> = {
+  claimsSessionKey: DEFAULT.CLAIMS_SESSION_KEY,
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS,
+  sessionKey: DEFAULT.SESSION_KEY
 }
 
 export const defValidateClaim = (assertion: Assertion, options?: Options) => {
-  const opt = options ?? {}
-  const include_error_description =
-    opt.include_error_description ?? DEFAULT_INCLUDE_ERROR_DESCRIPTION
-  const prefix = opt.log_prefix ?? DEFAULT_LOG_PREFIX
+  const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
-  const validateClaim: onRequestHookHandler = (request, reply, done) => {
-    const claims = request.session.get('claims')
+  const {
+    claimsSessionKey: claims_session_key,
+    logPrefix: prefix,
+    reportAllAjvErrors: allErrors,
+    sessionKey: session_key
+  } = config
+
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = new Ajv({ allErrors })
+  }
+
+  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+
+  const validateClaim: onRequestHookHandler = (request, _reply, done) => {
+    const session = (request as any)[session_key] as Session<SessionData>
+
+    request.log.debug(
+      `${prefix}get access token claims from session '${session_key}', key '${claims_session_key}'`
+    )
+    const claims: JWTPayload | undefined = session.get(claims_session_key)
 
     if (!claims) {
       const error_description = `No access token claims in session`
-      request.log.warn(`${prefix}${error_description}`)
-
-      const { code, body } = unauthorized({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new UnauthorizedError({ error_description })
     }
 
     const key = assertion.claim
@@ -41,14 +61,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     if (!assertion.op && !assertion.value) {
       if (!claims[key]) {
         const error_description = `No claim '${key}' in session`
-        request.log.warn(`${prefix}${error_description}`)
-
-        const { code, body } = unauthorized({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, body)
+        throw new UnauthorizedError({ error_description })
       } else {
         return done()
       }
@@ -67,19 +80,12 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       given = assertion.value
     }
     request.log.debug(
-      `${prefix}validate claim '${key}': ${actual} ${op} ${given}`
+      `${prefix}validate assertion on claim '${key}': ${actual} ${op} ${given}`
     )
 
     if (given === undefined) {
       const error_description = `Invalid assertion on claim '${key}'. The value given for the assertion is (or resolved to) undefined.`
-      request.log.warn(`${prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     // I think HTTP 403 Forbidden is the right status code to use here.
@@ -89,14 +95,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '==': {
         if (actual !== given) {
           const error_description = `claim '${key}' is '${actual}', but it should be '${given}'`
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = forbidden({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
+          throw new ForbiddenError({ error_description })
         } else {
           return done()
         }
@@ -105,14 +104,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '!=': {
         if (actual === given) {
           const error_description = `claim '${key}' is '${actual}', but it should not be '${given}'`
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = forbidden({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
+          throw new ForbiddenError({ error_description })
         } else {
           return done()
         }
@@ -121,14 +113,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '<': {
         if (actual >= given) {
           const error_description = `claim '${key}' is '${actual}', but it should be less than '${given}'`
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = forbidden({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
+          throw new ForbiddenError({ error_description })
         } else {
           return done()
         }
@@ -137,14 +122,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '<=': {
         if (actual > given) {
           const error_description = `claim '${key}' is '${actual}', but it should be less than or equal to '${given}'`
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = forbidden({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
+          throw new ForbiddenError({ error_description })
         } else {
           return done()
         }
@@ -153,14 +131,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '>': {
         if (actual <= given) {
           const error_description = `claim '${key}' is '${actual}', but it should be greater than '${given}'`
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = forbidden({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
+          throw new ForbiddenError({ error_description })
         } else {
           return done()
         }
@@ -169,14 +140,7 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '>=': {
         if (actual < given) {
           const error_description = `claim '${key}' is '${actual}', but it should be greater than or equal to '${given}'`
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = forbidden({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
+          throw new ForbiddenError({ error_description })
         } else {
           return done()
         }

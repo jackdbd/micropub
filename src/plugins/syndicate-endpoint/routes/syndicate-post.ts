@@ -1,12 +1,10 @@
 import type { RouteHandler } from 'fastify'
 import { XMLParser } from 'fast-xml-parser'
-
 import {
-  invalidRequest,
-  normalizeJf2,
-  serverError,
-  type Syndicator
-} from '../../../lib/micropub/index.js'
+  InvalidRequestError,
+  ServerError
+} from '../../../lib/fastify-errors/index.js'
+import { normalizeJf2, type Syndicator } from '../../../lib/micropub/index.js'
 import type {
   Get,
   PublishedUrlToStorageLocation,
@@ -16,7 +14,6 @@ import type {
 
 export interface Config {
   get: Get
-  include_error_description: boolean
   log_prefix: string
   publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   syndicators: { [uid: string]: Syndicator }
@@ -26,8 +23,7 @@ export interface Config {
 const parser = new XMLParser()
 
 export const defSyndicatePost = (config: Config) => {
-  const { get, include_error_description, log_prefix, syndicators, update } =
-    config
+  const { get, log_prefix, syndicators, update } = config
 
   const syndicatePost: RouteHandler = async (request, reply) => {
     // TODO: decide what request body to expect. For example:
@@ -77,20 +73,8 @@ export const defSyndicatePost = (config: Config) => {
     const result = await get(loc)
 
     if (result.error) {
-      const title = 'Syndication error'
       const error_description = `The post published at ${loc.website} is not stored at ${loc.store}.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title,
-        description: 'Syndicate error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     // We assume all content retrieved from the store to be untrusted data, so
@@ -189,13 +173,7 @@ export const defSyndicatePost = (config: Config) => {
 
     if (result_update.error) {
       const error_description = result_update.error.message
-
-      const { code, body } = serverError({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new ServerError({ error_description })
     }
 
     // request.log.warn(result_update, `=== syndication update ===`)

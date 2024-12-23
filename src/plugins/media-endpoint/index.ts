@@ -15,22 +15,15 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-import {
-  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
+import { DEFAULT, NAME } from './constants.js'
 import { defMediaGet } from './routes/media-get.js'
 import { defMediaPost } from './routes/media-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  multipartFormDataMaxFileSize: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
+  logPrefix: DEFAULT.LOG_PREFIX,
+  multipartFormDataMaxFileSize: DEFAULT.MULTIPART_FORMDATA_MAX_FILE_SIZE,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
 const mediaEndpoint: FastifyPluginCallback<Options> = (
@@ -40,20 +33,24 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
-
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
-
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
-
   const {
     delete: deleteMedia,
-    includeErrorDescription: include_error_description,
     isBlacklisted,
+    logPrefix: log_prefix,
     me,
     multipartFormDataMaxFileSize: fileSize,
+    reportAllAjvErrors: report_all_ajv_errors,
     upload
   } = config
+
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  }
+
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
@@ -78,16 +75,13 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
+  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ ajv })
 
-  const logIatAndExpClaims = defLogIatAndExpClaims({
-    include_error_description,
-    log_prefix
-  })
+  const logIatAndExpClaims = defLogIatAndExpClaims({ ajv })
 
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
   const validateClaimExp = defValidateClaim(
@@ -96,27 +90,15 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { include_error_description, log_prefix }
+    { ajv }
   )
 
-  const validateClaimJti = defValidateClaim(
-    { claim: 'jti' },
-    { include_error_description, log_prefix }
-  )
+  const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
-  const validateScopeMedia = defValidateScope({
-    scope: 'media',
-    include_error_description,
-    log_prefix
-  })
+  const validateScopeMedia = defValidateScope({ ajv, scope: 'media' })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({
-      include_error_description,
-      isBlacklisted,
-      log_prefix,
-      report_all_ajv_errors: all_ajv_errors
-    })
+    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
 
   // === ROUTES ============================================================= //
   fastify.get('/media', defMediaGet({ delete: deleteMedia }))
@@ -134,11 +116,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
         validateAccessTokenNotBlacklisted
       ]
     },
-    defMediaPost({
-      delete: deleteMedia,
-      include_error_description,
-      upload
-    })
+    defMediaPost({ delete: deleteMedia, upload })
   )
 
   done()

@@ -1,28 +1,14 @@
 import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import { issuer } from '../../lib/indieauth/index.js'
-import {
-  authorization_endpoint,
-  introspection_endpoint
-} from '../../lib/oauth2/index.js'
+import { authorization_endpoint } from '../../lib/oauth2/index.js'
 import {
   addToIssuedTokens,
-  include_error_description,
-  isBlacklisted,
+  type AddToIssuedTokens,
   jwks_private,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
-import type {
-  AddToIssuedTokens,
-  IsBlacklisted
-} from '../../lib/schemas/index.js'
-import {
-  DEFAULT_ACCESS_TOKEN_EXPIRATION,
-  DEFAULT_AUTHORIZATION_ENDPOINT,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REFRESH_TOKEN_EXPIRATION,
-  DEFAULT_REPORT_ALL_AJV_ERRORS
-} from './constants.js'
+import { DEFAULT } from './constants.js'
 
 const access_token_expiration = Type.String({
   description: `Human-readable expiration time for the access token issued by the token endpoint.`,
@@ -46,7 +32,7 @@ export const options = Type.Object(
      */
     accessTokenExpiration: Type.Optional({
       ...access_token_expiration,
-      default: DEFAULT_ACCESS_TOKEN_EXPIRATION
+      default: DEFAULT.ACCESS_TOKEN_EXPIRATION
     }),
 
     /**
@@ -55,33 +41,22 @@ export const options = Type.Object(
      */
     addToIssuedTokens,
 
+    ajv: Type.Optional(Type.Any()),
+
     /**
      * Endpoint that will be called to verify an authorization code before
      * issuing a token.
      */
     authorizationEndpoint: Type.Optional({
       ...authorization_endpoint,
-      default: DEFAULT_AUTHORIZATION_ENDPOINT
+      default: DEFAULT.AUTHORIZATION_ENDPOINT
     }),
-
-    includeErrorDescription: Type.Optional({
-      ...include_error_description,
-      default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
-    }),
-
-    introspectionEndpoint: introspection_endpoint,
-
-    /**
-     * Predicate function that will be called to check whether a previously
-     * issued token is blacklisted or not.
-     */
-    isBlacklisted,
 
     issuer,
 
     jwks: jwks_private,
 
-    logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
+    logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
     /**
      * Human-readable expiration time for the refresh token. It will be shown in
@@ -91,12 +66,12 @@ export const options = Type.Object(
      */
     refreshTokenExpiration: Type.Optional({
       ...refresh_token_expiration,
-      default: DEFAULT_REFRESH_TOKEN_EXPIRATION
+      default: DEFAULT.REFRESH_TOKEN_EXPIRATION
     }),
 
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
-      default: DEFAULT_REPORT_ALL_AJV_ERRORS
+      default: DEFAULT.REPORT_ALL_AJV_ERRORS
     })
   },
   {
@@ -108,5 +83,5 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   addToIssuedTokens: AddToIssuedTokens
-  isBlacklisted: IsBlacklisted
+  ajv?: Ajv
 }

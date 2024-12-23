@@ -1,6 +1,8 @@
 import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import {
-  include_error_description,
+  isBlacklisted,
+  type IsBlacklisted,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
 import {
@@ -14,24 +16,19 @@ import {
 import { micropub_endpoint } from '../../lib/micropub/index.js'
 import {
   authorization_endpoint,
+  introspection_endpoint,
   revocation_endpoint,
   token_endpoint
 } from '../../lib/oauth2/index.js'
 import { code_verifier_length } from '../../lib/pkce/index.js'
-import {
-  DEFAULT_AUTHORIZATION_CALLBACK_ROUTE,
-  DEFAULT_AUTHORIZATION_START_ROUTE,
-  DEFAULT_CODE_VERIFIER_LENGTH,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_LOGO_URI,
-  DEFAULT_REPORT_ALL_AJV_ERRORS
-} from './constants.js'
+import { DEFAULT } from './constants.js'
 
 export const options = Type.Object(
   {
+    ajv: Type.Optional(Type.Any()),
+
     authorizationCallbackRoute: Type.Optional(
-      Type.String({ default: DEFAULT_AUTHORIZATION_CALLBACK_ROUTE })
+      Type.String({ default: DEFAULT.AUTHORIZATION_CALLBACK_ROUTE })
     ),
 
     /**
@@ -47,7 +44,7 @@ export const options = Type.Object(
     authorizationEndpoint: Type.Optional(authorization_endpoint),
 
     authorizationStartRoute: Type.Optional(
-      Type.String({ default: DEFAULT_AUTHORIZATION_START_ROUTE })
+      Type.String({ default: DEFAULT.AUTHORIZATION_START_ROUTE })
     ),
 
     clientId: client_id,
@@ -61,13 +58,16 @@ export const options = Type.Object(
      */
     codeVerifierLength: Type.Optional({
       ...code_verifier_length,
-      default: DEFAULT_CODE_VERIFIER_LENGTH
+      default: DEFAULT.CODE_VERIFIER_LENGTH
     }),
 
-    includeErrorDescription: Type.Optional({
-      ...include_error_description,
-      default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
-    }),
+    introspectionEndpoint: introspection_endpoint,
+
+    /**
+     * Predicate function that will be called to check whether a previously
+     * issued token is blacklisted or not.
+     */
+    isBlacklisted,
 
     /**
      * Issuer identifier. If not provided, the one found in the OAuth Client ID
@@ -82,9 +82,9 @@ export const options = Type.Object(
      */
     issuer: Type.Optional(issuer),
 
-    logoUri: Type.Optional({ ...logo_uri, default: DEFAULT_LOGO_URI }),
+    logoUri: Type.Optional({ ...logo_uri, default: DEFAULT.LOGO_URI }),
 
-    logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
+    logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
     micropubEndpoint: micropub_endpoint,
 
@@ -92,7 +92,7 @@ export const options = Type.Object(
 
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
-      default: DEFAULT_REPORT_ALL_AJV_ERRORS
+      default: DEFAULT.REPORT_ALL_AJV_ERRORS
     }),
 
     /**
@@ -129,4 +129,7 @@ export const options = Type.Object(
   }
 )
 
-export type Options = Static<typeof options>
+export interface Options extends Static<typeof options> {
+  ajv?: Ajv
+  isBlacklisted: IsBlacklisted
+}

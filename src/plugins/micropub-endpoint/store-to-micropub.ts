@@ -1,24 +1,13 @@
 import {
-  forbidden,
-  invalidRequest,
-  unauthorized
-} from '../../lib/micropub/index.js'
-
-const DEFAULT_INCLUDE_ERROR_DESCRIPTION = false
+  ForbiddenError,
+  InvalidRequestError,
+  UnauthorizedError
+} from '../../lib/fastify-errors/index.js'
 
 const DEFAULT_STATUS_CODE_ERROR = 400
 const DEFAULT_STATUS_CODE_SUCCESS = 200
 
-interface Options {
-  include_error_description?: boolean
-}
-
-export const storeErrorToMicropubError = (err: any, options?: Options) => {
-  const opt = options ?? {}
-
-  const include_error_description =
-    opt.include_error_description ?? DEFAULT_INCLUDE_ERROR_DESCRIPTION
-
+export const storeErrorToMicropubError = (err: any) => {
   const error_description =
     err.message ?? 'There was an error with the Micropub store.'
 
@@ -28,16 +17,16 @@ export const storeErrorToMicropubError = (err: any, options?: Options) => {
 
   switch (status_code) {
     case 400: {
-      return invalidRequest({ error_description, include_error_description })
+      return new InvalidRequestError({ error_description })
     }
     case 401: {
-      return unauthorized({ error_description, include_error_description })
+      return new UnauthorizedError({ error_description })
     }
     case 403: {
-      return forbidden({ error_description, include_error_description })
+      return new ForbiddenError({ error_description })
     }
     default: {
-      return invalidRequest({ error_description, include_error_description })
+      return new InvalidRequestError({ error_description })
     }
   }
 }

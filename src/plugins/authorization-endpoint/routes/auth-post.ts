@@ -1,13 +1,12 @@
 import type { RouteHandler } from 'fastify'
 import type { MarkCodeAsUsed } from '../../../lib/authorization-code-storage-interface/index.js'
-import { invalidRequest } from '../../../lib/micropub/error-responses.js'
+import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
 import type { AuthPostRequestBody } from './schemas.js'
 
 const ME = 'https://giacomodebidda.com/'
 const SCOPE = 'profile email create update delete undelete media'
 
 export interface Config {
-  include_error_description: boolean
   log_prefix: string
   markAuthorizationCodeAsUsed: MarkCodeAsUsed
 }
@@ -19,8 +18,7 @@ export interface Config {
  * @see [Verifying the authorization code - indieweb.org](https://indieweb.org/obtaining-an-access-token#Verifying_the_authorization_code)
  */
 export const defAuthPost = (config: Config) => {
-  const { include_error_description, log_prefix, markAuthorizationCodeAsUsed } =
-    config
+  const { log_prefix, markAuthorizationCodeAsUsed } = config
 
   const authPost: RouteHandler<{ Body: AuthPostRequestBody }> = async (
     request,
@@ -48,14 +46,7 @@ export const defAuthPost = (config: Config) => {
     if (error) {
       const original = error.message
       const error_description = `Error while verifying the authorization code. ${original}`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.warn(

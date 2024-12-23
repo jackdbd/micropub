@@ -6,16 +6,15 @@ import {
   clientMetadata
 } from '../../../lib/indieauth/index.js'
 import {
-  invalidRequest,
-  serverError
-} from '../../../lib/micropub/error-responses.js'
+  InvalidRequestError,
+  ServerError
+} from '../../../lib/fastify-errors/index.js'
 import type { IssueCode } from '../../../lib/authorization-code-storage-interface/index.js'
 import type { AuthGetRequestQuerystring } from './schemas.js'
 
 export interface Config {
   access_token_expiration: string
   authorization_code_expiration: string
-  include_error_description: boolean
   issueCode: IssueCode
   /**
    * Issuer identifier. This is optional in OAuth 2.0 servers, but required in
@@ -60,7 +59,6 @@ export const defAuthGet = (config: Config) => {
   const {
     access_token_expiration,
     authorization_code_expiration,
-    include_error_description,
     issueCode,
     issuer,
     log_prefix,
@@ -79,14 +77,7 @@ export const defAuthGet = (config: Config) => {
 
     if (response_type !== 'code') {
       const error_description = `This authorization endpoint only supports the 'code' response type.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     // The authorization endpoint SHOULD fetch the client_id URL to retrieve
@@ -99,36 +90,17 @@ export const defAuthGet = (config: Config) => {
       await clientMetadata(client_id)
 
     if (client_metadata_error) {
-      const error_description = `Failed to fetch client metadata.`
       const original = client_metadata_error.message
-      request.log.error(`${log_prefix}${error_description} ${original}`)
-
-      const { code, body } = serverError({
-        error: 'failed_to_fetch_client_metadata',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Failed to fetch client metadata: ${original}.`
+      throw new ServerError({ error_description })
     }
 
     request.log.debug(client_metadata, 'retrieved IndieAuth client metadata')
     const { client_name, client_uri, logo_uri, redirect_uris } = client_metadata
 
     if (!redirect_uris) {
-      const error_description = `Metadata of client ID ${client_id} does not contain redirect_uris`
-
-      const { code, body } = serverError({
-        error: 'invalid_client_metadata',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Auth error',
-        description: 'Auth error page'
-      })
+      const error_description = `Metadata of client ID ${client_id} does not contain redirect_uris.`
+      throw new ServerError({ error_description })
     }
 
     const redirect_uri = redirect_uris.find(
@@ -137,14 +109,7 @@ export const defAuthGet = (config: Config) => {
 
     if (!redirect_uri) {
       const error_description = `Redirect URI from query string does not match any of the client's registered redirect URIs.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     // TODO: the authorization code should be generated AFTER the user has

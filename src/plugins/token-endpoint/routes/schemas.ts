@@ -6,11 +6,7 @@ import {
   redirect_uri
 } from '../../../lib/oauth2/index.js'
 import { code_challenge, code_verifier } from '../../../lib/pkce/index.js'
-import {
-  include_error_description,
-  issueJWT,
-  type IssueJWT
-} from '../../../lib/schemas/index.js'
+import { issueJWT, type IssueJWT } from '../../../lib/schemas/index.js'
 
 export const token_post_request_body = Type.Object({
   client_id,
@@ -24,7 +20,6 @@ export type TokenPostRequestBody = Static<typeof token_post_request_body>
 
 export const token_post_config = Type.Object({
   authorization_endpoint,
-  include_error_description,
   issueJWT,
   log_prefix: Type.String()
 })

@@ -1,34 +1,21 @@
 import Ajv from 'ajv'
 import type { preHandlerHookHandler } from 'fastify'
-
-import { hasScope } from '../../lib/fastify-request-predicates/index.js'
-import {
-  type Action,
-  insufficientScope,
-  invalidRequest
-} from '../../lib/micropub/index.js'
-
-import { NAME } from './constants.js'
+import { InvalidRequestError } from '../../lib/fastify-errors/index.js'
 import { micropub_get_request } from './routes/schemas.js'
 
-const PREFIX = `${NAME}/hooks `
-
-export interface ValidateAccessTokenConfig {
-  me: string
-}
+// export interface ValidateAccessTokenConfig {
+//   me: string
+// }
 
 export interface ValidateGetConfig {
   ajv: Ajv
-  include_error_description: boolean
 }
 
 export const defValidateGetRequest = (config: ValidateGetConfig) => {
-  const { ajv, include_error_description } = config
+  const { ajv } = config
   const validate = ajv.compile(micropub_get_request)
 
-  const validateGetRequest: preHandlerHookHandler = (request, reply, done) => {
-    request.log.debug(`${PREFIX}validating incoming GET request`)
-
+  const validateGetRequest: preHandlerHookHandler = (request, _reply, done) => {
     const valid = validate(request)
 
     if (!valid) {
@@ -36,14 +23,7 @@ export const defValidateGetRequest = (config: ValidateGetConfig) => {
       const error_description = errors
         .map((error) => error.message || 'no error message')
         .join('; ')
-      request.log.warn(`${PREFIX}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     done()
@@ -52,35 +32,24 @@ export const defValidateGetRequest = (config: ValidateGetConfig) => {
   return validateGetRequest
 }
 
-export const defEnsureRequestHasScope = (config: {
-  include_error_description: boolean
-}) => {
-  const { include_error_description } = config
+// export const defEnsureRequestHasScope = () => {
+//   const ensureRequestHasScope: preHandlerHookHandler = (
+//     request,
+//     _reply,
+//     done
+//   ) => {
+//     let action: Action = 'create'
+//     if (request.body && (request.body as any).action) {
+//       action = (request.body as any).action as Action
+//     }
 
-  const ensureRequestHasScope: preHandlerHookHandler = (
-    request,
-    reply,
-    done
-  ) => {
-    let action: Action = 'create'
-    if (request.body && (request.body as any).action) {
-      action = (request.body as any).action as Action
-    }
+//     if (!hasScope(request, action)) {
+//       const error_description = `Action '${action}' not allowed, since access token has no scope '${action}'.`
+//       throw new InsufficientScopeError({ error_description })
+//     }
 
-    if (!hasScope(request, action)) {
-      const error_description = `action '${action}' not allowed, since access token has no scope '${action}'`
-      request.log.warn(`${PREFIX}${error_description}`)
+//     return done()
+//   }
 
-      const { code, body } = insufficientScope({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
-    }
-
-    return done()
-  }
-
-  return ensureRequestHasScope
-}
+//   return ensureRequestHasScope
+// }

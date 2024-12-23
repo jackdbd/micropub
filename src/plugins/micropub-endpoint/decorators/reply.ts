@@ -1,10 +1,8 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { ValidateFunction } from 'ajv'
 import type { FastifyReply } from 'fastify'
-
-import { invalidRequest } from '../../../lib/micropub/error-responses.js'
+import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
 import type { Create } from '../../../lib/schemas/index.js'
-
 import {
   storeErrorToMicropubError,
   storeValueToMicropubValue
@@ -21,12 +19,11 @@ export interface ResponseConfig {
 
 export interface MicropubResponseConfig {
   create: Create
-  include_error_description: boolean
   prefix: string
 }
 
 export function defMicropubResponse(config: MicropubResponseConfig) {
-  const { create, include_error_description, prefix } = config
+  const { create, prefix } = config
 
   return async function micropubResponse(
     this: FastifyReply,
@@ -57,18 +54,21 @@ export function defMicropubResponse(config: MicropubResponseConfig) {
       const valid = validate(jf2)
 
       if (!valid) {
-        const error_description = `Received invalid JF2 according to schema ${schema_id}`
+        const error_description = `Received invalid JF2 according to schema '${schema_id}'.`
         this.request.log.warn(
           { jf2, errors: validate.errors || [] },
           `${prefix}${error_description}`
         )
+        const error = new InvalidRequestError({ error_description })
 
-        const { code, body } = invalidRequest({
-          error_description,
-          include_error_description
-        })
+        const body = {
+          error: error.error,
+          error_description: error.error_description,
+          error_uri: error.error_uri,
+          state: error.state
+        }
 
-        return this.errorResponse(code, body)
+        return this.errorResponse(error.statusCode, body)
       } else {
         const message = `validated JF2 according to schema ${schema_id}`
         this.request.log.debug(`${prefix}${message}`)
@@ -78,14 +78,19 @@ export function defMicropubResponse(config: MicropubResponseConfig) {
     const result = await create(jf2)
 
     if (result.error) {
-      const { code, body } = storeErrorToMicropubError(result.error, {
-        include_error_description
-      })
+      const error = storeErrorToMicropubError(result.error)
       this.request.log.error(
-        `${prefix}${body.error}: ${body.error_description}`
+        `${prefix}${error.error} (${error.statusCode}): ${error.error_description}`
       )
 
-      return this.errorResponse(code, body)
+      const body = {
+        error: error.error,
+        error_description: error.error_description,
+        error_uri: error.error_uri,
+        state: error.state
+      }
+
+      return this.errorResponse(error.statusCode, body)
     } else {
       const { code, summary } = storeValueToMicropubValue(result.value)
       this.request.log.debug(`${prefix}${summary}`)

@@ -5,9 +5,9 @@ import {
   unixTimestampInSeconds
 } from '../../../lib/date.js'
 import {
-  invalidRequest,
-  serverError
-} from '../../../lib/micropub/error-responses.js'
+  InvalidRequestError,
+  ServerError
+} from '../../../lib/fastify-errors/index.js'
 import type { RevokeJWT } from '../../../lib/schemas/index.js'
 import { safeDecode } from '../../../lib/token/decode.js'
 
@@ -21,7 +21,6 @@ interface RouteGeneric extends RouteGenericInterface {
 }
 
 interface Config {
-  include_error_description: boolean
   log_prefix: string
   me: string
   revokeJWT: RevokeJWT
@@ -33,7 +32,7 @@ interface Config {
  * @see [Token revocation - IndieAuth spec](https://indieauth.spec.indieweb.org/#token-revocation)
  */
 export const defRevocationPost = (config: Config) => {
-  const { include_error_description, me, log_prefix, revokeJWT } = config
+  const { me, log_prefix, revokeJWT } = config
 
   const revocationPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
@@ -44,17 +43,7 @@ export const defRevocationPost = (config: Config) => {
 
     if (!token) {
       const error_description = 'No `token` in request body.'
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'No token in request body',
-        description: 'Revocation endpoint error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     // TODO: allow to revoke refresh tokens
@@ -65,18 +54,7 @@ export const defRevocationPost = (config: Config) => {
     // https://datatracker.ietf.org/doc/html/rfc7009#section-2.1
     if (token_type_hint === 'refresh_token') {
       const error_description = `Revoking refresh tokens is not supported by this revocation endpoint.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Token revocation failed',
-        description: 'Revocation endpoint error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     // As described in [RFC7009], the revocation endpoint responds with HTTP 200
@@ -100,17 +78,7 @@ export const defRevocationPost = (config: Config) => {
     if (!claims.exp) {
       const error_description =
         'Cannot revoke token because it has no `exp` claim.'
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Token has no `exp` claim',
-        description: 'Revocation endpoint error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     const unix_now = unixTimestampInSeconds()
@@ -131,18 +99,7 @@ export const defRevocationPost = (config: Config) => {
     // be weird to return HTTP 200 for a JWT that has a different `me` claim.
     if (claims.me !== me) {
       const error_description = `The token has a claim me=${claims.me}. This endpoint can only revoke tokens that have me=${me}`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Token revocation failed',
-        description: 'Revocation endpoint error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(
@@ -155,16 +112,8 @@ export const defRevocationPost = (config: Config) => {
     // appropriate.
     if (revoke_error) {
       const original = revoke_error.message
-      const error_description = `cannot revoke token: ${original}`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = serverError({
-        error: 'revoke_failed',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Cannot revoke token: ${original}`
+      throw new ServerError({ error_description })
     }
 
     const { jti, message } = revoke_value

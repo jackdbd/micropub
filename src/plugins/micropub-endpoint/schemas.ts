@@ -1,42 +1,34 @@
 import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import { me } from '../../lib/indieauth/index.js'
 import { media_endpoint, micropub_endpoint } from '../../lib/micropub/index.js'
 import {
   create,
+  type Create,
   deleteContentOrMedia,
+  type DeleteContentOrMedia,
   isBlacklisted,
-  report_all_ajv_errors,
+  type IsBlacklisted,
   syndicate_to_item,
+  report_all_ajv_errors,
   undelete,
-  update
+  type Undelete,
+  update,
+  type Update
 } from '../../lib/schemas/index.js'
-import type {
-  Create,
-  DeleteContentOrMedia,
-  IsBlacklisted,
-  Undelete,
-  Update
-} from '../../lib/schemas/index.js'
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
-  DEFAULT_REPORT_ALL_AJV_ERRORS
-} from './constants.js'
+import { DEFAULT } from './constants.js'
 
 export const options = Type.Object(
   {
+    ajv: Type.Optional(Type.Any()),
+
     create,
 
     delete: deleteContentOrMedia,
 
-    includeErrorDescription: Type.Optional(
-      Type.Boolean({ default: DEFAULT_INCLUDE_ERROR_DESCRIPTION })
-    ),
-
     isBlacklisted,
 
-    logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
+    logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
     me,
 
@@ -48,14 +40,14 @@ export const options = Type.Object(
       Type.Number({
         title: 'multipart/form-data max file size',
         description: `Max file size (in bytes) for multipart/form-data requests.`,
-        default: DEFAULT_MULTIPART_FORMDATA_MAX_FILE_SIZE,
+        default: DEFAULT.MULTIPART_FORMDATA_MAX_FILE_SIZE,
         minimum: 0
       })
     ),
 
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
-      default: DEFAULT_REPORT_ALL_AJV_ERRORS
+      default: DEFAULT.REPORT_ALL_AJV_ERRORS
     }),
 
     syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
@@ -72,6 +64,7 @@ export const options = Type.Object(
 )
 
 export interface Options extends Static<typeof options> {
+  ajv?: Ajv
   create: Create
   delete: DeleteContentOrMedia
   isBlacklisted: IsBlacklisted

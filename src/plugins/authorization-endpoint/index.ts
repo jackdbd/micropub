@@ -9,12 +9,7 @@ import { defIssueCode } from '../../lib/authorization-code-storage-interface/iss
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
+import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/auth-config-get.js'
 import { defAuthGet } from './routes/auth-get.js'
 import { defAuthPost } from './routes/auth-post.js'
@@ -26,9 +21,8 @@ import {
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
 const authorizationEndpoint: FastifyPluginCallback<Options> = (
@@ -38,9 +32,15 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
+  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
+    config
 
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  }
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
@@ -48,7 +48,6 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     accessTokenExpiration: access_token_expiration,
     addToIssuedCodes,
     authorizationCodeExpiration: authorization_code_expiration,
-    includeErrorDescription: include_error_description,
     issuer,
     markAuthorizationCodeAsUsed,
     refreshTokenExpiration: refresh_token_expiration
@@ -88,7 +87,6 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     defAuthGet({
       access_token_expiration,
       authorization_code_expiration,
-      include_error_description,
       issuer,
       issueCode,
       log_prefix,
@@ -107,7 +105,6 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
       }
     },
     defAuthPost({
-      include_error_description,
       log_prefix,
       markAuthorizationCodeAsUsed
     })

@@ -1,62 +1,59 @@
+import type { Session, SessionData } from '@fastify/secure-session'
 import { FastifyRequest } from 'fastify'
-import { insufficientScope, unauthorized } from './micropub/error-responses.js'
-// import {
-//   InsufficientScopeError,
-//   UnauthorizedError
-// } from '../lib/fastify-errors/index.js'
+// import type { JWTPayload } from 'jose'
+import type { AccessTokenClaims } from './token/index.js'
+import {
+  InsufficientScopeError,
+  UnauthorizedError
+} from '../lib/fastify-errors/index.js'
 
-export interface Config {
-  include_error_description: boolean
-  log_prefix: string
+export interface Options {
+  // logPrefix?: string
+  claimsSessionKey?: string
+  // scopeClaimsKey: string
+  sessionKey?: string
 }
 
-export const defErrorIfActionNotAllowed = (config: Config) => {
-  const { include_error_description, log_prefix } = config
+export const defErrorIfActionNotAllowed = (options?: Options) => {
+  const opt = options ?? ({} as Options)
+  // const prefix = opt.logPrefix ?? 'error-if-action-not-allowed '
+  const claims_session_key = opt.claimsSessionKey ?? 'claims'
+  const session_key = opt.sessionKey ?? 'session'
 
   const errorIfActionNotAllowed = (request: FastifyRequest, scope: string) => {
+    const session = (request as any)[session_key] as Session<SessionData>
+
     // Consider passing this getter as a configuration option. For example, one
     // might prefer storing/retrieving the claims from a session cookie.
     // The type definition should be: () => Claims | undefined
-    const claims = request.session.get('claims')
+    // const claims: JWTPayload | undefined = session.get(claims_session_key)
+    const claims: AccessTokenClaims | undefined =
+      session.get(claims_session_key)
+    // const claims = request.session.get('claims')
 
     if (!claims) {
-      const error_description = `request context has no access token claims`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      return unauthorized({
-        error_description,
-        include_error_description
-      })
+      const error_description = `Session has no access token claims`
+      return new UnauthorizedError({ error_description })
     }
 
     const scopes = claims.scope.split(' ')
-    request.log.debug(`${log_prefix}access token scopes: ${scopes.join(' ')}`)
 
     // The Micropub server MUST require the bearer token to include at least one
     // scope value, in order to ensure posts cannot be created by arbitrary tokens.
     // https://micropub.spec.indieweb.org/#scope-p-1
     if (scopes.length < 1) {
-      const error_description = `access token has no scopes`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      // return new InsufficientScopeError({
-      //   error_description,
-      //   error_uri: 'https://micropub.spec.indieweb.org/#error-response'
-      // })
-
-      return insufficientScope({
+      const error_description = `Claims found in session do not include a 'scope' claim.`
+      return new InsufficientScopeError({
         error_description,
-        include_error_description
+        error_uri: 'https://micropub.spec.indieweb.org/#error-response'
       })
     }
 
     if (!scopes.includes(scope)) {
-      const error_description = `access token does not include scope '${scope}'`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      return insufficientScope({
+      const error_description = `Claim 'scope' found in session does not include '${scope}'.`
+      return new InsufficientScopeError({
         error_description,
-        include_error_description
+        error_uri: 'https://micropub.spec.indieweb.org/#error-response'
       })
     }
 

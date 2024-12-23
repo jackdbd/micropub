@@ -1,28 +1,39 @@
 import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import { report_all_ajv_errors } from '../../schemas/index.js'
-import {
-  DEFAULT_HEADER,
-  DEFAULT_HEADER_KEY,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  DEFAULT_SESSION_KEY
-} from './constants.js'
+import { DEFAULT } from './constants.js'
 
 export const options = Type.Object({
-  header: Type.Optional(Type.String({ minLength: 1, default: DEFAULT_HEADER })),
-  header_key: Type.Optional(
-    Type.String({ minLength: 1, default: DEFAULT_HEADER_KEY })
+  accessTokenSessionKey: Type.Optional(
+    Type.String({ minLength: 1, default: DEFAULT.ACCESS_TOKEN_SESSION_KEY })
   ),
-  log_prefix: Type.Optional(
-    Type.String({ minLength: 1, default: DEFAULT_LOG_PREFIX })
+
+  ajv: Type.Optional(Type.Any()),
+
+  claimsSessionKey: Type.Optional(
+    Type.String({ minLength: 1, default: DEFAULT.CLAIMS_SESSION_KEY })
   ),
-  report_all_ajv_errors: Type.Optional({
+
+  header: Type.Optional(Type.String({ minLength: 1, default: DEFAULT.HEADER })),
+
+  headerKey: Type.Optional(
+    Type.String({ minLength: 1, default: DEFAULT.HEADER_KEY })
+  ),
+
+  logPrefix: Type.Optional(
+    Type.String({ minLength: 1, default: DEFAULT.LOG_PREFIX })
+  ),
+
+  reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,
-    default: DEFAULT_REPORT_ALL_AJV_ERRORS
+    default: DEFAULT.REPORT_ALL_AJV_ERRORS
   }),
-  session_key: Type.Optional(
-    Type.String({ minLength: 1, default: DEFAULT_SESSION_KEY })
+
+  sessionKey: Type.Optional(
+    Type.String({ minLength: 1, default: DEFAULT.SESSION_KEY })
   )
 })
 
-export type Options = Static<typeof options>
+export interface Options extends Static<typeof options> {
+  ajv?: Ajv
+}

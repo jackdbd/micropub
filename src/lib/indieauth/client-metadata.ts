@@ -23,18 +23,18 @@ export const clientMetadata = async (client_id: string) => {
       headers: { Accept: 'application/json' }
     })
   } catch (err) {
-    return { error: new Error(`Failed to fetch ${url}`) }
+    return { error: new Error(`failed to fetch ${url}`) }
   }
 
   if (!response.ok) {
     const msg = await errorMessageFromJSONResponse(response)
-    return { error: new Error(`Failed to fetch ${url}: ${msg}`) }
+    return { error: new Error(`failed to fetch ${url}: ${msg}`) }
   }
 
   try {
     const metadata: ClientMetadata = await response.json()
     return { value: metadata }
   } catch (err) {
-    return { error: new Error(`Failed to parse JSON response`) }
+    return { error: new Error(`failed to parse JSON response`) }
   }
 }

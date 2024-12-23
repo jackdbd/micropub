@@ -1,47 +1,39 @@
+import type { Session, SessionData } from '@fastify/secure-session'
+import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
 import type { onRequestAsyncHookHandler } from 'fastify'
-import { applyToDefaults } from '@hapi/hoek'
 import {
-  invalidToken,
-  serverError,
-  unauthorized
-} from '../../micropub/error-responses.js'
-import type { AccessTokenClaims } from '../../token/claims.js'
-import { safeDecode } from '../../token/decode.js'
+  InvalidTokenError,
+  ServerError,
+  UnauthorizedError
+} from '../../fastify-errors/index.js'
+import { accessTokenFromRequestHeader } from '../../fastify-request-utils/index.js'
+import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
 import { throwIfDoesNotConform } from '../../validators.js'
+import { DEFAULT } from './constants.js'
 import { options as options_schema, Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
-  include_error_description: false,
-  key_in_session: 'access_token',
-  log_prefix: '',
-  report_all_ajv_errors: false
-}
-
-const authorizationHeaderToToken = (auth?: string) => {
-  if (!auth) {
-    return { error: new Error('Missing Authorization') }
-  }
-
-  if (auth.indexOf('Bearer') === -1) {
-    return { error: new Error('Missing Bearer') }
-  }
-
-  const splits = auth.split(' ')
-  if (splits.length !== 2) {
-    return { error: new Error('Missing value for Bearer') }
-  }
-
-  return { value: splits[1] }
+  accessTokenSessionKey: DEFAULT.ACCESS_TOKEN_SESSION_KEY,
+  header: DEFAULT.HEADER,
+  headerKey: DEFAULT.HEADER_KEY,
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS,
+  sessionKey: DEFAULT.SESSION_KEY
 }
 
 export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
   const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
-  const hkey = 'authorization'
-  const { isBlacklisted, key_in_session, log_prefix: prefix } = config
-  const allErrors = config.report_all_ajv_errors as boolean
-  const include_error_description = config.include_error_description as boolean
+  const {
+    accessTokenSessionKey: access_token_session_key,
+    header,
+    headerKey: header_key,
+    isBlacklisted,
+    logPrefix: prefix,
+    reportAllAjvErrors: allErrors,
+    sessionKey: session_key
+  } = config
 
   let ajv: Ajv
   if (config.ajv) {
@@ -52,56 +44,42 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
 
   throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
 
+  const hkey = header.toLowerCase()
+
   const validateAccessTokenNotBlacklisted: onRequestAsyncHookHandler = async (
     request,
-    reply
+    _reply
   ) => {
-    let jwt = request.session.get(key_in_session)
+    const session = (request as any)[session_key] as Session<SessionData>
 
-    if (!jwt) {
-      const { error, value } = authorizationHeaderToToken(request.headers[hkey])
+    request.log.debug(
+      `${prefix}get access token from session '${session_key}', key '${access_token_session_key}'`
+    )
+
+    let access_token: string | undefined = session.get(access_token_session_key)
+
+    if (!access_token) {
+      const { value } = accessTokenFromRequestHeader(request, {
+        header,
+        header_key
+      })
+
       if (value) {
-        jwt = value
-      } else {
-        if (error) {
-          const error_description = error.message
-          request.log.warn(`${prefix}${error_description}`)
-
-          const { code, body } = invalidToken({
-            error_description,
-            include_error_description
-          })
-
-          return reply.errorResponse(code, body)
-        }
+        access_token = value
       }
     }
 
-    if (!jwt) {
-      const error_description = `access token not found neither in session, nor in request header ${hkey}`
-      request.log.warn(`${prefix}${error_description}`)
-
-      const { code, body } = unauthorized({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+    if (!access_token) {
+      const error_description = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
+      throw new UnauthorizedError({ error_description })
     }
 
     const { error: decode_error, value: claims } =
-      await safeDecode<AccessTokenClaims>(jwt)
+      await safeDecode<AccessTokenClaims>(access_token)
 
     if (decode_error) {
-      const error_description = decode_error.message
-      request.log.warn(`${prefix}${error_description}`)
-
-      const { code, body } = invalidToken({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Error while decoding access token: ${decode_error.message}`
+      throw new InvalidTokenError({ error_description })
     }
 
     const { jti } = claims
@@ -113,28 +91,12 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
 
     if (black_err) {
       const error_description = black_err.message
-      request.log.warn(`${prefix}${error_description}`)
-
-      const { code, body } = serverError({
-        error: 'storage_is_blacklisted_error',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new ServerError({ error_description })
     }
 
     if (blacklisted) {
       const error_description = `Token ${jti} is blacklisted.`
-      // use a warn level to easily spot this log entry.
-      request.log.warn(`${prefix}${error_description}`)
-
-      const { code, body } = invalidToken({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidTokenError({ error_description })
     }
   }
 

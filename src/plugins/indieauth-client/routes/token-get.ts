@@ -1,9 +1,11 @@
 import type { RouteHandler } from 'fastify'
-import { invalidRequest, unauthorized } from '../../../lib/micropub/index.js'
+import {
+  InvalidRequestError,
+  UnauthorizedError
+} from '../../../lib/fastify-errors/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 
 export interface TokenGetConfig {
-  include_error_description: boolean
   introspection_endpoint: string
   log_prefix: string
 }
@@ -15,8 +17,7 @@ export interface TokenGetConfig {
  * @see [Introspection Endpoint - OAuth 2.0 Token Introspection (RFC7662)](https://www.rfc-editor.org/rfc/rfc7662#section-2)
  */
 export const defTokenGet = (config: TokenGetConfig) => {
-  const { include_error_description, introspection_endpoint, log_prefix } =
-    config
+  const { introspection_endpoint, log_prefix } = config
 
   const tokenGet: RouteHandler = async (request, reply) => {
     const access_token = request.session.get('access_token')
@@ -24,14 +25,7 @@ export const defTokenGet = (config: TokenGetConfig) => {
 
     if (!access_token) {
       const error_description = `Access token not found in session.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = unauthorized({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new UnauthorizedError({ error_description })
     }
 
     request.log.debug(`${log_prefix}access token extracted from session`)
@@ -57,14 +51,7 @@ export const defTokenGet = (config: TokenGetConfig) => {
     if (!response.ok) {
       const msg = await errorMessageFromJSONResponse(response)
       const error_description = `Cannot introspect ${token_type_hint}: ${msg}`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     const introspection_response_body = await response.json()

@@ -1,7 +1,10 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
-import { invalidRequest, serverError } from '../../../lib/micropub/index.js'
+import {
+  InvalidRequestError,
+  ServerError
+} from '../../../lib/fastify-errors/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type {
   TokenPostConfig as Config,
@@ -18,12 +21,7 @@ interface RouteGeneric extends RouteGenericInterface {
  * @see [Access Token Response - IndieAuth spec](https://indieauth.spec.indieweb.org/#access-token-response)
  */
 export const defTokenPost = (config: Config) => {
-  const {
-    authorization_endpoint,
-    include_error_description,
-    issueJWT,
-    log_prefix
-  } = config
+  const { authorization_endpoint, issueJWT, log_prefix } = config
 
   // OAuth 2.0 Access Token Request
   // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
@@ -52,14 +50,7 @@ export const defTokenPost = (config: Config) => {
 
     if (grant_type !== 'authorization_code') {
       const error_description = `This token endpoint only supports the 'authorization_code' grant type.`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(
@@ -88,15 +79,8 @@ export const defTokenPost = (config: Config) => {
 
     if (!response.ok) {
       const msg = await errorMessageFromJSONResponse(response)
-      const error_description = `Could not verify authorization code: ${msg}`
-      request.log.warn(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Cannot verify authorization code: ${msg}`
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(
@@ -111,18 +95,10 @@ export const defTokenPost = (config: Config) => {
     try {
       auth_res_body = await response.json()
     } catch (err: any) {
-      const error_description = `Failed to parse the JSON response received from the authorization endpoint: ${err.message}`
-      request.log.error(`${log_prefix}${error_description}`)
-
+      const error_description = `Cannot parse the JSON response received from the authorization endpoint: ${err.message}.`
       // I don't think it's the client's fault if we couldn't parse the response
       // body, so we return a generic server error.
-      const { code, body } = serverError({
-        error: 'response_body_parse_error',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new ServerError({ error_description })
     }
 
     const { me, scope } = auth_res_body
@@ -132,16 +108,8 @@ export const defTokenPost = (config: Config) => {
     )
 
     if (!me) {
-      const error_description = `Response body from authorization endpoint does not include 'me'`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = serverError({
-        error: 'auth_response_error',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Response body from authorization endpoint does not include 'me'.`
+      throw new ServerError({ error_description })
     }
 
     // If the authorization code was issued with no scope, the token endpoint
@@ -151,14 +119,7 @@ export const defTokenPost = (config: Config) => {
     // if (!scope) {
     //   const error_description = `Response body from authorization endpoint does not include 'scope'`
     //   request.log.error(`${log_prefix}${error_description}`)
-
-    //   const { code, body } = serverError({
-    //     error: 'auth_response_error',
-    //     error_description,
-    //     include_error_description
-    //   })
-
-    //   return reply.errorResponse(code, body)
+    //   throw new ServerError({ error_description })
     // }
 
     const payload = { me, scope }
@@ -166,15 +127,7 @@ export const defTokenPost = (config: Config) => {
 
     if (error) {
       const error_description = `Cannot issue JWT: ${error.message}`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = serverError({
-        error: 'issue_jwt_error',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new ServerError({ error_description })
     }
 
     const { claims, jwt, message } = value

@@ -4,42 +4,20 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { unixTimestampInSeconds } from '../../lib/date.js'
-import {
-  defDecodeJwtAndSetClaims,
-  defValidateAccessTokenNotBlacklisted,
-  defValidateClaim
-} from '../../lib/fastify-hooks/index.js'
 import { defIssueJWT } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-
 import { defConfigGet } from './routes/token-config-get.js'
-import { defTokenGet } from './routes/token-get.js'
 import { defTokenPost } from './routes/token-post.js'
+import { DEFAULT, NAME } from './constants.js'
 import { options as options_schema, type Options } from './schemas.js'
-import {
-  DEFAULT_ACCESS_TOKEN_EXPIRATION,
-  DEFAULT_AUTHORIZATION_ENDPOINT,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REFRESH_TOKEN_EXPIRATION,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
-import {
-  ForbiddenError,
-  InsufficientScopeError,
-  UnauthorizedError
-} from '../../lib/fastify-errors/index.js'
 
 const defaults: Partial<Options> = {
-  accessTokenExpiration: DEFAULT_ACCESS_TOKEN_EXPIRATION,
-  authorizationEndpoint: DEFAULT_AUTHORIZATION_ENDPOINT,
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  refreshTokenExpiration: DEFAULT_REFRESH_TOKEN_EXPIRATION,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
+  accessTokenExpiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
+  authorizationEndpoint: DEFAULT.AUTHORIZATION_ENDPOINT,
+  logPrefix: DEFAULT.LOG_PREFIX,
+  refreshTokenExpiration: DEFAULT.REFRESH_TOKEN_EXPIRATION,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
 const tokenEndpoint: FastifyPluginCallback<Options> = (
@@ -49,23 +27,25 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
-
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
-
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
-
   const {
     accessTokenExpiration: access_token_expiration,
     addToIssuedTokens,
     authorizationEndpoint: authorization_endpoint,
-    includeErrorDescription: include_error_description,
-    introspectionEndpoint: introspection_endpoint,
-    isBlacklisted,
     issuer,
     jwks,
-    refreshTokenExpiration: refresh_token_expiration
+    logPrefix: log_prefix,
+    refreshTokenExpiration: refresh_token_expiration,
+    reportAllAjvErrors: report_all_ajv_errors
   } = config
+
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  }
+
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   fastify.log.debug(
     `${log_prefix}access token expiration: ${access_token_expiration}`
@@ -82,30 +62,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.register(responseDecorators)
   fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
-  fastify.setErrorHandler<
-    ForbiddenError | UnauthorizedError | InsufficientScopeError
-  >(function (error, request, reply) {
-    // `this` is the fastify instance
-    const code = error.statusCode || reply.statusCode
-    if (code >= 400 && code < 500) {
-      request.log.warn(
-        `${log_prefix}${error.error}: ${error.error_description} (status: ${code})`
-      )
-    }
-
-    // TODO: maybe redirect only if client Accept header is text/html
-    if (code === 401) {
-      return reply.redirect('/login', 302)
-    }
-
-    return reply.view('error.njk', {
-      title: error.name,
-      description: 'Some error description',
-      error: error.name,
-      error_description: error.message
-    })
-  })
-
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
@@ -114,30 +70,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
-
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ log_prefix })
-
-  // const validateClaimMe = defValidateClaim(
-  //   { claim: 'me', op: '==', value: me },
-  //   { include_error_description, log_prefix: prefix }
-  // )
-
-  const validateClaimExp = defValidateClaim(
-    {
-      claim: 'exp',
-      op: '>',
-      value: unixTimestampInSeconds
-    },
-    { include_error_description, log_prefix }
-  )
-
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({
-      include_error_description,
-      isBlacklisted,
-      log_prefix,
-      report_all_ajv_errors: all_ajv_errors
-    })
 
   // === ROUTES ============================================================= //
   const issueJWT = defIssueJWT({
@@ -149,33 +81,12 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
 
   fastify.get('/token/config', defConfigGet(config))
 
-  fastify.get(
-    '/token',
-    {
-      onRequest: [
-        decodeJwtAndSetClaims,
-        validateClaimExp,
-        validateAccessTokenNotBlacklisted
-      ]
-    },
-    defTokenGet({
-      include_error_description,
-      introspection_endpoint,
-      log_prefix
-    })
-  )
-
   fastify.post(
     '/token',
     {
       // schema: token_post_request
     },
-    defTokenPost({
-      authorization_endpoint,
-      include_error_description,
-      issueJWT,
-      log_prefix
-    })
+    defTokenPost({ authorization_endpoint, issueJWT, log_prefix })
   )
 
   done()

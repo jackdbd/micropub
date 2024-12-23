@@ -143,7 +143,7 @@ export interface Config {
   NODE_ENV: string
 }
 
-const SENSITIVE = new Set([
+export const SENSITIVE = new Set([
   'cloudflare_r2_access_key_id',
   'cloudflare_r2_secret_access_key',
   'github_token',
@@ -153,17 +153,29 @@ const SENSITIVE = new Set([
   'telegram_token'
 ])
 
-export const sensitive_fields = [...SENSITIVE]
+// These configuration values are not sensitive, but either they can't be
+// rendered in a template (e.g. a function), or they fail to render in a
+// template (e.g. ajv).
+export const DO_NOT_RENDER = new Set(['ajv'] as string[])
 
-export const sentiveEntries = (config: Config) => {
-  return Object.entries(config).filter(([key]) => {
-    return SENSITIVE.has(key) ? true : false
-  })
-}
+// export const sensitive_fields = [...SENSITIVE]
 
-export const unsentiveEntries = (config: Config) => {
+// export const sentiveEntries = (config: Config) => {
+//   return Object.entries(config).filter(([key]) => {
+//     return SENSITIVE.has(key) ? true : false
+//   })
+// }
+
+// export const unsentiveEntries = (config: Config) => {
+//   return Object.entries(config).filter(([key]) => {
+//     return SENSITIVE.has(key) ? false : true
+//   })
+// }
+
+export const entriesSafeToRender = (config: Config) => {
   return Object.entries(config).filter(([key]) => {
-    return SENSITIVE.has(key) ? false : true
+    const hide = SENSITIVE.has(key) || DO_NOT_RENDER.has(key)
+    return hide ? false : true
   })
 }
 

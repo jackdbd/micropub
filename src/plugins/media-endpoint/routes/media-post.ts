@@ -2,21 +2,17 @@ import type { MultipartFile, MultipartValue } from '@fastify/multipart'
 import type { RouteHandler } from 'fastify'
 import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
 import {
-  type Action,
-  invalidRequest,
-  serverError
-} from '../../../lib/micropub/index.js'
+  InvalidRequestError,
+  ServerError
+} from '../../../lib/fastify-errors/index.js'
+import type { Action } from '../../../lib/micropub/index.js'
 import type {
   DeleteContentOrMedia,
   UploadMedia
 } from '../../../lib/schemas/index.js'
-import { NAME } from '../constants.js'
-
-const PREFIX = `${NAME}/routes `
 
 interface Config {
   delete: DeleteContentOrMedia
-  include_error_description: boolean
   upload: UploadMedia
 }
 
@@ -40,23 +36,17 @@ interface Config {
  * @see [Uploading Files](https://micropub.spec.indieweb.org/#uploading-files)
  */
 export const defMediaPost = (config: Config) => {
-  const { delete: deleteMedia, include_error_description, upload } = config
+  const { delete: deleteMedia, upload } = config
 
-  const errorIfActionNotAllowed = defErrorIfActionNotAllowed({
-    include_error_description,
-    log_prefix: 'POST media/'
-  })
+  const errorIfActionNotAllowed = defErrorIfActionNotAllowed()
 
   const mediaPost: RouteHandler = async (request, reply) => {
     if (!request.isMultipart()) {
       const action = (request.body as any).action as Action
 
       if (action !== 'delete') {
-        const { code, body } = invalidRequest({
-          error_description: `action '${action}' is not supported by this media endpoint`,
-          include_error_description
-        })
-        return reply.errorResponse(code, body)
+        const error_description = `Action '${action}' is not supported by this media endpoint.`
+        throw new InvalidRequestError({ error_description })
       }
 
       // const store_error = errorIfMethodNotImplementedInStore(store, action)
@@ -69,8 +59,7 @@ export const defMediaPost = (config: Config) => {
       // claims. But there is already a Fastify hook that does just that.
       const scope_error = errorIfActionNotAllowed(request, action)
       if (scope_error) {
-        const { code, body } = scope_error
-        return reply.errorResponse(code, body)
+        throw scope_error
       }
 
       const url = (request.body as any).url as string
@@ -79,16 +68,8 @@ export const defMediaPost = (config: Config) => {
 
       if (result.error) {
         const original = result.error.message
-        const error_description = `Could not delete ${url} from media store: ${original}`
-        request.log.error(`${PREFIX}: ${error_description}`)
-
-        const { code, body } = serverError({
-          error: 'delete_failed',
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, body)
+        const error_description = `Cannot delete ${url} from media store: ${original}.`
+        throw new ServerError({ error_description })
       } else {
         const code = 200
         // const url = result.value.url || ''
@@ -109,26 +90,12 @@ export const defMediaPost = (config: Config) => {
       // request.log.warn({ data }, '====== INCOMING DATA ======')
     } catch (err: any) {
       const error_description = err.message
-      request.log.warn(`${PREFIX}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     if (!data) {
-      const error_description = 'multi-part request has no file'
-      request.log.warn(`${PREFIX}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = 'Multi-part request has no file.'
+      throw new InvalidRequestError({ error_description })
     }
 
     let filename: string
@@ -138,15 +105,8 @@ export const defMediaPost = (config: Config) => {
       const value = data.fields.filename as MultipartValue<string>
       filename = value.value
     } else {
-      const error_description = `request has no field 'filename'`
-      request.log.warn(`${PREFIX}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Request has no field 'filename'.`
+      throw new InvalidRequestError({ error_description })
     }
 
     const contentType = data.mimetype
@@ -156,32 +116,17 @@ export const defMediaPost = (config: Config) => {
       body = await data.toBuffer()
     } catch (err: any) {
       const error_description = err.message
-      request.log.warn(`${PREFIX}${error_description}`)
-
       // I am not sure it's actually the client's fault if we can't obtain the
       // buffer from the multipart request.
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      throw new InvalidRequestError({ error_description })
     }
 
     const result = await upload({ body, contentType, filename })
 
     if (result.error) {
       const original = result.error.message
-      const error_description = `Could not upload file ${filename} to media store: ${original}`
-      request.log.error(`${PREFIX}: ${error_description}`)
-
-      const { code, body } = serverError({
-        error: 'upload_failed',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, body)
+      const error_description = `Cannot upload file ${filename} to media store: ${original}`
+      throw new ServerError({ error_description })
     }
 
     const code = 202 // or 201

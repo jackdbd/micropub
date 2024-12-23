@@ -1,20 +1,9 @@
-export type { ClientErrorResponse, ClientErrorType } from './error.js'
-
 export {
   error_response,
   error_type,
   type ErrorResponse,
   type ErrorType
 } from './error-response.js'
-
-export {
-  forbidden,
-  insufficientScope,
-  invalidRequest,
-  invalidToken,
-  serverError,
-  unauthorized
-} from './error-responses.js'
 
 export {
   audio,

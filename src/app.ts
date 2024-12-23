@@ -1,5 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import Fastify from 'fastify'
 import fastifyCsrf from '@fastify/csrf-protection'
 import { fastifyRequestContext } from '@fastify/request-context'
@@ -14,18 +16,14 @@ import type { Environment } from 'nunjucks'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
-import type { Action } from './lib/micropub/index.js'
-import type { ErrorResponse as ErrorResponseBody } from './lib/oauth2/index.js'
 import { defR2 } from './lib/r2-storage/client.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/index.js'
 
 import auth from './plugins/authorization-endpoint/index.js'
-import errorHandler from './plugins/error-handler/index.js'
 import indieauthClient from './plugins/indieauth-client/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
-import type { NoScopeResponseOptions } from './plugins/micropub-endpoint/decorators/request.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
 import introspection from './plugins/introspection-endpoint/index.js'
 import responseDecorators from './plugins/response-decorators/index.js'
@@ -37,9 +35,17 @@ import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
 import token from './plugins/token-endpoint/index.js'
-import youch from './plugins/youch/index.js'
 
-import { sensitive_fields, unsentiveEntries, type Config } from './config.js'
+import {
+  entriesSafeToRender,
+  DO_NOT_RENDER,
+  SENSITIVE,
+  type Config
+} from './config.js'
+import {
+  defErrorHandlerDev,
+  defErrorHandlerProd
+} from './error-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
 
 // Token storage - Filesystem backend //////////////////////////////////////////
@@ -72,12 +78,6 @@ const NAME = 'app'
 const LOG_PREFIX = `${NAME} `
 
 declare module 'fastify' {
-  interface FastifyRequest {
-    noScopeResponse: (
-      action: Action,
-      options?: NoScopeResponseOptions
-    ) => { code: number; body: ErrorResponseBody }
-  }
   interface FastifyReply {
     errorResponse<B extends BaseErrorResponseBody = BaseErrorResponseBody>(
       code: number,
@@ -171,6 +171,27 @@ export async function defFastify(config: Config) {
     // userinfo_endpoint: userinfoEndpoint
   } = config
 
+  // We would need all these extra formats to fully support fluent-json-schema.
+  // https://github.com/ajv-validator/ajv-formats#formats
+  // However, it seems that for this app we only need these formats.
+  const ajv = addFormats(new Ajv({ allErrors: reportAllAjvErrors }), [
+    'date',
+    'date-time',
+    'duration',
+    'email',
+    // 'hostname',
+    // 'ipv4',
+    // 'ipv6',
+    // 'json-pointer',
+    // 'regex',
+    // 'relative-json-pointer',
+    // 'time',
+    'uri'
+    // 'uri-reference',
+    // 'uri-template',
+    // 'uuid'
+  ])
+
   // console.log(`=== app config ===`)
   // console.log(config)
 
@@ -230,6 +251,7 @@ export async function defFastify(config: Config) {
   fastify.register(sensible)
 
   fastify.setNotFoundHandler((_request, reply) => {
+    // TODO: render 404 page
     return reply.notFound()
   })
 
@@ -271,20 +293,30 @@ export async function defFastify(config: Config) {
   })
 
   if (use_development_error_handler) {
-    fastify.register(youch, { preLines: 5 })
+    // fastify.setErrorHandler(
+    //   defErrorHandlerProd({
+    //     includeErrorDescription,
+    //     includeErrorDetails: true,
+    //     telegram: { chat_id: telegram_chat_id, token: telegram_token }
+    //   })
+    // )
+    fastify.setErrorHandler(defErrorHandlerDev({ preLines: 5 }))
   } else {
-    fastify.register(errorHandler, {
-      telegram: { chat_id: telegram_chat_id, token: telegram_token }
-    })
+    fastify.setErrorHandler(
+      defErrorHandlerProd({
+        includeErrorDescription,
+        telegram: { chat_id: telegram_chat_id, token: telegram_token }
+      })
+    )
   }
 
   fastify.register(responseDecorators)
 
   fastify.register(auth, {
+    ajv,
     accessTokenExpiration: access_token_expiration,
     addToIssuedCodes,
     authorizationCodeExpiration: authorization_code_expiration,
-    includeErrorDescription,
     issuer,
     markAuthorizationCodeAsUsed,
     refreshTokenExpiration: refresh_token_expiration,
@@ -292,13 +324,15 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(indieauthClient, {
+    ajv,
     authorizationCallbackRoute,
     authorizationEndpoint,
     authorizationStartRoute,
     clientId,
     clientName,
     clientUri,
-    includeErrorDescription,
+    introspectionEndpoint,
+    isBlacklisted,
     issuer,
     logoUri,
     micropubEndpoint,
@@ -310,7 +344,7 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(introspection, {
-    includeErrorDescription,
+    ajv,
     isBlacklisted,
     issuer,
     jwksUrl: jwks_url,
@@ -318,7 +352,7 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(revocation, {
-    includeErrorDescription,
+    ajv,
     isBlacklisted,
     issuer,
     jwksUrl: jwks_url,
@@ -331,10 +365,8 @@ export async function defFastify(config: Config) {
   fastify.register(token, {
     accessTokenExpiration: access_token_expiration,
     addToIssuedTokens,
+    ajv,
     authorizationEndpoint,
-    includeErrorDescription,
-    isBlacklisted,
-    introspectionEndpoint,
     issuer,
     jwks,
     refreshTokenExpiration: refresh_token_expiration,
@@ -342,7 +374,7 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(userinfo, {
-    includeErrorDescription,
+    ajv,
     isBlacklisted,
     me,
     reportAllAjvErrors
@@ -386,8 +418,8 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(media, {
+    ajv,
     delete: r2.delete,
-    includeErrorDescription,
     isBlacklisted,
     me,
     multipartFormDataMaxFileSize,
@@ -396,9 +428,9 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(micropub, {
+    ajv,
     create: github.create,
     delete: github.delete,
-    includeErrorDescription,
     isBlacklisted,
     me,
     mediaEndpoint,
@@ -419,8 +451,8 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(syndicate, {
+    ajv,
     get: github.get,
-    includeErrorDescription,
     isBlacklisted,
     me,
     publishedUrlToStorageLocation: github.publishedUrlToStorageLocation,
@@ -467,15 +499,13 @@ export async function defFastify(config: Config) {
   })
 
   fastify.get('/config', async (_request, reply) => {
-    const non_sensitive = Object.fromEntries(unsentiveEntries(config))
-
     return reply.successResponse(200, {
       title: 'Config',
       description: 'Configuration page the app',
       summary: 'Configuration of the app',
       payload: {
-        non_sensitive,
-        sensitive_fields
+        ...Object.fromEntries(entriesSafeToRender(config)),
+        not_shown: [...DO_NOT_RENDER.keys(), ...SENSITIVE.keys()]
       }
     })
   })

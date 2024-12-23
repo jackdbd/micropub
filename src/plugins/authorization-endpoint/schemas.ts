@@ -1,4 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import {
   addToIssuedCodes,
   markCodeAsUsed,
@@ -6,15 +7,8 @@ import {
   type MarkCodeAsUsed
 } from '../../lib/authorization-code-storage-interface/index.js'
 import { issuer } from '../../lib/indieauth/index.js'
-import {
-  include_error_description,
-  report_all_ajv_errors
-} from '../../lib/schemas/index.js'
-import {
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_REPORT_ALL_AJV_ERRORS
-} from './constants.js'
+import { report_all_ajv_errors } from '../../lib/schemas/index.js'
+import { DEFAULT } from './constants.js'
 
 // TODO: I am not sure it's a good idea to show the expiration times for the
 // access token and the refresh token, because they are set by the token
@@ -37,6 +31,8 @@ export const options = Type.Object(
      */
     addToIssuedCodes,
 
+    ajv: Type.Optional(Type.Any()),
+
     /**
      * Human-readable expiration time for the authorization code. It will be
      * shown in the consent screen.
@@ -44,11 +40,6 @@ export const options = Type.Object(
      * @example '60 seconds'
      */
     authorizationCodeExpiration: Type.String({ minLength: 1 }),
-
-    includeErrorDescription: Type.Optional({
-      ...include_error_description,
-      default: DEFAULT_INCLUDE_ERROR_DESCRIPTION
-    }),
 
     /**
      * Issuer identifier. This is optional in OAuth 2.0 servers, but required in
@@ -59,7 +50,7 @@ export const options = Type.Object(
      */
     issuer: Type.Optional(issuer),
 
-    logPrefix: Type.Optional(Type.String({ default: DEFAULT_LOG_PREFIX })),
+    logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
     /**
      * Function that will be called to mark a previously generated authorization
@@ -77,7 +68,7 @@ export const options = Type.Object(
 
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
-      default: DEFAULT_REPORT_ALL_AJV_ERRORS
+      default: DEFAULT.REPORT_ALL_AJV_ERRORS
     })
   },
   {
@@ -89,5 +80,6 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   addToIssuedCodes: AddToIssuedCodes
+  ajv?: Ajv
   markAuthorizationCodeAsUsed: MarkCodeAsUsed
 }

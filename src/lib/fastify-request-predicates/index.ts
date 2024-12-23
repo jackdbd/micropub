@@ -1,4 +1,5 @@
 import type { FastifyRequest } from 'fastify'
+export { defIsAuthenticated } from './is-authenticated.js'
 
 export const clientAcceptsHtml = (request: FastifyRequest) => {
   if (request.headers.accept && request.headers.accept.includes('text/html')) {

@@ -1,84 +1,92 @@
+import type { Session, SessionData } from '@fastify/secure-session'
+import { applyToDefaults } from '@hapi/hoek'
+import Ajv from 'ajv'
 import type { onRequestAsyncHookHandler } from 'fastify'
-import { UnauthorizedError } from '../../fastify-errors/index.js'
-import type { AccessTokenClaims } from '../../token/claims.js'
-import { safeDecode } from '../../token/decode.js'
 import {
-  DEFAULT_HEADER,
-  DEFAULT_HEADER_KEY,
-  DEFAULT_LOG_PREFIX,
-  // DEFAULT_REPORT_ALL_AJV_ERRORS,
-  DEFAULT_SESSION_KEY
-} from './constants.js'
-import { type Options } from './schemas.js'
+  InvalidTokenError,
+  UnauthorizedError
+} from '../../fastify-errors/index.js'
+import { accessTokenFromRequestHeader } from '../../fastify-request-utils/index.js'
+import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
+import { throwIfDoesNotConform } from '../../validators.js'
+import { DEFAULT } from './constants.js'
+import { options as options_schema, type Options } from './schemas.js'
+
+const defaults: Partial<Options> = {
+  accessTokenSessionKey: DEFAULT.ACCESS_TOKEN_SESSION_KEY,
+  claimsSessionKey: DEFAULT.CLAIMS_SESSION_KEY,
+  header: DEFAULT.HEADER,
+  headerKey: DEFAULT.HEADER_KEY,
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS,
+  sessionKey: DEFAULT.SESSION_KEY
+}
 
 export const defDecodeJwtAndSetClaims = (options?: Options) => {
-  const opt = options ?? {}
-  const hkey = opt.header ? opt.header.toLowerCase() : DEFAULT_HEADER
-  const header_key = opt.header_key ?? DEFAULT_HEADER_KEY
-  const log_prefix = opt.log_prefix ?? DEFAULT_LOG_PREFIX
-  // const report_all_ajv_errors =
-  //   opt.report_all_ajv_errors || DEFAULT_REPORT_ALL_AJV_ERRORS
-  const session_key = opt.session_key ?? DEFAULT_SESSION_KEY
+  const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
-  // TODO: validate options schema with Ajv
+  const {
+    accessTokenSessionKey: access_token_session_key,
+    claimsSessionKey: claims_session_key,
+    header,
+    headerKey: header_key,
+    logPrefix: prefix,
+    reportAllAjvErrors: allErrors,
+    sessionKey: session_key
+  } = config
+
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = new Ajv({ allErrors })
+  }
+
+  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+
+  const hkey = header.toLowerCase()
 
   const decodeJwtAndSetClaims: onRequestAsyncHookHandler = async (
     request,
-    reply
+    _reply
   ) => {
-    let access_token = request.session.get(session_key)
+    const session = (request as any)[session_key] as Session<SessionData>
 
-    if (!access_token) {
-      const hval = request.headers[hkey.toLowerCase()]
-
-      if (!hval) {
-        const details = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
-        const error_description = `Request has no access token. ${details}`
-        throw new UnauthorizedError({ error_description })
-      }
-
-      // The value of a request header can be an array. This typically happens
-      // when multiple headers with the same name are sent in a single request.
-      // (e.g. Set-Cookie). I don't think this is a case I should handle, so I
-      // return an HTTP 401 error.
-      if (Array.isArray(hval)) {
-        const error_description = `Request header '${hkey}' is an array.`
-        throw new UnauthorizedError({ error_description })
-      }
-
-      const splits = hval.split(' ')
-
-      if (splits.length !== 2) {
-        const error_description = `Request header '${hkey}' has no '${header_key}' value.`
-        throw new UnauthorizedError({ error_description })
-      }
-
-      access_token = splits.at(1)
-    }
-
-    if (!access_token) {
-      const details = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
-      const error_description = `Request has no access token. ${details}`
-
-      reply.code(401)
-      const err = new Error(error_description)
-      err.name = 'Unauthorized'
-      throw err
-    }
-
-    const { error, value: claims } = await safeDecode<AccessTokenClaims>(
-      access_token
+    request.log.debug(
+      `${prefix}get access token from session '${session_key}', key '${access_token_session_key}'`
     )
+    let access_token: string | undefined = session.get(access_token_session_key)
 
-    if (error) {
-      const error_description = `Error while decoding access token: ${error.message}`
+    if (!access_token) {
+      const { value } = accessTokenFromRequestHeader(request, {
+        header,
+        header_key
+      })
+
+      if (value) {
+        access_token = value
+      }
+    }
+
+    if (!access_token) {
+      const error_description = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
       throw new UnauthorizedError({ error_description })
     }
 
-    // TODO: make it another configuration parameter. Maybe it should 'claims' by default.
-    // Also, should I set this in the request context or in the session?
-    request.session.set('claims', claims)
-    request.log.debug(`${log_prefix}set access token decoded claims in session`)
+    const { error: decode_error, value: claims } =
+      await safeDecode<AccessTokenClaims>(access_token)
+
+    if (decode_error) {
+      const error_description = `Error while decoding access token: ${decode_error.message}`
+      // Which one is more appropriate? UnauthorizedError or InvalidTokenError?
+      // throw new UnauthorizedError({ error_description })
+      throw new InvalidTokenError({ error_description })
+    }
+
+    session.set(claims_session_key as keyof SessionData, claims)
+    request.log.debug(
+      `${prefix}set access token decoded claims in session '${session_key}', key '${claims_session_key}'`
+    )
   }
 
   return decodeJwtAndSetClaims

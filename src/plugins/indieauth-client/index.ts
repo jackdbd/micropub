@@ -6,17 +6,12 @@ import fp from 'fastify-plugin'
 import { client_metadata } from '../../lib/indieauth/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
-import {
-  DEFAULT_CODE_VERIFIER_LENGTH,
-  DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  DEFAULT_LOG_PREFIX,
-  DEFAULT_LOGO_URI,
-  DEFAULT_REPORT_ALL_AJV_ERRORS,
-  NAME
-} from './constants.js'
+import { DEFAULT, NAME } from './constants.js'
+import { defRedirectWhenNotAuthenticated } from './hooks/index.js'
 import { defAuthCallback } from './routes/auth-callback.js'
 import { defAuthStartGet } from './routes/auth-start.js'
 import { defEditor } from './routes/editor-get.js'
+import { defTokenGet } from './routes/token-get.js'
 import { defIdGet } from './routes/id-get.js'
 import { defLogin } from './routes/login-get.js'
 import { defLogout } from './routes/logout-get.js'
@@ -27,14 +22,13 @@ import { options as options_schema, type Options } from './schemas.js'
 import { auth_start_get_request_querystring } from './routes/schemas.js'
 
 const defaults: Partial<Options> = {
-  codeVerifierLength: DEFAULT_CODE_VERIFIER_LENGTH,
-  includeErrorDescription: DEFAULT_INCLUDE_ERROR_DESCRIPTION,
-  logoUri: DEFAULT_LOGO_URI,
-  logPrefix: DEFAULT_LOG_PREFIX,
-  reportAllAjvErrors: DEFAULT_REPORT_ALL_AJV_ERRORS
+  codeVerifierLength: DEFAULT.CODE_VERIFIER_LENGTH,
+  logoUri: DEFAULT.LOGO_URI,
+  logPrefix: DEFAULT.LOG_PREFIX,
+  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
-// This Fastify plugin should be both an IndieAuth client and a Micropub client.
+// This Fastify plugin is both an IndieAuth client and a Micropub client.
 
 const indieAuthClient: FastifyPluginCallback<Options> = (
   fastify,
@@ -43,9 +37,15 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: all_ajv_errors } = config
+  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
+    config
 
-  const ajv = addFormats(new Ajv({ allErrors: all_ajv_errors }), ['uri'])
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+  }
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
@@ -57,7 +57,8 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     clientName: client_name,
     clientUri: client_uri,
     codeVerifierLength: code_verifier_length,
-    includeErrorDescription: include_error_description,
+    introspectionEndpoint: introspection_endpoint,
+    isBlacklisted,
     issuer,
     logoUri: logo_uri,
     micropubEndpoint: micropub_endpoint,
@@ -91,6 +92,11 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     )
   })
 
+  const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
+    isBlacklisted,
+    logPrefix: `${log_prefix}[hook] `
+  })
+
   // === ROUTES ============================================================= //
   const redirect_uri = redirect_uris[0] // `${base_url}${auth_callback_path}`
 
@@ -101,13 +107,7 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
       onResponse: [],
       schema: { querystring: {}, response: {} }
     },
-    defAuthCallback({
-      client_id,
-      include_error_description,
-      log_prefix,
-      redirect_uri,
-      token_endpoint
-    })
+    defAuthCallback({ client_id, log_prefix, redirect_uri, token_endpoint })
   )
 
   // auth_start_path is a route available on this IndieAuth/Micropub client, but
@@ -122,20 +122,21 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     defAuthStartGet({
       authorization_endpoint,
       code_verifier_length,
-      include_error_description,
       issuer,
       log_prefix,
       redirect_uri
     })
   )
 
-  fastify.get('/editor', defEditor({ log_prefix, submit_endpoint }))
-
   fastify.get('/accepted', postAccepted)
 
   fastify.get('/created', postCreated)
 
-  fastify.post('/submit', defSubmit({ log_prefix, micropub_endpoint }))
+  fastify.get(
+    '/editor',
+    { onRequest: [redirectWhenNotAuthenticated] },
+    defEditor({ submit_endpoint })
+  )
 
   fastify.get(
     '/id',
@@ -155,9 +156,20 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     defLogin({ auth_start_endpoint, client_id, log_prefix })
   )
 
+  fastify.get('/logout', defLogout({ log_prefix, revocation_endpoint }))
+
+  fastify.post(
+    '/submit',
+    { onRequest: [redirectWhenNotAuthenticated] },
+    defSubmit({ log_prefix, micropub_endpoint })
+  )
+
   fastify.get(
-    '/logout',
-    defLogout({ include_error_description, log_prefix, revocation_endpoint })
+    '/token',
+    {
+      onRequest: [redirectWhenNotAuthenticated]
+    },
+    defTokenGet({ introspection_endpoint, log_prefix })
   )
 
   done()

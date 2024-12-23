@@ -6,12 +6,22 @@
 
   {% if error_description %}
   <h2>Error description</h2>
-  <p class="error_description">{{ error_description }}</p>
+  <p class="error-description">{{ error_description }}</p>
   {% endif %}
 
-  {% if payload %}
+  {% if error_uri %}
+  <h2>Error URI</h2>
+  <a class="error-uri" href="{{ error_uri }}">{{ error_uri }}</a>
+  {% endif %}
+
+  {% if state %}
+  <h2>state</h2>
+  <code>{{ state }}</code>
+  {% endif %}
+
+  {% if error_details %}
   <pre>
-    <code id="error-payload">{{ payload | tap('Error payload') | dump(2) }}</code>
+    <code id="error-details">{{ error_details | tap('Error details') | dump(2) }}</code>
   </pre>
   {% endif %}
 

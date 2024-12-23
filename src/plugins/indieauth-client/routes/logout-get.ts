@@ -1,5 +1,5 @@
 import type { RouteHandler } from 'fastify'
-import { invalidRequest } from '../../../lib/micropub/index.js'
+import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 
 interface RevokeConfig {
@@ -44,7 +44,6 @@ const revoke = async (config: RevokeConfig) => {
 }
 
 export interface Config {
-  include_error_description: boolean
   log_prefix: string
   revocation_endpoint?: string
 }
@@ -56,7 +55,7 @@ export interface Config {
  * @see [Token Revocation Request - IndieAuth spec](https://indieauth.spec.indieweb.org/#token-revocation-request)
  */
 export const defLogout = (config: Config) => {
-  const { include_error_description, log_prefix } = config
+  const { log_prefix } = config
 
   const logout: RouteHandler = async (request, reply) => {
     request.log.info(`${log_prefix}Logging out`)
@@ -114,13 +113,7 @@ export const defLogout = (config: Config) => {
 
         // TODO: at the moment my revocation endpoint does not support revoking
         // refresh tokens. For now I simply log a warning and continue.
-
-        // const { code, body } = invalidRequest({
-        //   error_description,
-        //   include_error_description
-        // })
-
-        // return reply.errorResponse(code, body)
+        // throw new InvalidRequestError({ error_description })
       } else {
         request.log.info(`${log_prefix}refresh token revoked`)
       }
@@ -140,14 +133,7 @@ export const defLogout = (config: Config) => {
 
       if (error) {
         const error_description = error.message
-        request.log.warn(`${log_prefix}${error_description}`)
-
-        const { code, body } = invalidRequest({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, body)
+        throw new InvalidRequestError({ error_description })
       }
 
       request.log.info(`${log_prefix}access token revoked`)

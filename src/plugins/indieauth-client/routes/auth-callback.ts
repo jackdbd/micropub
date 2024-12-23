@@ -1,15 +1,17 @@
 import type { RouteHandler } from 'fastify'
 import {
-  invalidRequest,
-  serverError,
-  unauthorized
-} from '../../../lib/micropub/index.js'
+  InvalidRequestError,
+  InvalidTokenError,
+  ServerError,
+  UnauthorizedError
+} from '../../../lib/fastify-errors/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type { AuthCallbackQuerystring } from '../../authorization-endpoint/routes/schemas.js'
+import { safeDecode } from '../../../lib/token/decode.js'
+import { AccessTokenClaims } from '../../../lib/token/claims.js'
 
 export interface Config {
   client_id: string
-  include_error_description: boolean
   log_prefix: string
   redirect_uri: string
   token_endpoint?: string
@@ -23,8 +25,7 @@ export interface Config {
  * @see [Authorization Response - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization-response)
  */
 export const defAuthCallback = (config: Config) => {
-  const { client_id, include_error_description, log_prefix, redirect_uri } =
-    config
+  const { client_id, log_prefix, redirect_uri } = config
 
   const callback: RouteHandler<{
     Querystring: AuthCallbackQuerystring
@@ -37,18 +38,7 @@ export const defAuthCallback = (config: Config) => {
         session_data[key] = value
       } else {
         const error_description = `Key '${key}' not found in session or it is undefined.`
-        request.log.error(`${log_prefix}${error_description}`)
-
-        const { code, body } = invalidRequest({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, {
-          ...body,
-          title: 'Authentication error',
-          description: 'Authentication error page'
-        })
+        throw new InvalidRequestError({ error_description })
       }
     }
 
@@ -60,18 +50,7 @@ export const defAuthCallback = (config: Config) => {
         query_data[key] = value
       } else {
         const error_description = `Key '${key}' not found in query string or it is undefined.`
-        request.log.error(`${log_prefix}${error_description}`)
-
-        const { code, body } = invalidRequest({
-          error_description,
-          include_error_description
-        })
-
-        return reply.errorResponse(code, {
-          ...body,
-          title: 'Authentication error',
-          description: 'Authentication error page'
-        })
+        throw new InvalidRequestError({ error_description })
       }
     }
 
@@ -84,17 +63,7 @@ export const defAuthCallback = (config: Config) => {
         { query_string: query_data.iss, session: session_data.issuer },
         `${log_prefix}${error_description}`
       )
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Authentication error',
-        description: 'Authentication error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(
@@ -103,18 +72,7 @@ export const defAuthCallback = (config: Config) => {
 
     if (session_data.state !== query_data.state) {
       const error_description = `Parameter 'state' found in query string does not match key 'state' found in session.`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Authentication error',
-        description: 'Authentication error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     request.log.debug(
@@ -145,18 +103,7 @@ export const defAuthCallback = (config: Config) => {
 
     if (!token_endpoint) {
       const error_description = `Token endpoint not set. It was neither provided in the configuration, nor it was found in the session.`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Authentication error',
-        description: 'Authentication error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     const response = await fetch(token_endpoint, {
@@ -177,18 +124,7 @@ export const defAuthCallback = (config: Config) => {
     if (!response.ok) {
       const msg = await errorMessageFromJSONResponse(response)
       const error_description = `Failed to exchange authorization code for access token: ${msg}`
-      request.log.error(`${log_prefix}${error_description}`)
-
-      const { code, body } = invalidRequest({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Token error',
-        description: 'Token error page'
-      })
+      throw new InvalidRequestError({ error_description })
     }
 
     let access_token: string | undefined
@@ -200,36 +136,14 @@ export const defAuthCallback = (config: Config) => {
     } catch (err) {
       const error = err as Error
       const error_description = `Failed to parse the JSON response received from the token endpoint: ${error.message}`
-      request.log.error(`${log_prefix}${error_description}`)
-
       // I don't think it's the client's fault if we cann't parse the response
       // body, so we return a generic server error.
-      const { code, body } = serverError({
-        error: 'response_body_parse_error',
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Token error',
-        description: 'Token error page'
-      })
+      throw new ServerError({ error_description })
     }
 
     if (!access_token) {
       const error_description = `Response body from token endpoint has no access_token parameter.`
-
-      const { code, body } = unauthorized({
-        error_description,
-        include_error_description
-      })
-
-      return reply.errorResponse(code, {
-        ...body,
-        title: 'Auth error',
-        description: 'Auth error page'
-      })
+      throw new UnauthorizedError({ error_description })
     }
 
     request.session.set('access_token', access_token)
@@ -240,10 +154,28 @@ export const defAuthCallback = (config: Config) => {
       request.log.debug(`${log_prefix}set refresh token in session`)
     }
 
-    request.log.debug(
-      `${log_prefix}redirect to token endpoint ${token_endpoint}`
-    )
-    return reply.redirect(token_endpoint)
+    const { error: decode_error, value: claims } =
+      await safeDecode<AccessTokenClaims>(access_token)
+
+    if (decode_error) {
+      const error_description = `Error while decoding access token: ${decode_error.message}`
+      // Which one is more appropriate? UnauthorizedError or InvalidTokenError?
+      // throw new UnauthorizedError({ error_description })
+      throw new InvalidTokenError({ error_description })
+    }
+
+    request.session.set('claims', claims)
+    request.log.debug(`${log_prefix}set decoded claims in session`)
+
+    // TODO: make it another configuration parameter. Maybe it should 'claims' by default.
+    // Also, should I set this in the request context or in the session?
+    // session.set(claims_session_key as keyof SessionData, claims)
+    // request.log.debug(
+    //   `${prefix}set access token decoded claims in session '${session_key}', key '${claims_session_key}'`
+    // )
+
+    request.log.debug(`${log_prefix}redirect to /`)
+    return reply.redirect('/')
   }
 
   return callback
