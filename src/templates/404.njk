@@ -1,0 +1,9 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<div>
+  {# Maybe be more specific (e.g. show request.routeOptions) #}
+  <p>URL <code>{{ request_url }}</code> not found.</p>
+  <p>Navigate back to <a href="{{ go_back_href }}">{{ go_back_name }}</a>.</p>
+</div>
+{% endblock %}

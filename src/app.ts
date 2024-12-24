@@ -46,6 +46,7 @@ import {
   defErrorHandlerDev,
   defErrorHandlerProd
 } from './error-handlers/index.js'
+import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
 
 // Token storage - Filesystem backend //////////////////////////////////////////
@@ -250,10 +251,7 @@ export async function defFastify(config: Config) {
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
 
-  fastify.setNotFoundHandler((_request, reply) => {
-    // TODO: render 404 page
-    return reply.notFound()
-  })
+  fastify.setNotFoundHandler(defNotFoundHandler({ ajv, reportAllAjvErrors }))
 
   fastify.register(fastifyRequestContext, {
     // defaultStoreValues: {
