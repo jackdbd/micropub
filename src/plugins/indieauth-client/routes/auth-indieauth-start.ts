@@ -47,6 +47,12 @@ export const defAuthStartGet = (config: Config) => {
   const authStartGet: RouteHandler<RouteGeneric> = async (request, reply) => {
     const { client_id, me } = request.query
 
+    // TODO: Every `me` has its own `client_id`. I think I need to store the
+    // expected `me` and `client_id` in persistent storage (e.g. a database or a
+    // file). Since `me` and `client_id` are not sensitive information, I can
+    // store them in plain text in a file.
+    // See how IndieLogin and other website do it.
+
     request.log.debug(`${log_prefix}perform IndieAuth Discovery on ${me}`)
     const { error: metadata_endpoint_error, value: metadata_endpoint } =
       await metadataEndpoint(me)

@@ -77,17 +77,31 @@ export const defAuthenticate = (config: Config) => {
 
     hrefs.forEach((str) => {
       request.log.info(`${log_prefix}found rel="me" link: ${str}`)
-      if (str.includes('github.com')) {
-        providers.push({ href: github_auth_start_path, text: 'GitHub' })
+      if (str.includes('mailto:')) {
+        const href = '/auth/email'
+        providers.push({ href, text: 'Email' })
       } else if (str.includes('fosstodon.org')) {
         const href = '/auth/mastodon'
         providers.push({ href, text: 'Mastodon' })
+      } else if (str.includes('github.com')) {
+        providers.push({ href: github_auth_start_path, text: 'GitHub' })
+      } else if (str.includes('instagram.com')) {
+        providers.push({ href: '/auth/instagram', text: 'Instagram' })
+      } else if (str.includes('letterboxd.com')) {
+        providers.push({ href: '/auth/letterboxd', text: 'Letterboxd' })
       } else if (str.includes('linkedin.com')) {
         const href = '/auth/linkedin'
         providers.push({ href, text: 'LinkedIn' })
-      } else if (str.includes('mailto')) {
-        const href = '/auth/email'
-        providers.push({ href, text: 'Email' })
+      } else if (str.includes('medium.com')) {
+        providers.push({ href: '/auth/medium', text: 'Medium' })
+      } else if (str.includes('micro.blog')) {
+        const href = '/auth/micro-blog'
+        providers.push({ href, text: 'Micro.blog' })
+      } else if (str.includes('sms:')) {
+        const href = '/auth/sms'
+        providers.push({ href, text: 'SMS' })
+      } else if (str.includes('twitter.com')) {
+        providers.push({ href: '/auth/twitter', text: 'Twitter/X' })
       } else {
         const href = '/auth/other'
         providers.push({ href, text: 'Other' })

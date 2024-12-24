@@ -6,7 +6,12 @@ import {
 } from '../src/lib/indieauth/index.js'
 
 const run = async () => {
-  const me = 'https://giacomodebidda.com/'
+  const args = process.argv.slice(2)
+  let [_me_flag, me, ...rest] = args
+
+  if (!me) {
+    me = 'https://giacomodebidda.com/'
+  }
 
   const { value: metadata_endpoint } = await metadataEndpoint(me)
 

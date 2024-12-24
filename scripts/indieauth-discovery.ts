@@ -1,12 +1,13 @@
-import crypto from 'node:crypto'
-import {
-  authorizationRequestUrl,
-  metadataEndpoint,
-  serverMetadata
-} from '../src/lib/indieauth/index.js'
+import { metadataEndpoint, serverMetadata } from '../src/lib/indieauth/index.js'
 
 const run = async () => {
-  const me = 'https://giacomodebidda.com/'
+  const args = process.argv.slice(2)
+  let [_me_flag, me, ...rest] = args
+
+  if (!me) {
+    me = 'https://giacomodebidda.com/'
+  }
+
   // const me = 'https://aaronparecki.com/'
   // const me = 'https://paulrobertlloyd.com/'
   // const me = 'https://www.jvt.me/'

@@ -9,11 +9,12 @@ import {
   h_event,
   p_content
 } from '../src/lib/microformats2/index.js'
+import { options as indieauth_client_options } from '../src/plugins/indieauth-client/schemas.js'
+import { options } from '../src/plugins/micropub-endpoint/schemas.js'
 import {
   micropub_get_request,
-  micropub_post_request,
-  options
-} from '../src/plugins/micropub-endpoint/schemas.js'
+  micropub_post_request
+} from '../src/plugins/micropub-endpoint/routes/schemas.js'
 
 const execAsync = promisify(exec)
 
@@ -43,6 +44,14 @@ const microformats = async (schemas_dir: string) => {
   await fs.writeFile(
     path.join(schemas_dir, 'h-event.json'),
     JSON.stringify(h_event, null, 2),
+    { encoding: 'utf-8' }
+  )
+}
+
+const indieAuthClient = async (schemas_dir: string) => {
+  await fs.writeFile(
+    path.join(schemas_dir, 'indieauth_client-options.json'),
+    JSON.stringify(options, null, 2),
     { encoding: 'utf-8' }
   )
 }
@@ -77,6 +86,7 @@ const run = async () => {
     await fs.mkdir(schemas_dir, { recursive: true })
   }
 
+  await indieAuthClient(schemas_dir)
   await microformats(schemas_dir)
   await micropubEndpoint(schemas_dir)
 
