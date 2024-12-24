@@ -10,9 +10,9 @@ import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 
 import { DEFAULT, NAME } from './constants.js'
-import { defConfigGet } from './routes/auth-config-get.js'
-import { defAuthGet } from './routes/auth-get.js'
-import { defAuthPost } from './routes/auth-post.js'
+import { defConfigGet } from './routes/authorization-config-get.js'
+import { defAuthGet } from './routes/authorization-get.js'
+import { defAuthPost } from './routes/authorization-post.js'
 import {
   auth_get_request_querystring,
   auth_post_request_body,

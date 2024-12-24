@@ -1,4 +1,5 @@
-import type { RouteHandler } from 'fastify'
+import { OAuth2Namespace } from '@fastify/oauth2'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
 
@@ -21,7 +22,7 @@ interface RevokeConfig {
 
 // https://indieauth.spec.indieweb.org/#token-revocation
 // https://datatracker.ietf.org/doc/html/rfc7009#section-2.1
-const revoke = async (config: RevokeConfig) => {
+const revokeIndieAuth = async (config: RevokeConfig) => {
   const { access_token, revocation_endpoint, token, token_type_hint } = config
 
   const response = await fetch(revocation_endpoint, {
@@ -48,6 +49,23 @@ export interface Config {
   revocation_endpoint?: string
 }
 
+const revokeGitHub = async (
+  githubOAuth2: OAuth2Namespace,
+  access_token: string
+) => {
+  // https://github.com/fastify/fastify-oauth2?tab=readme-ov-file#utilities
+  await githubOAuth2.revokeToken(
+    {
+      token_type: 'Bearer',
+      access_token,
+      expires_in: 123,
+      expires_at: new Date()
+    },
+    'access_token',
+    undefined
+  )
+}
+
 /**
  * Deletes the active session and revokes both the access token and the refresh
  * token.
@@ -57,7 +75,11 @@ export interface Config {
 export const defLogout = (config: Config) => {
   const { log_prefix } = config
 
-  const logout: RouteHandler = async (request, reply) => {
+  return async function (
+    this: FastifyInstance,
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) {
     request.log.info(`${log_prefix}Logging out`)
 
     // TODO: is it better to delete the session first and then revoke the
@@ -66,6 +88,28 @@ export const defLogout = (config: Config) => {
     // There is no need to log that we are deleting the session, because
     // fastify-session already logs it for us.
     request.session.delete()
+
+    const access_token = request.session.get('access_token')
+    const refresh_token = request.session.get('refresh_token')
+
+    // TODO: revoke the tokens by calling the appropriate revocation endpoint.
+    // i.e.
+    // - revoke a token issued by GitHub by calling GitHub's revocation endpoint,
+    // - revoke a token issued by an IndieAuth server by calling the IndieAuth revocation endpoint.
+
+    if (access_token) {
+      request.log.debug(`${log_prefix}call GitHub token revocation endpoint`)
+      try {
+        await revokeGitHub(this.githubOAuth2, access_token)
+        request.log.debug(`${log_prefix}GitHub token revoked`)
+      } catch (err: any) {
+        request.log.error(
+          `${log_prefix}GitHub token NOT revoked: ${err.message}`
+        )
+      } finally {
+        return reply.redirect('/')
+      }
+    }
 
     let revocation_endpoint = config.revocation_endpoint
     if (!revocation_endpoint) {
@@ -87,9 +131,6 @@ export const defLogout = (config: Config) => {
       return reply.redirect('/')
     }
 
-    const access_token = request.session.get('access_token')
-    const refresh_token = request.session.get('refresh_token')
-
     // The revocation endpoint requires an authenticated request, so we need the
     // access token. If we don't have it, we cannot revoke the refresh token.
     // We revoke the refresh token first, so we can use the access token to
@@ -100,7 +141,7 @@ export const defLogout = (config: Config) => {
         `${log_prefix}session has a refresh token. Calling ${revocation_endpoint} to revoke it...`
       )
 
-      const { error } = await revoke({
+      const { error } = await revokeIndieAuth({
         access_token,
         revocation_endpoint,
         token: refresh_token,
@@ -124,7 +165,7 @@ export const defLogout = (config: Config) => {
         `${log_prefix}session has an access token. Calling ${revocation_endpoint} to revoke it...`
       )
 
-      const { error } = await revoke({
+      const { error } = await revokeIndieAuth({
         access_token,
         revocation_endpoint,
         token: access_token,
@@ -141,6 +182,4 @@ export const defLogout = (config: Config) => {
 
     return reply.redirect('/')
   }
-
-  return logout
 }

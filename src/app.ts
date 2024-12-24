@@ -4,6 +4,7 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import Fastify from 'fastify'
 import fastifyCsrf from '@fastify/csrf-protection'
+import oauth2, { type OAuth2Namespace } from '@fastify/oauth2'
 import { fastifyRequestContext } from '@fastify/request-context'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
@@ -79,6 +80,10 @@ const NAME = 'app'
 const LOG_PREFIX = `${NAME} `
 
 declare module 'fastify' {
+  interface FastifyInstance {
+    githubOAuth2: OAuth2Namespace
+  }
+
   interface FastifyReply {
     errorResponse<B extends BaseErrorResponseBody = BaseErrorResponseBody>(
       code: number,
@@ -127,14 +132,16 @@ export async function defFastify(config: Config) {
   // TODO: validate config with Ajv
   const {
     access_token_expiration,
-    authorization_callback_route: authorizationCallbackRoute,
     authorization_code_expiration,
     authorization_endpoint: authorizationEndpoint,
-    authorization_start_route: authorizationStartRoute,
     cloudflare_account_id,
     cloudflare_r2_access_key_id,
     cloudflare_r2_bucket_name,
     cloudflare_r2_secret_access_key,
+    github_oauth_client_id,
+    github_oauth_client_secret,
+    github_oauth_auth_start,
+    github_oauth_auth_callback,
     github_owner,
     github_repo,
     github_token,
@@ -168,8 +175,8 @@ export async function defFastify(config: Config) {
     telegram_token,
     token_endpoint: tokenEndpoint,
     use_development_error_handler,
-    use_secure_flag_for_session_cookie
-    // userinfo_endpoint: userinfoEndpoint
+    use_secure_flag_for_session_cookie,
+    userinfo_endpoint: userinfoEndpoint
   } = config
 
   // We would need all these extra formats to fully support fluent-json-schema.
@@ -251,8 +258,6 @@ export async function defFastify(config: Config) {
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
 
-  fastify.setNotFoundHandler(defNotFoundHandler({ ajv, reportAllAjvErrors }))
-
   fastify.register(fastifyRequestContext, {
     // defaultStoreValues: {
     //   user: { id: 'system' }
@@ -290,6 +295,25 @@ export async function defFastify(config: Config) {
     root: path.join(__dirname, 'public')
   })
 
+  fastify.register(oauth2, {
+    name: 'githubOAuth2',
+    // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps#available-scopes
+    scope: ['read:user', 'user:email'],
+    credentials: {
+      client: {
+        id: github_oauth_client_id,
+        secret: github_oauth_client_secret
+      },
+      auth: oauth2.GITHUB_CONFIGURATION
+    },
+    startRedirectPath: github_oauth_auth_start,
+    callbackUri: github_oauth_auth_callback
+    // You can also define callbackUri as a function that takes a FastifyRequest and returns a string
+    // callbackUri: req => `${req.protocol}://${req.hostname}/login/facebook/callback`,
+  })
+
+  fastify.setNotFoundHandler(defNotFoundHandler({ ajv, reportAllAjvErrors }))
+
   if (use_development_error_handler) {
     // fastify.setErrorHandler(
     //   defErrorHandlerProd({
@@ -323,9 +347,7 @@ export async function defFastify(config: Config) {
 
   fastify.register(indieauthClient, {
     ajv,
-    authorizationCallbackRoute,
     authorizationEndpoint,
-    authorizationStartRoute,
     clientId,
     clientName,
     clientUri,
@@ -338,7 +360,8 @@ export async function defFastify(config: Config) {
     redirectUris,
     revocationEndpoint,
     submitEndpoint,
-    tokenEndpoint
+    tokenEndpoint,
+    userinfoEndpoint
   })
 
   fastify.register(introspection, {

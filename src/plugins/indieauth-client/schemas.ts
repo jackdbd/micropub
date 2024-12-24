@@ -11,7 +11,8 @@ import {
   client_uri,
   issuer,
   logo_uri,
-  redirect_uris
+  redirect_uris,
+  userinfo_endpoint
 } from '../../lib/indieauth/index.js'
 import { micropub_endpoint } from '../../lib/micropub/index.js'
 import {
@@ -27,8 +28,8 @@ export const options = Type.Object(
   {
     ajv: Type.Optional(Type.Any()),
 
-    authorizationCallbackRoute: Type.Optional(
-      Type.String({ default: DEFAULT.AUTHORIZATION_CALLBACK_ROUTE })
+    authenticationStartPath: Type.Optional(
+      Type.String({ default: DEFAULT.AUTHENTICATION_START_PATH })
     ),
 
     /**
@@ -43,10 +44,6 @@ export const options = Type.Object(
      */
     authorizationEndpoint: Type.Optional(authorization_endpoint),
 
-    authorizationStartRoute: Type.Optional(
-      Type.String({ default: DEFAULT.AUTHORIZATION_START_ROUTE })
-    ),
-
     clientId: client_id,
 
     clientName: client_name,
@@ -60,6 +57,22 @@ export const options = Type.Object(
       ...code_verifier_length,
       default: DEFAULT.CODE_VERIFIER_LENGTH
     }),
+
+    githubAuthenticationStartPath: Type.Optional(
+      Type.String({ default: DEFAULT.GITHUB_AUTHENTICATION_START_PATH })
+    ),
+
+    githubAuthenticationCallbackPath: Type.Optional(
+      Type.String({ default: DEFAULT.GITHUB_AUTHENTICATION_CALLBACK_PATH })
+    ),
+
+    indieAuthAuthenticationStartPath: Type.Optional(
+      Type.String({ default: DEFAULT.INDIEAUTH_AUTHENTICATION_START_PATH })
+    ),
+
+    indieAuthAuthenticationCallbackPath: Type.Optional(
+      Type.String({ default: DEFAULT.INDIEAUTH_AUTHENTICATION_CALLBACK_PATH })
+    ),
 
     introspectionEndpoint: introspection_endpoint,
 
@@ -111,6 +124,7 @@ export const options = Type.Object(
       format: 'uri',
       title: 'submit endpoint'
     }),
+
     /**
      * Token endpoint URL. If not provided, the one found in the OAuth Client ID
      * Metadata Document during
@@ -120,7 +134,9 @@ export const options = Type.Object(
      *
      * @see [Redeeming the Authorization Code - IndieAuth spec](https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code)
      */
-    tokenEndpoint: Type.Optional(token_endpoint)
+    tokenEndpoint: Type.Optional(token_endpoint),
+
+    userinfoEndpoint: Type.Optional(userinfo_endpoint)
   },
   {
     $id: 'fastify-indieauth-client-options',

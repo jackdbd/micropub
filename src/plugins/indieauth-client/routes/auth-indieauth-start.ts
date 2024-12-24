@@ -1,9 +1,8 @@
 import assert from 'node:assert'
-import type { RouteHandler } from 'fastify'
+import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
 import {
   authorizationRequestUrl,
-  canonicalUrl,
   metadataEndpoint,
   serverMetadata
 } from '../../../lib/indieauth/index.js'
@@ -26,6 +25,10 @@ export interface Config {
   redirect_uri: string
 }
 
+interface RouteGeneric extends RouteGenericInterface {
+  Querystring: AuthStartGetRequestQuerystring
+}
+
 /**
  * Starts the IndieAuth flow.
  *
@@ -41,19 +44,15 @@ export interface Config {
 export const defAuthStartGet = (config: Config) => {
   const { code_verifier_length, log_prefix, redirect_uri } = config
 
-  const authStartGet: RouteHandler<{
-    Querystring: AuthStartGetRequestQuerystring
-  }> = async (request, reply) => {
-    const { client_id } = request.query
-
-    const me = canonicalUrl(request.query.me)
+  const authStartGet: RouteHandler<RouteGeneric> = async (request, reply) => {
+    const { client_id, me } = request.query
 
     request.log.debug(`${log_prefix}perform IndieAuth Discovery on ${me}`)
     const { error: metadata_endpoint_error, value: metadata_endpoint } =
       await metadataEndpoint(me)
 
     if (metadata_endpoint_error) {
-      const error_description = `Found no IndieAuth metadata endpoint for site ${me}.`
+      const error_description = `Found no IndieAuth metadata endpoint for for profile URL ${me}.`
       const original = metadata_endpoint_error.message
       request.log.warn(`${log_prefix}${error_description} ${original}`)
       // Should I return HTTP 400? See IndieAuth Discovery spec (and OAuth 2.0

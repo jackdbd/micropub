@@ -3,16 +3,16 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { unixTimestampInSeconds } from '../../lib/date.js'
-import {
-  defDecodeJwtAndSetClaims,
-  defValidateAccessTokenNotBlacklisted,
-  defValidateClaim,
-  defValidateScope
-} from '../../lib/fastify-hooks/index.js'
+// import { unixTimestampInSeconds } from '../../lib/date.js'
+// import {
+//   defDecodeJwtAndSetClaims,
+//   defValidateAccessTokenNotBlacklisted,
+//   defValidateClaim,
+//   defValidateScope
+// } from '../../lib/fastify-hooks/index.js'
 import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
-import { userinfo } from './routes/userinfo-get.js'
+import { defUserinfoGet } from './routes/userinfo-get.js'
 import { options as options_schema, type Options } from './schemas.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 
@@ -29,9 +29,9 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   const config = applyToDefaults(defaults, options) as Required<Options>
 
   const {
-    isBlacklisted,
+    // isBlacklisted,
     logPrefix: log_prefix,
-    me,
+    // me,
     reportAllAjvErrors: report_all_ajv_errors
   } = config
 
@@ -55,30 +55,30 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ ajv })
+  // const decodeJwtAndSetClaims = defDecodeJwtAndSetClaims({ ajv })
 
-  const validateClaimMe = defValidateClaim(
-    { claim: 'me', op: '==', value: me },
-    { ajv }
-  )
+  // const validateClaimMe = defValidateClaim(
+  //   { claim: 'me', op: '==', value: me },
+  //   { ajv }
+  // )
 
-  const validateClaimExp = defValidateClaim(
-    {
-      claim: 'exp',
-      op: '>',
-      value: unixTimestampInSeconds
-    },
-    { ajv }
-  )
+  // const validateClaimExp = defValidateClaim(
+  //   {
+  //     claim: 'exp',
+  //     op: '>',
+  //     value: unixTimestampInSeconds
+  //   },
+  //   { ajv }
+  // )
 
-  const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
+  // const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+  // const validateAccessTokenNotBlacklisted =
+  //   defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
 
-  const validateScopeEmail = defValidateScope({ ajv, scope: 'email' })
+  // const validateScopeEmail = defValidateScope({ ajv, scope: 'email' })
 
-  const validateScopeProfile = defValidateScope({ ajv, scope: 'profile' })
+  // const validateScopeProfile = defValidateScope({ ajv, scope: 'profile' })
 
   // === ROUTES ============================================================= //
   // To fetch the user's profile information, the client makes a GET request to
@@ -90,17 +90,17 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
     '/userinfo',
     {
       onRequest: [
-        decodeJwtAndSetClaims,
-        validateClaimExp,
-        validateClaimMe,
-        validateClaimJti,
-        validateScopeEmail,
-        validateScopeProfile,
-        validateAccessTokenNotBlacklisted
+        // decodeJwtAndSetClaims,
+        // validateClaimExp,
+        // validateClaimMe,
+        // validateClaimJti,
+        // validateScopeEmail,
+        // validateScopeProfile,
+        // validateAccessTokenNotBlacklisted
       ]
       // schema: userinfo_get_request
     },
-    userinfo
+    defUserinfoGet({ log_prefix })
   )
 
   done()

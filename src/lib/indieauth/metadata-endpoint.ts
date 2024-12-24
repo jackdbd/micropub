@@ -1,10 +1,11 @@
 import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
 import { linkHeaderToLinkHref } from './parse-link-header.js'
 import { htmlToLinkHref } from './parse-link-html.js'
-import { canonicalUrl } from './url-canonicalization.js'
+import { canonicalUrl } from '../url-canonicalization/index.js'
 
 /**
- * Discovers the user's indieauth-metadata endpoint.
+ * Discovers the user's indieauth-metadata endpoint by fetching the
+ * [user's profile URL](https://indieauth.spec.indieweb.org/#user-profile-url).
  *
  * The indieauth-metadata endpoint provides the location of the IndieAuth
  * server's authorization endpoint and token endpoint, as well as other relevant
@@ -20,6 +21,7 @@ export const metadataEndpoint = async (me: string) => {
 
   let response: Response
   try {
+    // We are only interested in the response headers, so HEAD is enough.
     response = await fetch(url, { method: 'HEAD' })
   } catch (err) {
     return { error: new Error(`Failed to fetch ${url}`) }
@@ -59,6 +61,7 @@ export const metadataEndpoint = async (me: string) => {
   if (content_type && content_type.includes('text/html')) {
     let html: string
     try {
+      // We did not found a Link header, so we now try downloading the page.
       const res = await fetch(url, { method: 'GET' })
       html = await res.text()
     } catch (err: any) {

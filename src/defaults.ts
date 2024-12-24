@@ -2,13 +2,9 @@ export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
 // export const ACCESS_TOKEN_EXPIRATION = '3600 seconds' // this is quite common
 // export const ACCESS_TOKEN_EXPIRATION = '72 hours'
 
-export const AUTHORIZATION_CALLBACK_ROUTE = '/auth/callback'
-
 export const AUTHORIZATION_CODE_EXPIRATION = '60 seconds'
 
 // export const AUTHORIZATION_ENDPOINT = 'https://indieauth.com/auth'
-
-export const AUTHORIZATION_START_ROUTE = '/auth/start'
 
 export const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 

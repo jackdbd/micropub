@@ -12,6 +12,7 @@ import { APPLICATION_JSON, TEXT_HTML } from '../lib/content-type.js'
 import {
   ForbiddenError,
   InsufficientScopeError,
+  InvalidRequestError,
   InvalidScopeError,
   ServerError,
   UnauthorizedError
@@ -91,6 +92,7 @@ export const defErrorHandler = (options?: Options) => {
       | ForbiddenError
       | UnauthorizedError
       | InsufficientScopeError
+      | InvalidRequestError
       | InvalidScopeError
       | ServerError,
     request: FastifyRequest,

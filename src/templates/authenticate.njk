@@ -1,0 +1,13 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<div>
+  <p><a href="{{ me }}">{{ me }}</a> supports these authentication providers:</p>
+
+  <ul class="cluster list-style:none" data-align="start">
+  {% for provider in providers %}
+    <li><a href="{{ provider.href }}"><strong>{{ provider.text }}</strong></a></li>
+  {% endfor %}
+  </ul>
+</div>
+{% endblock %}

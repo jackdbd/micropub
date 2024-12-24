@@ -12,6 +12,7 @@ import type {
 import {
   ForbiddenError,
   InsufficientScopeError,
+  InvalidRequestError,
   InvalidScopeError,
   ServerError,
   UnauthorizedError
@@ -53,6 +54,7 @@ export const defErrorHandler = (options?: Options) => {
       | ForbiddenError
       | UnauthorizedError
       | InsufficientScopeError
+      | InvalidRequestError
       | InvalidScopeError
       | ServerError,
     request: FastifyRequest,

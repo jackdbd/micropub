@@ -136,7 +136,7 @@ export const defAuthGet = (config: Config) => {
       client_uri,
       code_challenge,
       code_challenge_method,
-      description: 'User consent screen',
+      description: 'Authorization page with user consent screen',
       code,
       iss,
       logo_uri,
@@ -145,11 +145,11 @@ export const defAuthGet = (config: Config) => {
       refresh_token_expiration,
       scopes: scope.split(' '),
       state,
-      title: 'Consent'
+      title: 'Authorize'
     }
 
-    request.log.debug(data, `${log_prefix}render consent.njk with this data`)
-    return reply.view('consent.njk', data)
+    request.log.debug(data, `${log_prefix}render authorize.njk with this data`)
+    return reply.view('authorize.njk', data)
   }
 
   return authGet

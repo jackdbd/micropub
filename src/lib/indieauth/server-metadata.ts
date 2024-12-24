@@ -1,5 +1,5 @@
 import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
-import { canonicalUrl } from './url-canonicalization.js'
+import { canonicalUrl } from '../url-canonicalization/index.js'
 import type { ServerMetadata } from './schemas.js'
 
 /**

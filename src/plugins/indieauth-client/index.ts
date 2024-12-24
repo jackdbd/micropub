@@ -8,8 +8,10 @@ import { throwIfDoesNotConform } from '../../lib/validators.js'
 import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defRedirectWhenNotAuthenticated } from './hooks/index.js'
-import { defAuthCallback } from './routes/auth-callback.js'
-import { defAuthStartGet } from './routes/auth-start.js'
+import { defAuthenticate } from './routes/authenticate-start-get.js'
+import { defAuthCallback as defIndieAuthCallback } from './routes/auth-indieauth-callback.js'
+import { defAuthCallback as defGitHubCallback } from './routes/auth-github-callback.js'
+import { defAuthStartGet as defIndieAuthStart } from './routes/auth-indieauth-start.js'
 import { defEditor } from './routes/editor-get.js'
 import { defTokenGet } from './routes/token-get.js'
 import { defIdGet } from './routes/id-get.js'
@@ -18,11 +20,18 @@ import { defLogout } from './routes/logout-get.js'
 import { postAccepted } from './routes/post-accepted-get.js'
 import { postCreated } from './routes/post-created-get.js'
 import { defSubmit } from './routes/submit-post.js'
+import { defUserGet } from './routes/user-get.js'
 import { options as options_schema, type Options } from './schemas.js'
 import { auth_start_get_request_querystring } from './routes/schemas.js'
 
 const defaults: Partial<Options> = {
+  authenticationStartPath: DEFAULT.AUTHENTICATION_START_PATH,
   codeVerifierLength: DEFAULT.CODE_VERIFIER_LENGTH,
+  githubAuthenticationStartPath: DEFAULT.GITHUB_AUTHENTICATION_START_PATH,
+  githubAuthenticationCallbackPath: DEFAULT.GITHUB_AUTHENTICATION_CALLBACK_PATH,
+  indieAuthAuthenticationStartPath: DEFAULT.INDIEAUTH_AUTHENTICATION_START_PATH,
+  indieAuthAuthenticationCallbackPath:
+    DEFAULT.INDIEAUTH_AUTHENTICATION_CALLBACK_PATH,
   logoUri: DEFAULT.LOGO_URI,
   logPrefix: DEFAULT.LOG_PREFIX,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
@@ -50,13 +59,16 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
-    authorizationEndpoint: authorization_endpoint,
-    authorizationCallbackRoute: auth_callback_path,
-    authorizationStartRoute: auth_start_path,
+    authenticationStartPath: authentication_start_path,
+    authorizationEndpoint,
     clientId: client_id,
     clientName: client_name,
     clientUri: client_uri,
     codeVerifierLength: code_verifier_length,
+    githubAuthenticationStartPath: github_auth_start_path,
+    githubAuthenticationCallbackPath: github_auth_callback_path,
+    indieAuthAuthenticationStartPath: indieauth_auth_start_path,
+    indieAuthAuthenticationCallbackPath: indieauth_auth_callback_path,
     introspectionEndpoint: introspection_endpoint,
     isBlacklisted,
     issuer,
@@ -65,7 +77,8 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
     redirectUris: redirect_uris,
     revocationEndpoint: revocation_endpoint,
     submitEndpoint: submit_endpoint,
-    tokenEndpoint: token_endpoint
+    tokenEndpoint: token_endpoint,
+    userinfoEndpoint: userinfo_endpoint
   } = config
 
   // client ID and redirect URI of the GitHub OAuth app used to authenticate users
@@ -98,35 +111,47 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  const redirect_uri = redirect_uris[0] // `${base_url}${auth_callback_path}`
+  const redirect_uri = redirect_uris[0]
 
   fastify.get(
-    auth_callback_path,
-    {
-      onRequest: [],
-      onResponse: [],
-      schema: { querystring: {}, response: {} }
-    },
-    defAuthCallback({ client_id, log_prefix, redirect_uri, token_endpoint })
+    authentication_start_path,
+    defAuthenticate({
+      github_auth_start_path,
+      indieauth_auth_start_path,
+      indieauth_client_id: client_id,
+      indieauth_client_name: client_name,
+      log_prefix
+    })
   )
 
-  // auth_start_path is a route available on this IndieAuth/Micropub client, but
-  // the login page could be hosted somewhere else, so we could do:
-  // const auth_start_endpoint = `${base_url}${auth_start_path}`
-
-  const auth_start_endpoint = auth_start_path
-
   fastify.get(
-    auth_start_path,
+    indieauth_auth_start_path,
     { schema: { querystring: auth_start_get_request_querystring } },
-    defAuthStartGet({
-      authorization_endpoint,
+    defIndieAuthStart({
+      authorization_endpoint: authorizationEndpoint,
       code_verifier_length,
       issuer,
       log_prefix,
       redirect_uri
     })
   )
+
+  fastify.get(
+    indieauth_auth_callback_path,
+    {
+      onRequest: [],
+      onResponse: [],
+      schema: { querystring: {}, response: {} }
+    },
+    defIndieAuthCallback({
+      client_id,
+      log_prefix,
+      redirect_uri,
+      token_endpoint
+    })
+  )
+
+  fastify.get(github_auth_callback_path, defGitHubCallback())
 
   fastify.get('/accepted', postAccepted)
 
@@ -153,7 +178,7 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
 
   fastify.get(
     '/login',
-    defLogin({ auth_start_endpoint, client_id, log_prefix })
+    defLogin({ authentication_start_path, client_id, log_prefix })
   )
 
   fastify.get('/logout', defLogout({ log_prefix, revocation_endpoint }))
@@ -170,6 +195,12 @@ const indieAuthClient: FastifyPluginCallback<Options> = (
       onRequest: [redirectWhenNotAuthenticated]
     },
     defTokenGet({ introspection_endpoint, log_prefix })
+  )
+
+  fastify.get(
+    '/user',
+    { onRequest: [] },
+    defUserGet({ log_prefix, userinfo_endpoint })
   )
 
   done()

@@ -2,6 +2,18 @@
   background-color: red;
 }
 
+/*
+ * See the CSS variables of MVP.css
+ * https://andybrewer.github.io/mvp/#docs
+ */
+.deny {
+  --color-link: red;
+}
+
+.approve {
+  --color-link: forestgreen;
+}
+
 .list-style\:none {
   list-style: none !important;
 }

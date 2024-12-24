@@ -1,4 +1,4 @@
-import type { RouteHandler } from 'fastify'
+import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import {
   InvalidRequestError,
   InvalidTokenError,
@@ -17,6 +17,10 @@ export interface Config {
   token_endpoint?: string
 }
 
+interface RouteGeneric extends RouteGenericInterface {
+  Querystring: AuthCallbackQuerystring
+}
+
 /**
  * Authorization callback for the IndieAuth flow. Users will be redirected here
  * by the authorization endpoint after they approve the authorization request.
@@ -27,9 +31,14 @@ export interface Config {
 export const defAuthCallback = (config: Config) => {
   const { client_id, log_prefix, redirect_uri } = config
 
-  const callback: RouteHandler<{
-    Querystring: AuthCallbackQuerystring
-  }> = async (request, reply) => {
+  const callback: RouteHandler<RouteGeneric> = async (request, reply) => {
+    const action = request.query.action
+
+    if (action && action === 'deny') {
+      request.log.warn(`${log_prefix}user denied the authorization request`)
+      return reply.redirect('/')
+    }
+
     const session_data = { code_verifier: '', issuer: '', state: '' }
     type SessionKey = keyof typeof session_data
     for (const key of Object.keys(session_data) as SessionKey[]) {
@@ -174,8 +183,11 @@ export const defAuthCallback = (config: Config) => {
     //   `${prefix}set access token decoded claims in session '${session_key}', key '${claims_session_key}'`
     // )
 
-    request.log.debug(`${log_prefix}redirect to /`)
-    return reply.redirect('/')
+    // const provider = 'indieauth'
+    // request.log.debug(`${log_prefix}redirect to /user?provider=${provider}`)
+    const redirect_path = `/token`
+    request.log.debug(`${log_prefix}redirect to ${redirect_path}`)
+    return reply.redirect(redirect_path)
   }
 
   return callback

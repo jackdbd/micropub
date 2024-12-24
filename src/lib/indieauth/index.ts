@@ -38,5 +38,3 @@ export {
 } from './schemas.js'
 
 export { serverMetadata } from './server-metadata.js'
-
-export { canonicalUrl } from './url-canonicalization.js'

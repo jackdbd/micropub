@@ -28,7 +28,9 @@ class BaseError extends Error implements FastifyError {
     name: string,
     data: ErrorData
   ) {
-    super(error)
+    // const message = error
+    const message = `${error}: ${data.error_description}`
+    super(message)
     this.statusCode = statusCode
     this.code = code
     this.error = error

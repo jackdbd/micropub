@@ -7,6 +7,8 @@ const REQUIRED_ENV_VARS = [
   'CLOUDFLARE_R2_ACCESS_KEY_ID',
   'CLOUDFLARE_R2_BUCKET_NAME',
   'CLOUDFLARE_R2_SECRET_ACCESS_KEY',
+  'GITHUB_OAUTH_APP_CLIENT_ID',
+  'GITHUB_OAUTH_APP_CLIENT_SECRET',
   'GITHUB_OWNER',
   'GITHUB_REPO',
   'GITHUB_TOKEN',
@@ -57,14 +59,16 @@ const syndicate_to: SyndicateToItem[] = [
  */
 export interface Config {
   access_token_expiration: string
-  authorization_callback_route: string
   authorization_code_expiration: string
-  authorization_start_route: string
   authorization_endpoint: string
   cloudflare_account_id: string
   cloudflare_r2_access_key_id: string
   cloudflare_r2_bucket_name: string
   cloudflare_r2_secret_access_key: string
+  github_oauth_client_id: string
+  github_oauth_client_secret: string
+  github_oauth_auth_start: string
+  github_oauth_auth_callback: string
   github_owner: string
   github_repo: string
   github_token: string
@@ -146,6 +150,7 @@ export interface Config {
 export const SENSITIVE = new Set([
   'cloudflare_r2_access_key_id',
   'cloudflare_r2_secret_access_key',
+  'github_oauth_client_secret',
   'github_token',
   'jwks',
   'secure_session_key_one_buf',
@@ -201,17 +206,12 @@ export const defConfig = async (): Promise<Config> => {
   // localhost, otherwise we will have mixed content errors.
   const base_url = process.env.BASE_URL || `http://localhost:${port}`
 
-  const authorization_callback_route = DEFAULT.AUTHORIZATION_CALLBACK_ROUTE
-  const authorization_start_route = DEFAULT.AUTHORIZATION_START_ROUTE
-
   // Example of IndieAuth/Micropub client: https://indiebookclub.biz/id
   const indieauth_client_id = `${base_url}/id`
   const indieauth_client_logo_uri = 'https://indiebookclub.biz/images/book.svg'
   const indieauth_client_name = 'Zephyr'
   const indieauth_client_uri = base_url
-  const indieauth_client_redirect_uris = [
-    `${base_url}${authorization_callback_route}`
-  ]
+  const indieauth_client_redirect_uris = [`${base_url}/auth/callback`]
 
   const issuer = base_url
 
@@ -235,6 +235,11 @@ export const defConfig = async (): Promise<Config> => {
   // const token_endpoint = 'https://tokens.indieauth.com/token'
   const userinfo_endpoint = `${base_url}/userinfo`
 
+  const github_oauth_client_id = process.env.GITHUB_OAUTH_APP_CLIENT_ID!
+  const github_oauth_client_secret = process.env.GITHUB_OAUTH_APP_CLIENT_SECRET!
+  const github_oauth_auth_start = '/auth/github'
+  const github_oauth_auth_callback = `${base_url}/auth/github/callback`
+
   //////////////////////////////////////////////////////////////////////////////
 
   // In some environments (e.g. Fly.io) we need to set JWKS as an escaped JSON
@@ -247,14 +252,16 @@ export const defConfig = async (): Promise<Config> => {
 
   return {
     access_token_expiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
-    authorization_callback_route,
     authorization_code_expiration: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
-    authorization_start_route,
     authorization_endpoint,
     cloudflare_account_id: DEFAULT.CLOUDFLARE_ACCOUNT_ID!,
     cloudflare_r2_access_key_id: DEFAULT.CLOUDFLARE_R2_ACCESS_KEY_ID!,
     cloudflare_r2_bucket_name: DEFAULT.CLOUDFLARE_R2_BUCKET_NAME!,
     cloudflare_r2_secret_access_key: DEFAULT.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
+    github_oauth_client_id,
+    github_oauth_client_secret,
+    github_oauth_auth_start,
+    github_oauth_auth_callback,
     github_owner: DEFAULT.GITHUB_OWNER!,
     github_repo: DEFAULT.GITHUB_REPO!,
     github_token: DEFAULT.GITHUB_TOKEN!,

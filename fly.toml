@@ -16,6 +16,7 @@ kill_timeout = 180
   BASE_URL = "https://micropub.fly.dev"
   CLOUDFLARE_ACCOUNT_ID = "43f9884041661b778e95a26992850715"
   CLOUDFLARE_R2_BUCKET_NAME = "giacomodebidda-content"
+  GITHUB_OAUTH_APP_CLIENT_ID = "Ov23lilVwPNRoRstiL8I"
   GITHUB_OWNER= "jackdbd"
   GITHUB_REPO = "giacomodebidda-content"
   NODE_ENV = "production"

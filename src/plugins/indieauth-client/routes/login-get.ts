@@ -1,11 +1,7 @@
 import type { RouteHandler } from 'fastify'
 
 export interface Config {
-  /**
-   * URL where the authorization process starts.
-   * Upon form submission, you will be redirected here.
-   */
-  auth_start_endpoint: string
+  authentication_start_path: string
 
   /**
    * IndieAuth client identifier. It MUST be a URL.
@@ -24,7 +20,7 @@ export interface Config {
  * @see [Authorization - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization)
  */
 export const defLogin = (config: Config) => {
-  const { auth_start_endpoint, client_id, log_prefix } = config
+  const { authentication_start_path, client_id, log_prefix } = config
 
   const login: RouteHandler = (request, reply) => {
     const access_token = request.session.get('access_token')
@@ -38,11 +34,11 @@ export const defLogin = (config: Config) => {
     }
 
     request.log.debug(
-      `${log_prefix}web-sign-in page. Upon form submission, you will be redirected to ${auth_start_endpoint}`
+      `${log_prefix}web-sign-in page. Upon form submission, you will be redirected to ${authentication_start_path}`
     )
 
     return reply.view('web-sign-in.njk', {
-      auth_start_endpoint,
+      authentication_start_path,
       client_id,
       description: 'Web sign-in page',
       title: 'Web sign-in'
