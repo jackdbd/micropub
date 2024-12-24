@@ -28,8 +28,9 @@ in {
     CLOUDFLARE_R2_SECRET_ACCESS_KEY = cloudflare_r2.personal.secret_access_key;
     DEBUG = "micropub:*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
-    GITHUB_OAUTH_APP_CLIENT_ID = micropub.github_oauth_app_client_id;
-    GITHUB_OAUTH_APP_CLIENT_SECRET = micropub.github_oauth_app_client_secret;
+    GITHUB_OAUTH_APP_CLIENT_ID = micropub.github_oauth_app_client_id_dev;
+    GITHUB_OAUTH_APP_CLIENT_SECRET = micropub.github_oauth_app_client_secret_dev;
+    GITHUB_OAUTH_APP_CLIENT_SECRET_PROD = micropub.github_oauth_app_client_secret_prod;
     GITHUB_OWNER = "jackdbd";
     GITHUB_REPO = "giacomodebidda-content";
     GITHUB_TOKEN = builtins.readFile /run/secrets/github-tokens/crud_contents_api;
@@ -125,7 +126,7 @@ in {
     '';
     fly-secrets-set-github.exec = ''
       fly secrets set GITHUB_TOKEN="${config.env.GITHUB_TOKEN}"
-      fly secrets set GITHUB_OAUTH_APP_CLIENT_SECRET="${config.env.GITHUB_OAUTH_APP_CLIENT_SECRET}"
+      fly secrets set GITHUB_OAUTH_APP_CLIENT_SECRET="${config.env.GITHUB_OAUTH_APP_CLIENT_SECRET_PROD}"
     '';
     fly-secrets-set-jwks.exec = ''
       fly secrets set JWKS="${config.env.JWKS}"
