@@ -1,4 +1,4 @@
-import { Type } from '@sinclair/typebox'
+import { Static, Type } from '@sinclair/typebox'
 
 /**
  * OAuth 2.0 grant_type string that the client can use at the token endpoint.
@@ -20,3 +20,5 @@ export const grant_type = Type.Union(
       'OAuth 2.0 grant_type string that the client can use at the token endpoint.'
   }
 )
+
+export type GrantType = Static<typeof grant_type>

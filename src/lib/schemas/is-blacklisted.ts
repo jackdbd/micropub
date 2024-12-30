@@ -15,12 +15,12 @@ export type ResultPromise = Static<typeof result_promise>
 
 // This would be ideal, but it CANNOT be used with a standard JSON Schema
 // validator. However, we can still use its TypeScript type.
-const isBlacklisted_ = Type.Function([jti], result_promise)
+const isAccessTokenBlacklisted_ = Type.Function([jti], result_promise)
 
 /**
  * Returns true if a jti (JSON Web Token ID) is blacklisted.
  */
-export type IsBlacklisted = Static<typeof isBlacklisted_>
+export type IsAccessTokenBlacklisted = Static<typeof isAccessTokenBlacklisted_>
 
 // This is INCORRECT. This schema does not validate a function but a description
 // of one. Also, it CANNOT be used with a standard JSON Schema validator because
@@ -41,4 +41,4 @@ export type IsBlacklisted = Static<typeof isBlacklisted_>
 // })
 
 // This can be used, but of course is not that useful.
-export const isBlacklisted = Type.Any()
+export const isAccessTokenBlacklisted = Type.Any()

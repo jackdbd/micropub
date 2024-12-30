@@ -11,12 +11,7 @@ export const defMediaGet = (config: Config) => {
     const supports_delete = config.delete ? true : false
     const capabilities = { supports_upload: true, supports_delete }
 
-    return reply.successResponse(200, {
-      title: 'Media endpoint configuration',
-      description: 'Configuration page for the media endpoint.',
-      summary: 'Configuration for the Micropub media endpoint.',
-      payload: { capabilities }
-    })
+    return reply.code(200).send({ capabilities })
   }
 
   return mediaGet

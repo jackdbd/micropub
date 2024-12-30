@@ -1,7 +1,12 @@
-export { defIssueJWT } from './issue-jwt.js'
-export type { Config as ConfigIssueJWT } from './issue-jwt.js'
+export { defIssueAccessToken } from './issue-access-token.js'
 
-export type { IssueRecord, IssueTable } from './issue-table.js'
+export { defRevokeJWT } from './revoke-access-token.js'
 
-export { defRevokeJWT } from './revoke-jwt.js'
-export type { Config as ConfigRevokeJWT } from './revoke-jwt.js'
+export {
+  access_token_record,
+  type AccessTokenRecord,
+  access_token_table,
+  type AccessTokenTable,
+  issueAccessToken,
+  type IssueAccessToken
+} from './schemas.js'

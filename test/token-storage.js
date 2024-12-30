@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import tmp from 'tmp'
 import { defAtom } from '@thi.ng/atom'
 import {
-  defIssueJWT,
+  defIssueAccessToken,
   defRevokeJWT
 } from '../dist/lib/token-storage-interface/index.js'
 import * as fs_impl from '../dist/lib/fs-storage/index.js'
@@ -31,10 +31,10 @@ const init = async (impl) => {
       await fs.writeFile(filepath, '{}')
 
       const addToIssuedTokens = fs_impl.defAddToIssuedTokens({ filepath })
-      const isBlacklisted = fs_impl.defIsBlacklisted({ filepath })
+      const isBlacklisted = fs_impl.defIsAccessTokenBlacklisted({ filepath })
       const markTokenAsRevoked = fs_impl.defMarkTokenAsRevoked({ filepath })
 
-      const issueJWT = defIssueJWT({
+      const issueAccessToken = defIssueAccessToken({
         addToIssuedTokens,
         expiration,
         issuer,
@@ -54,7 +54,7 @@ const init = async (impl) => {
         addToIssuedTokens,
         getIssuedTokens: fs_impl.defGetIssuedTokens({ filepath }),
         isBlacklisted,
-        issueJWT,
+        issueAccessToken,
         markTokenAsRevoked,
         revokeAllTokens: fs_impl.defRevokeAllTokens({ filepath }),
         revokeJWT,
@@ -66,10 +66,10 @@ const init = async (impl) => {
       const atom = defAtom({})
 
       const addToIssuedTokens = mem_impl.defAddToIssuedTokens({ atom })
-      const isBlacklisted = mem_impl.defIsBlacklisted({ atom })
+      const isBlacklisted = mem_impl.defIsAccessTokenBlacklisted({ atom })
       const markTokenAsRevoked = mem_impl.defMarkTokenAsRevoked({ atom })
 
-      const issueJWT = defIssueJWT({
+      const issueAccessToken = defIssueAccessToken({
         addToIssuedTokens,
         expiration,
         issuer,
@@ -89,7 +89,7 @@ const init = async (impl) => {
         addToIssuedTokens,
         getIssuedTokens: mem_impl.defGetIssuedTokens({ atom }),
         isBlacklisted,
-        issueJWT,
+        issueAccessToken,
         markTokenAsRevoked,
         revokeAllTokens: mem_impl.defRevokeAllTokens({ atom }),
         revokeJWT,
@@ -133,8 +133,8 @@ IMPLEMENTATIONS.forEach((label) => {
         assert.ok(impl.revokeAllTokens)
       })
 
-      it('has a issueJWT method', () => {
-        assert.ok(impl.issueJWT)
+      it('has a issueAccessToken method', () => {
+        assert.ok(impl.issueAccessToken)
       })
 
       it('has a revokeJWT method', () => {
@@ -152,7 +152,7 @@ IMPLEMENTATIONS.forEach((label) => {
       })
 
       it(`issues a JWT that has required claims when no payload is passed`, async () => {
-        const { error: issue_error, value } = await impl.issueJWT()
+        const { error: issue_error, value } = await impl.issueAccessToken()
         assert.ok(!issue_error)
 
         await assertTokenHasRequiredClaims(value.jwt)
@@ -160,7 +160,9 @@ IMPLEMENTATIONS.forEach((label) => {
 
       it(`issues a JWT that has required+custom claims when a payload is passed`, async () => {
         const payload = { foo: 'bar' }
-        const { error: issue_error, value } = await impl.issueJWT(payload)
+        const { error: issue_error, value } = await impl.issueAccessToken(
+          payload
+        )
         assert.ok(!issue_error)
 
         await assertTokenHasRequiredAndCustomClaims(value.jwt, payload)
@@ -174,7 +176,9 @@ IMPLEMENTATIONS.forEach((label) => {
           scope: 'create update'
         }
 
-        const { error: issue_error, value } = await impl.issueJWT(payload)
+        const { error: issue_error, value } = await impl.issueAccessToken(
+          payload
+        )
         assert.ok(!issue_error)
         const { jwt } = value
         assert.ok(jwt)
@@ -193,7 +197,9 @@ IMPLEMENTATIONS.forEach((label) => {
           no_scope: 'create update'
         }
 
-        const { error: issue_error, value } = await impl.issueJWT(payload)
+        const { error: issue_error, value } = await impl.issueAccessToken(
+          payload
+        )
         assert.ok(!issue_error)
         const { jwt } = value
         assert.ok(jwt)
@@ -212,17 +218,15 @@ IMPLEMENTATIONS.forEach((label) => {
 
         const payload = { me: 'https://example.com/', scope: 'create update' }
 
-        const { error: issue_err0, value: issue_val0 } = await impl.issueJWT(
-          payload
-        )
+        const { error: issue_err0, value: issue_val0 } =
+          await impl.issueAccessToken(payload)
         assert.ok(!issue_err0)
         const { jwt: jwt0, claims: claims0 } = issue_val0
         assert.ok(jwt0)
         await assertTokenHasRequiredAndCustomClaims(jwt0, payload)
 
-        const { error: issue_err1, value: issue_val1 } = await impl.issueJWT(
-          payload
-        )
+        const { error: issue_err1, value: issue_val1 } =
+          await impl.issueAccessToken(payload)
         assert.ok(!issue_err1)
         const { jwt: jwt1, claims: claims1 } = issue_val1
         assert.ok(jwt1)
@@ -252,9 +256,9 @@ IMPLEMENTATIONS.forEach((label) => {
       it('can revoke all JTWs that have been issued', async () => {
         const payload = { me: 'https://example.com/', scope: 'create update' }
 
-        const r0 = await impl.issueJWT(payload)
-        const r1 = await impl.issueJWT(payload)
-        const r2 = await impl.issueJWT(payload)
+        const r0 = await impl.issueAccessToken(payload)
+        const r1 = await impl.issueAccessToken(payload)
+        const r2 = await impl.issueAccessToken(payload)
 
         const jwts = [r0, r1, r2].map((r) => {
           assert.ok(!r.error)

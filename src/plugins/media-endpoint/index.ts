@@ -14,13 +14,13 @@ import {
   defValidateAccessTokenNotBlacklisted
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
-import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defMediaGet } from './routes/media-get.js'
 import { defMediaPost } from './routes/media-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   multipartFormDataMaxFileSize: DEFAULT.MULTIPART_FORMDATA_MAX_FILE_SIZE,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
@@ -35,7 +35,8 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
 
   const {
     delete: deleteMedia,
-    isBlacklisted,
+    includeErrorDescription: include_error_description,
+    isAccessTokenBlacklisted,
     logPrefix: log_prefix,
     me,
     multipartFormDataMaxFileSize: fileSize,
@@ -62,9 +63,6 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(
     `${log_prefix}registered plugin: multipart (for parsing multipart/form-data)`
   )
-
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix} registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
@@ -98,7 +96,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   const validateScopeMedia = defValidateScope({ ajv, scope: 'media' })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   // === ROUTES ============================================================= //
   fastify.get('/media', defMediaGet({ delete: deleteMedia }))
@@ -116,7 +114,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
         validateAccessTokenNotBlacklisted
       ]
     },
-    defMediaPost({ delete: deleteMedia, upload })
+    defMediaPost({ delete: deleteMedia, include_error_description, upload })
   )
 
   done()

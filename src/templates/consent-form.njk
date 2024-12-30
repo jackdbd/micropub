@@ -1,5 +1,16 @@
-<form id="consent-form" action="{{ redirect_uri }}" method="get">
-  <p>Approve this request to grant these <a href="https://indieweb.org/scope" target="_blank" rel="noopener noreferrer">scopes</a> to <a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> (client ID <a href="{{ client_id }}" target="_blank" rel="noopener noreferrer">{{ client_id }}</a>) on behalf of <a href="{{ me }}" target="_blank" rel="noopener noreferrer">{{ me }}</a>.</p>
+<form id="consent-form" action="/consent" method="get">
+  
+  <p>
+    {% if logo_uri %}
+    <span class="icon">
+      <img src="{{ logo_uri }}" alt="{{ client_name}} icon">
+    </span>
+    {% endif %}
+
+    <a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> (client ID <a href="{{ client_id }}" target="_blank" rel="noopener noreferrer">{{ client_id }}</a>) is requesting the following <a href="https://indieweb.org/scope" target="_blank" rel="noopener noreferrer">scopes</a> to access resources on behalf of <a href="{{ me }}" target="_blank" rel="noopener noreferrer">{{ me }}</a>.
+    You can uncheck the scopes you do not want to grant to the application.
+  </p>
+
   {% include "scopes.njk" %}
 
   {% if code_challenge_method == "plain" %}
@@ -7,20 +18,25 @@
   {% endif %}
 
   {% if code_challenge_method == "S256" %}
-    <p><a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> supports PKCE (it generated a code challenge using method <code>{{ code_challenge_method }}</code>).</p>
+    <p><a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> supports PKCE (code challenge with method <code>{{ code_challenge_method }}</code>).</p>
   {% endif %}
 
-  <small>Once you approve this request, this authorization endpoint will generate an authorization code that will be valid for {{ authorization_code_expiration }}.</small>
+  <p>If you <strong>deny</strong> this request you will be redirected to <a href="{{ redirect_url_on_deny }}" target="_blank" rel="noopener noreferrer">{{ redirect_url_on_deny }}</a>.</p>
 
-  <p>Upon successful authentication, you will be redirected to <a href="{{ redirect_uri }}" target="_blank" rel="noopener noreferrer">{{ redirect_uri }}</a>.</p>
+  <p>If you <strong>approve</strong> this request:</p>
+  <ul>
+    <li>this authorization endpoint will generate an authorization code that will be valid for {{ authorization_code_expiration }}</li>
+    <li>you will be redirected to <a href="{{ redirect_uri }}" target="_blank" rel="noopener noreferrer">{{ redirect_uri }}</a></li>
+  </ul>
 
   {# I am not sure the consent screen should display this information to the
   user. This information should only be known to the token endpoint, not to the
   authorization endpoint. #}
-  <p><a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> will have access for {{ access_token_expiration }}, or for {{ refresh_token_expiration }} if it implements <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-1.5" target="_blank" rel="noopener noreferrer">OAuth 2.0 Refresh Token Flow</a>.</p>
+  {# <p><a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> will have access for {{ access_token_expiration }}, or for {{ refresh_token_expiration }} if it implements <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-1.5" target="_blank" rel="noopener noreferrer">OAuth 2.0 Refresh Token Flow</a>.</p> #}
 
-  <input type="hidden" name="code" value="{{ code }}" />
-  <input type="hidden" name="iss" value="{{ iss }}" />
+  <input type="hidden" name="client_id" value="{{ client_id }}" />
+  <input type="hidden" name="me" value="{{ me }}" />
+  <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
   <input type="hidden" name="state" value="{{ state }}" />
 
   <button class="deny" type="submit" name="action" value="deny">Deny</button>

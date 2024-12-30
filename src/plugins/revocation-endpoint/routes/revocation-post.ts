@@ -21,6 +21,7 @@ interface RouteGeneric extends RouteGenericInterface {
 }
 
 interface Config {
+  include_error_description: boolean
   log_prefix: string
   me: string
   revokeJWT: RevokeJWT
@@ -32,7 +33,7 @@ interface Config {
  * @see [Token revocation - IndieAuth spec](https://indieauth.spec.indieweb.org/#token-revocation)
  */
 export const defRevocationPost = (config: Config) => {
-  const { me, log_prefix, revokeJWT } = config
+  const { include_error_description, log_prefix, me, revokeJWT } = config
 
   const revocationPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
@@ -43,7 +44,10 @@ export const defRevocationPost = (config: Config) => {
 
     if (!token) {
       const error_description = 'No `token` in request body.'
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // TODO: allow to revoke refresh tokens
@@ -54,7 +58,10 @@ export const defRevocationPost = (config: Config) => {
     // https://datatracker.ietf.org/doc/html/rfc7009#section-2.1
     if (token_type_hint === 'refresh_token') {
       const error_description = `Revoking refresh tokens is not supported by this revocation endpoint.`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // As described in [RFC7009], the revocation endpoint responds with HTTP 200
@@ -65,41 +72,37 @@ export const defRevocationPost = (config: Config) => {
     const { error: error_decode, value: claims } = await safeDecode(token)
 
     if (error_decode) {
-      const summary = `Nothing to revoke, since the token is invalid.`
-      request.log.debug(`${log_prefix}${summary} ${error_decode.message}`)
-
-      return reply.successResponse(200, {
-        title: 'Success',
-        description: 'Token revoke success page',
-        summary
-      })
+      const message = `Nothing to revoke, since the token is invalid.`
+      request.log.debug(`${log_prefix}${message} ${error_decode.message}`)
+      return reply.code(200).send({ message })
     }
 
     if (!claims.exp) {
       const error_description =
         'Cannot revoke token because it has no `exp` claim.'
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const unix_now = unixTimestampInSeconds()
     if (claims.exp < unix_now) {
       const exp = secondsToUTCString(claims.exp)
       const now = secondsToUTCString(unix_now)
-      const summary = `Nothing to revoke, since the token expired at ${exp} (now is ${now}).`
-      request.log.debug(`${log_prefix}${summary}`)
-
-      return reply.successResponse(200, {
-        title: 'Success',
-        description: 'Token revoke success page',
-        summary
-      })
+      const message = `Nothing to revoke, since the token expired at ${exp} (now is ${now}).`
+      request.log.debug(`${log_prefix}${message}`)
+      return reply.code(200).send({ message })
     }
 
     // I am not sure this should be considered an error, but I I think it would
     // be weird to return HTTP 200 for a JWT that has a different `me` claim.
     if (claims.me !== me) {
       const error_description = `The token has a claim me=${claims.me}. This endpoint can only revoke tokens that have me=${me}`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     request.log.debug(
@@ -113,7 +116,10 @@ export const defRevocationPost = (config: Config) => {
     if (revoke_error) {
       const original = revoke_error.message
       const error_description = `Cannot revoke token: ${original}`
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const { jti, message } = revoke_value
@@ -125,11 +131,7 @@ export const defRevocationPost = (config: Config) => {
       request.log.debug(`${log_prefix}token ${jti} revoked`)
     }
 
-    return reply.successResponse(200, {
-      title: 'Success',
-      description: 'Token revoke success page',
-      summary: `Token ${jti} is revoked.`
-    })
+    return reply.code(200).send({ message: `Token ${jti} is revoked.` })
   }
 
   return revocationPost

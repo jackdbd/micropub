@@ -1,14 +1,7 @@
 import assert from 'node:assert'
 import { describe, it } from 'node:test'
-import { fileURLToPath } from 'node:url'
 import { unixTimestampInSeconds } from '../dist/lib/date.js'
-import {
-  isExpired,
-  randomKid,
-  safeDecode,
-  sign,
-  verify
-} from '../dist/lib/token/index.js'
+import { randomKid, safeDecode, sign, verify } from '../dist/lib/token/index.js'
 import { issueJWT } from './test_utils.js'
 import {
   DEFAULT_EXPIRATION,
@@ -66,22 +59,6 @@ describe('safeDecode', () => {
     Object.entries(payload).forEach(([key, value]) => {
       assert.strictEqual(claims[key], value)
     })
-  })
-})
-
-describe('isExpired', () => {
-  it('returns true when the `exp` claim is of 1 second ago', () => {
-    const now = unixTimestampInSeconds()
-    const token = { exp: now - 1 }
-
-    assert.ok(isExpired(token.exp))
-  })
-
-  it('returns false when the `exp` claim is of 1 second into the future', () => {
-    const now = unixTimestampInSeconds()
-    const token = { exp: now + 1 }
-
-    assert.ok(!isExpired(token.exp))
   })
 })
 

@@ -1,15 +1,15 @@
 import type { Atom } from '@thi.ng/atom'
-import type { IsBlacklisted } from '../schemas/index.js'
-import type { IssueTable } from '../token-storage-interface/index.js'
+import type { IsAccessTokenBlacklisted } from '../schemas/index.js'
+import type { AccessTokenTable } from '../token-storage-interface/index.js'
 
 interface Config {
-  atom: Atom<IssueTable>
+  atom: Atom<AccessTokenTable>
 }
 
-export const defIsBlacklisted = (config: Config) => {
+export const defIsAccessTokenBlacklisted = (config: Config) => {
   const { atom } = config
 
-  const isBlacklisted: IsBlacklisted = async (jti) => {
+  const isAccessTokenBlacklisted: IsAccessTokenBlacklisted = async (jti) => {
     const record = atom.deref()[jti]
 
     if (!record) {
@@ -19,5 +19,5 @@ export const defIsBlacklisted = (config: Config) => {
     return { value: record.revoked ? true : false }
   }
 
-  return isBlacklisted
+  return isAccessTokenBlacklisted
 }

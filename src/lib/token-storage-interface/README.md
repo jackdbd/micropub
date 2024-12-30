@@ -10,7 +10,7 @@ The functions defined in this module leave to the user the responsibility of per
 
 | Interface | implementation |
 | :--- | :--- |
-| `defIssueJWT` | `addToIssuedTokens` |
+| `defIssueAccessToken` | `addToIssuedTokens` |
 | `defRevokeJWT` | `markTokenAsRevoked` |
 
 Token storage implementations:
@@ -19,3 +19,4 @@ Token storage implementations:
 - [In-Memory](../in-memory-storage/README.md)
 - [GitHub](../github-storage/README.md) TODO
 - [R2](../r2-storage/README.md) TODO
+- [Turso](../turso-storage/README.md) TODO

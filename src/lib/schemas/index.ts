@@ -12,7 +12,11 @@ export {
   type DeleteContentOrMedia
 } from './delete-content-or-media.js'
 
-export { report_all_ajv_errors } from './flags.js'
+export {
+  include_error_description,
+  include_error_details,
+  report_all_ajv_errors
+} from './flags.js'
 
 export { get, type Get } from './get-content.js'
 
@@ -22,9 +26,10 @@ export { info, type Info } from './info.js'
 
 export { storage, type Introspection } from './introspection.js'
 
-export { isBlacklisted, type IsBlacklisted } from './is-blacklisted.js'
-
-export { issueJWT, type IssueJWT } from './issue-jwt.js'
+export {
+  isAccessTokenBlacklisted,
+  type IsAccessTokenBlacklisted
+} from './is-blacklisted.js'
 
 export { jf2, type JF2 } from './jf2.js'
 

@@ -1,9 +1,5 @@
 {% extends "base.njk" %}
 
-{% block js %}
-<script defer src="{{ base_url }}/scripts/editor.js"></script>
-{% endblock %}
-
 {% block content %}
 <div>
   <form id="note-form" action="{{ submit_endpoint }}" method="post">

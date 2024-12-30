@@ -3,14 +3,14 @@ import type { FastifyError } from '@fastify/error'
 // import type { ErrorType } from '../../lib/micropub/index.js'
 // import type { ErrorType } from '../../lib/oauth2/index.js'
 
-// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
-// https://indieauth.spec.indieweb.org/#error-responses
-// https://micropub.spec.indieweb.org/#error-response
-
 export interface ErrorData {
   error_description: string
   error_uri?: string
   state?: string
+}
+
+export interface PayloadOptions {
+  include_error_description?: boolean
 }
 
 class BaseError extends Error implements FastifyError {
@@ -38,6 +38,20 @@ class BaseError extends Error implements FastifyError {
     this.error_uri = data.error_uri
     this.state = data.state
     this.name = name
+  }
+
+  public payload(options?: PayloadOptions) {
+    const opt = options || {}
+    const include_error_description = opt.include_error_description ?? false
+
+    return include_error_description
+      ? {
+          error: this.error,
+          error_description: this.error_description,
+          error_uri: this.error_uri,
+          state: this.state
+        }
+      : { error: this.error }
   }
 }
 

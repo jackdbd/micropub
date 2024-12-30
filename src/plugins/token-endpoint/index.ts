@@ -4,17 +4,24 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { defIssueJWT } from '../../lib/token-storage-interface/index.js'
+import { defIssueAccessToken } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
-import responseDecorators from '../response-decorators/index.js'
+import { access_token_request_body } from '../authorization-endpoint/index.js'
+import { access_token_response_body_success } from './routes/schemas.js'
 import { defConfigGet } from './routes/token-config-get.js'
 import { defTokenPost } from './routes/token-post.js'
 import { DEFAULT, NAME } from './constants.js'
 import { options as options_schema, type Options } from './schemas.js'
 
+export {
+  access_token_response_body_success,
+  type AccessTokenResponseBodySuccess
+} from './routes/schemas.js'
+
 const defaults: Partial<Options> = {
   accessTokenExpiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
   authorizationEndpoint: DEFAULT.AUTHORIZATION_ENDPOINT,
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   refreshTokenExpiration: DEFAULT.REFRESH_TOKEN_EXPIRATION,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
@@ -31,6 +38,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
     accessTokenExpiration: access_token_expiration,
     addToIssuedTokens,
     authorizationEndpoint: authorization_endpoint,
+    includeErrorDescription: include_error_description,
     issuer,
     jwks,
     logPrefix: log_prefix,
@@ -42,7 +50,10 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   if (config.ajv) {
     ajv = config.ajv
   } else {
-    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), [
+      'email',
+      'uri'
+    ])
   }
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
@@ -59,9 +70,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.register(formbody)
   fastify.log.debug(`${log_prefix}registered plugin: formbody`)
 
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
-
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
@@ -72,7 +80,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  const issueJWT = defIssueJWT({
+  const issueAccessToken = defIssueAccessToken({
     addToIssuedTokens,
     expiration: access_token_expiration,
     issuer,
@@ -84,9 +92,17 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/token',
     {
-      // schema: token_post_request
+      schema: {
+        body: access_token_request_body,
+        response: { '2xx': access_token_response_body_success }
+      }
     },
-    defTokenPost({ authorization_endpoint, issueJWT, log_prefix })
+    defTokenPost({
+      authorization_endpoint,
+      include_error_description,
+      issueAccessToken,
+      log_prefix
+    })
   )
 
   done()

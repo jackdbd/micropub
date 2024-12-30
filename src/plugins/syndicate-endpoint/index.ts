@@ -12,13 +12,13 @@ import {
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
-import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/syndication-config-get.js'
 import { defSyndicatePost } from './routes/syndicate-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
@@ -30,8 +30,11 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
-    config
+  const {
+    includeErrorDescription: include_error_description,
+    logPrefix: log_prefix,
+    reportAllAjvErrors: report_all_ajv_errors
+  } = config
 
   let ajv: Ajv
   if (config.ajv) {
@@ -44,7 +47,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
 
   const {
     get,
-    isBlacklisted,
+    isAccessTokenBlacklisted,
     me,
     publishedUrlToStorageLocation,
     syndicators,
@@ -56,9 +59,6 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
   fastify.log.debug(
     `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
-
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
@@ -90,7 +90,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   // === ROUTES ============================================================= //
   fastify.get('/syndication/config', defConfigGet(config))
@@ -106,10 +106,10 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
         validateClaimJti,
         validateAccessTokenNotBlacklisted
       ]
-      // schema: syndicator_post_request
     },
     defSyndicatePost({
       get,
+      include_error_description,
       log_prefix,
       publishedUrlToStorageLocation,
       syndicators,

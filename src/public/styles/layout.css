@@ -38,6 +38,17 @@
   margin-top: var(--flow-space, 1em);
 }
 
+.icon {
+  --font-size: 1.25em;
+  display: inline;
+  font-size: var(--font-size);
+  vertical-align: middle;
+}
+
+.icon > img {
+  width: var(--font-size);
+}
+
 .stack {
   --stack-space: var(--scale-space-m);
 }

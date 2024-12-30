@@ -14,7 +14,6 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import type { SyndicateToItem } from '../../lib/micropub/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
-import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defMicropubResponse } from './decorators/reply.js'
 import { defValidateGetRequest } from './hooks.js'
@@ -27,6 +26,7 @@ import {
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   multipartFormDataMaxFileSize: DEFAULT.MULTIPART_FORMDATA_MAX_FILE_SIZE,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS,
@@ -43,7 +43,8 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const {
     create,
     delete: deleteContent,
-    isBlacklisted,
+    includeErrorDescription: include_error_description,
+    isAccessTokenBlacklisted,
     logPrefix: log_prefix,
     me,
     mediaEndpoint: media_endpoint,
@@ -84,14 +85,14 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   })
   fastify.log.debug(`${log_prefix}registered plugin: multipart`)
 
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
-
   // === DECORATORS ========================================================= //
-  const micropubResponse = defMicropubResponse({ create, prefix: log_prefix })
+  const micropubResponse = defMicropubResponse({
+    create,
+    include_error_description,
+    prefix: log_prefix
+  })
 
-  const dependencies = ['errorResponse']
-  fastify.decorateReply('micropubResponse', micropubResponse, dependencies)
+  fastify.decorateReply('micropubResponse', micropubResponse)
   fastify.log.debug(
     `${log_prefix}decorated fastify.reply with micropubResponse`
   )
@@ -124,7 +125,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   const validateGetRequest = defValidateGetRequest({ ajv })
 
@@ -151,6 +152,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     defMicropubPost({
       ajv,
       delete: deleteContent,
+      include_error_description,
       log_prefix,
       me,
       media_endpoint,

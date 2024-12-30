@@ -33,6 +33,7 @@ interface PostRouteGeneric extends RouteGenericInterface {
 export interface MicropubPostConfig {
   ajv: Ajv
   delete: DeleteContentOrMedia
+  include_error_description: boolean
   log_prefix: string
   me: string
   media_endpoint: string
@@ -77,6 +78,7 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
   const {
     ajv,
     delete: deleteContent,
+    include_error_description,
     log_prefix,
     // me,
     media_endpoint,
@@ -120,7 +122,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
 
     if (!request_body) {
       const error_description = 'Request has no body.'
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // The request body sent by a Micropub client could be a JF2 or a MF2.
@@ -134,7 +139,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       if (error) {
         const error_description = error.message
         request.log.error({ request_body }, `${log_prefix}${error_description}`)
-        throw new InvalidRequestError({ error_description })
+        const err = new InvalidRequestError({ error_description })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       } else {
         // We could end up with an access_token in the request body. It happed
         // to me when I made a request from Quill. But I don't think it's
@@ -199,7 +207,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
     if (!hasScope(request, action)) {
       const error_description = `Action '${action}' not allowed, since access token has no scope '${action}'.`
       request.log.warn(`${log_prefix}${error_description}`)
-      throw new InsufficientScopeError({ error_description })
+      const err = new InsufficientScopeError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     if (url) {
@@ -208,66 +219,45 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           const result = await deleteContent(url)
 
           if (result.error) {
-            const error = storeErrorToMicropubError(result.error)
+            const err = storeErrorToMicropubError(result.error)
             request.log.error(
-              `${log_prefix}${error.error} (${error.statusCode}): ${error.error_description}`
+              `${log_prefix}${err.error} (${err.statusCode}): ${err.error_description}`
             )
-
-            const body = {
-              error: error.error,
-              error_description: error.error_description,
-              error_uri: error.error_uri,
-              state: error.state
-            }
-
-            return reply.errorResponse(error.statusCode, body)
+            return reply
+              .code(err.statusCode)
+              .send(err.payload({ include_error_description }))
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, summary, payload } = value
             request.log.info(`${log_prefix}${summary}`)
-
-            return reply.successResponse(code, {
-              title: 'Delete success',
-              description: 'Delete success page',
-              summary,
-              payload
-            })
+            return reply.code(code).send({ summary, payload })
           }
         }
 
         case 'undelete': {
           if (!undelete) {
             const error_description = `Action 'undelete' not supported by this Micropub server.`
-            throw new InvalidRequestError({ error_description })
+            const err = new InvalidRequestError({ error_description })
+            return reply
+              .code(err.statusCode)
+              .send(err.payload({ include_error_description }))
           }
 
           const result = await undelete(url)
 
           if (result.error) {
-            const error = storeErrorToMicropubError(result.error)
+            const err = storeErrorToMicropubError(result.error)
             request.log.error(
-              `${log_prefix}${error.error} (${error.statusCode}): ${error.error_description}`
+              `${log_prefix}${err.error} (${err.statusCode}): ${err.error_description}`
             )
-
-            const body = {
-              error: error.error,
-              error_description: error.error_description,
-              error_uri: error.error_uri,
-              state: error.state
-            }
-
-            return reply.errorResponse(error.statusCode, body)
+            return reply
+              .code(err.statusCode)
+              .send(err.payload({ include_error_description }))
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, summary, payload } = value
             request.log.info(`${log_prefix}${summary}`)
-
-            return reply.successResponse(code, {
-              title: 'Undelete success',
-              description: 'Undelete success page',
-              summary,
-              payload
-            })
+            return reply.code(code).send({ summary, payload })
           }
         }
 
@@ -277,30 +267,18 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
           const result = await update(url, patch)
 
           if (result.error) {
-            const error = storeErrorToMicropubError(result.error)
+            const err = storeErrorToMicropubError(result.error)
             request.log.error(
-              `${log_prefix}${error.error} (${error.statusCode}): ${error.error_description}`
+              `${log_prefix}${err.error} (${err.statusCode}): ${err.error_description}`
             )
-
-            const body = {
-              error: error.error,
-              error_description: error.error_description,
-              error_uri: error.error_uri,
-              state: error.state
-            }
-
-            return reply.errorResponse(error.statusCode, body)
+            return reply
+              .code(err.statusCode)
+              .send(err.payload({ include_error_description }))
           } else {
             const value = storeValueToMicropubValue(result.value)
             const { code, payload, summary } = value
             request.log.info(patch, `${log_prefix}${summary}`)
-
-            return reply.successResponse(code, {
-              title: 'Update success',
-              description: 'Update success page',
-              summary,
-              payload
-            })
+            return reply.code(code).send({ summary, payload })
           }
 
           // TODO: return correct response upon successful update operation
@@ -321,7 +299,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
             { action, jf2 },
             `${log_prefix}${error_description}`
           )
-          throw new InvalidRequestError({ error_description })
+          const err = new InvalidRequestError({ error_description })
+          return reply
+            .code(err.statusCode)
+            .send(err.payload({ include_error_description }))
         }
       }
     }
@@ -349,7 +330,10 @@ export const defMicropubPost = (config: MicropubPostConfig) => {
       default: {
         const error_description = `Post h=${jf2.h} is not supported by this Micropub server.`
         request.log.error({ action, jf2 }, `${log_prefix}${error_description}`)
-        throw new InvalidRequestError({ error_description })
+        const err = new InvalidRequestError({ error_description })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       }
     }
   }

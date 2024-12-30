@@ -16,14 +16,9 @@ const entriesSafeToRender = (config: Required<Options>) => {
 
 export const defConfigGet = (config: Required<Options>) => {
   const configGet: RouteHandler = async (_request, reply) => {
-    return reply.successResponse(200, {
-      title: 'Revocation endpoint configuration',
-      description: 'Configuration page for this revocation endpoint.',
-      summary: 'Configuration of this revocation endpoint.',
-      payload: {
-        ...Object.fromEntries(entriesSafeToRender(config)),
-        not_shown: [...FAIL_TO_RENDER.keys(), ...SENSITIVE.keys()]
-      }
+    return reply.code(200).send({
+      ...Object.fromEntries(entriesSafeToRender(config)),
+      not_shown: [...FAIL_TO_RENDER.keys(), ...SENSITIVE.keys()]
     })
   }
 

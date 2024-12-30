@@ -14,6 +14,7 @@ import type {
 
 export interface Config {
   get: Get
+  include_error_description: boolean
   log_prefix: string
   publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   syndicators: { [uid: string]: Syndicator }
@@ -23,7 +24,8 @@ export interface Config {
 const parser = new XMLParser()
 
 export const defSyndicatePost = (config: Config) => {
-  const { get, log_prefix, syndicators, update } = config
+  const { get, include_error_description, log_prefix, syndicators, update } =
+    config
 
   const syndicatePost: RouteHandler = async (request, reply) => {
     // TODO: decide what request body to expect. For example:
@@ -74,7 +76,10 @@ export const defSyndicatePost = (config: Config) => {
 
     if (result.error) {
       const error_description = `The post published at ${loc.website} is not stored at ${loc.store}.`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // We assume all content retrieved from the store to be untrusted data, so
@@ -173,7 +178,10 @@ export const defSyndicatePost = (config: Config) => {
 
     if (result_update.error) {
       const error_description = result_update.error.message
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // request.log.warn(result_update, `=== syndication update ===`)
@@ -183,16 +191,12 @@ export const defSyndicatePost = (config: Config) => {
       `${failures.length} Failures: ${failures.join('\n')}`
     ].join('\n\n')
 
-    const code = 200
-
-    const body = {
-      title: `Syndication outcome`,
-      description: 'Syndicate success page',
-      summary,
-      payload: { successes, failures, store_update_patch: patch }
-    }
-
-    return reply.successResponse(code, body)
+    return reply.code(200).send({
+      successes,
+      failures,
+      store_update_patch: patch,
+      summary
+    })
   }
 
   return syndicatePost

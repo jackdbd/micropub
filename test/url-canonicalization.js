@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { canonicalUrl } from '../dist/lib/url-canonicalization/index.js'
+import { canonicalUrl } from '../dist/lib/url-canonicalization.js'
 
 describe('canonicalUrl', () => {
   it('adds a trailing slash', () => {

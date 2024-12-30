@@ -45,6 +45,18 @@ export const jwks_uri = Type.String({
   title: 'JWKS URI'
 })
 
+/**
+ * [Profile information](https://indieauth.spec.indieweb.org/#profile-information).
+ */
+export const profile = Type.Object({
+  name: Type.String({ minLength: 1 }),
+  url: Type.String({ format: 'uri' }),
+  photo: Type.String({ format: 'uri' }),
+  email: Type.String({ format: 'email' })
+})
+
+export type Profile = Static<typeof profile>
+
 export const registration_endpoint = Type.String({
   description: `URL of the authorization server's OAuth 2.0 Dynamic Client Registration endpoint.`,
   format: 'uri',
@@ -244,6 +256,10 @@ export const server_metadata = Type.Object({
  */
 export type ServerMetadata = Static<typeof server_metadata>
 
+/**
+ * The ID of the application that asks for authorization. An IndieAuth client ID
+ * is a URL.
+ */
 export const client_id = Type.String({
   $id: 'indieauth-client-id',
   description:

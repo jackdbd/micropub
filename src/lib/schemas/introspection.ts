@@ -1,12 +1,15 @@
 import { Static, Type } from '@sinclair/typebox'
 import { info } from './info.js'
-import { isBlacklisted, type IsBlacklisted } from './is-blacklisted.js'
+import {
+  isAccessTokenBlacklisted,
+  type IsAccessTokenBlacklisted
+} from './is-blacklisted.js'
 
 export const storage = Type.Object({
   info,
-  isBlacklisted
+  isAccessTokenBlacklisted
 })
 
 export interface Introspection extends Static<typeof storage> {
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
 }

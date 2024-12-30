@@ -19,11 +19,12 @@ export interface ResponseConfig {
 
 export interface MicropubResponseConfig {
   create: Create
+  include_error_description: boolean
   prefix: string
 }
 
 export function defMicropubResponse(config: MicropubResponseConfig) {
-  const { create, prefix } = config
+  const { create, include_error_description, prefix } = config
 
   return async function micropubResponse(
     this: FastifyReply,
@@ -59,16 +60,10 @@ export function defMicropubResponse(config: MicropubResponseConfig) {
           { jf2, errors: validate.errors || [] },
           `${prefix}${error_description}`
         )
-        const error = new InvalidRequestError({ error_description })
-
-        const body = {
-          error: error.error,
-          error_description: error.error_description,
-          error_uri: error.error_uri,
-          state: error.state
-        }
-
-        return this.errorResponse(error.statusCode, body)
+        const err = new InvalidRequestError({ error_description })
+        return this.code(err.statusCode).send(
+          err.payload({ include_error_description })
+        )
       } else {
         const message = `validated JF2 according to schema ${schema_id}`
         this.request.log.debug(`${prefix}${message}`)
@@ -78,19 +73,14 @@ export function defMicropubResponse(config: MicropubResponseConfig) {
     const result = await create(jf2)
 
     if (result.error) {
-      const error = storeErrorToMicropubError(result.error)
+      const err = storeErrorToMicropubError(result.error)
       this.request.log.error(
-        `${prefix}${error.error} (${error.statusCode}): ${error.error_description}`
+        `${prefix}${err.error} (${err.statusCode}): ${err.error_description}`
       )
 
-      const body = {
-        error: error.error,
-        error_description: error.error_description,
-        error_uri: error.error_uri,
-        state: error.state
-      }
-
-      return this.errorResponse(error.statusCode, body)
+      return this.code(err.statusCode).send(
+        err.payload({ include_error_description })
+      )
     } else {
       const { code, summary } = storeValueToMicropubValue(result.value)
       this.request.log.debug(`${prefix}${summary}`)
@@ -98,11 +88,7 @@ export function defMicropubResponse(config: MicropubResponseConfig) {
       const published_location = DEFAULT_PUBLISHED_LOCATION
       this.header('Location', published_location)
 
-      return this.successResponse(code, {
-        title: `Post h=${jf2.h} created`,
-        summary,
-        payload: { location: published_location }
-      })
+      return this.code(code).send({ location: published_location })
     }
   }
 }

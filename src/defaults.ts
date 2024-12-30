@@ -4,8 +4,6 @@ export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
 
 export const AUTHORIZATION_CODE_EXPIRATION = '60 seconds'
 
-// export const AUTHORIZATION_ENDPOINT = 'https://indieauth.com/auth'
-
 export const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
 
 export const CLOUDFLARE_R2_ACCESS_KEY_ID =
@@ -61,5 +59,3 @@ export const SHOULD_USE_SOFT_DELETE = false
 
 export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 export const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN
-
-// export const TOKEN_ENDPOINT = 'https://tokens.indieauth.com/token'

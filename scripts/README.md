@@ -51,7 +51,6 @@ Deploy the public JWKS to Cloudflare R2, and set the private JWKS as [Fly secret
 npx tsm ./scripts/deploy-jwks.ts
 ```
 
-
 ## RelMeAuth
 
 Perform RelMeAuth discovery on a given profile URL.
@@ -80,3 +79,12 @@ Try also with these `me` URLs:
 - https://aaronparecki.com/
 - https://paulrobertlloyd.com/
 - https://www.jvt.me/
+
+Register an IndieAuth client.
+
+```sh
+npx tsm ./scripts/register-client.ts \
+  --me https://giacomodebidda.com/ \
+  --client-id http://localhost:3001/id \
+  --redirect-id http://localhost:3001/auth/callback
+```

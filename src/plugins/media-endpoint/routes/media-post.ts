@@ -13,6 +13,7 @@ import type {
 
 interface Config {
   delete: DeleteContentOrMedia
+  include_error_description: boolean
   upload: UploadMedia
 }
 
@@ -36,7 +37,7 @@ interface Config {
  * @see [Uploading Files](https://micropub.spec.indieweb.org/#uploading-files)
  */
 export const defMediaPost = (config: Config) => {
-  const { delete: deleteMedia, upload } = config
+  const { delete: deleteMedia, include_error_description, upload } = config
 
   const errorIfActionNotAllowed = defErrorIfActionNotAllowed()
 
@@ -46,20 +47,19 @@ export const defMediaPost = (config: Config) => {
 
       if (action !== 'delete') {
         const error_description = `Action '${action}' is not supported by this media endpoint.`
-        throw new InvalidRequestError({ error_description })
+        const err = new InvalidRequestError({ error_description })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       }
-
-      // const store_error = errorIfMethodNotImplementedInStore(store, action)
-      // if (store_error) {
-      //   const { code, body } = store_error
-      //   return reply.errorResponse(code, body)
-      // }
 
       // We should also check the presence of a 'media' scope in the access token
       // claims. But there is already a Fastify hook that does just that.
       const scope_error = errorIfActionNotAllowed(request, action)
       if (scope_error) {
-        throw scope_error
+        return reply
+          .code(scope_error.statusCode)
+          .send(scope_error.payload({ include_error_description }))
       }
 
       const url = (request.body as any).url as string
@@ -69,18 +69,17 @@ export const defMediaPost = (config: Config) => {
       if (result.error) {
         const original = result.error.message
         const error_description = `Cannot delete ${url} from media store: ${original}.`
-        throw new ServerError({ error_description })
+        const err = new ServerError({ error_description })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       } else {
-        const code = 200
+        // const code = 200
         // const url = result.value.url || ''
-        const summary = `${url} deleted`
+        // const summary = `${url} deleted`
         // const payload = result.value.payload
 
-        return reply.successResponse(code, {
-          title: 'Delete success',
-          description: 'Delete success page',
-          summary
-        })
+        return reply.code(200).send({ message: `${url} deleted` })
       }
     }
 
@@ -88,14 +87,20 @@ export const defMediaPost = (config: Config) => {
     try {
       data = await request.file()
       // request.log.warn({ data }, '====== INCOMING DATA ======')
-    } catch (err: any) {
-      const error_description = err.message
-      throw new InvalidRequestError({ error_description })
+    } catch (ex: any) {
+      const error_description = ex.message
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     if (!data) {
       const error_description = 'Multi-part request has no file.'
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     let filename: string
@@ -106,7 +111,10 @@ export const defMediaPost = (config: Config) => {
       filename = value.value
     } else {
       const error_description = `Request has no field 'filename'.`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const contentType = data.mimetype
@@ -114,11 +122,14 @@ export const defMediaPost = (config: Config) => {
     let body: Buffer
     try {
       body = await data.toBuffer()
-    } catch (err: any) {
-      const error_description = err.message
+    } catch (ex: any) {
+      const error_description = ex.message
       // I am not sure it's actually the client's fault if we can't obtain the
       // buffer from the multipart request.
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const result = await upload({ body, contentType, filename })
@@ -126,21 +137,17 @@ export const defMediaPost = (config: Config) => {
     if (result.error) {
       const original = result.error.message
       const error_description = `Cannot upload file ${filename} to media store: ${original}`
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const code = 202 // or 201
     const url = result.value.url
-    const summary = `File uploaded successfully to ${url}`
 
     reply.header('Location', url)
-
-    return reply.successResponse(code, {
-      title: 'Upload success',
-      description: 'Upload success page',
-      summary
-      // payload: result.value.payload
-    })
+    return reply.code(code).send({ message: `File uploaded to ${url}` })
   }
 
   return mediaPost

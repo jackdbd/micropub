@@ -2,11 +2,45 @@
 
 [![CI workflow](https://github.com/jackdbd/micropub/actions/workflows/ci.yaml/badge.svg)](https://github.com/jackdbd/micropub/actions/workflows/ci.yaml)
 
-## Installation
+Packages for implementing an authorization server that supports the [IndieAuth protocol](https://indieauth.spec.indieweb.org/), a [Micropub](https://micropub.spec.indieweb.org/) server and a Micropub client.
 
-```sh
-npm install
-```
+## Packages
+
+### Libraries
+
+| Library | Description |
+| :--- | :--- |
+| [authorization-code-storage-interface](./src/lib/authorization-code-storage-interface/README.md) | Storage interface for authorization codes |
+| [clients-storage-interface](./src/lib/clients-storage-interface/README.md) | Storage interface for IndieAuth clients |
+| [fastify-errors](./src/lib/fastify-errors/README.md) | Consistent errors for OAuth 2.0 / IndieAuth / Micropub servers |
+| [fastify-hooks](./src/lib/fastify-hooks/README.md) | Hooks shared by several Fastify plugins |
+| [fs-storage](./src/lib/fs-storage/README.md) | Storage implementation (filesystem) |
+| [github-storage](./src/lib/github-storage/README.md) | Storage implementation (GitHub repository) |
+| [in-memory-storage](./src/lib/in-memory-storage/README.md) | Storage implementation (in-memory) |
+| [indieauth](./src/lib/indieauth/README.md) | Schemas and functions for working with IndieAuth |
+| [microformats2](./src/lib/microformats2/README.md) | Schemas for microformats2 |
+| [micropub](./src/lib/micropub/README.md) | Schemas and functions for implementing Micropub |
+| [pkce](./src/lib/pkce/README.md) | Schemas and functions for implementing Authorization Code Flow with Proof Key for Code Exchange (PKCE) |
+| [r2-storage](./src/lib/r2-storage/README.md) | Storage implementation (Cloudflare R2) |
+| [relmeauth](./src/lib/relmeauth/README.md) | Schemas and functions for working with RelMeAuth |
+| [schemas](./src/lib/schemas/README.md) | Miscellaneous schemas |
+| [token](./src/lib/token/README.md) | Helper functions for working with JWT tokens |
+| [token-storage-interface](./src/lib/token-storage-interface/README.md) | Storage interface for token |
+
+### Fastify plugins
+
+| Plugin | Description |
+| :--- | :--- |
+| [authorization-endpoint](./src/plugins/authorization-endpoint/README.md) | IndieAuth authorization endpoint |
+| [indieauth-client](./src/plugins/indieauth-client/README.md) | IndieAuth client |
+| [introspection-endpoint](./src/plugins/introspection-endpoint/README.md) | IndieAuth token introspection endpoint |
+| [media-endpoint](./src/plugins/media-endpoint/README.md) | media endpoint |
+| [micropub-client](./src/plugins/micropub-client/README.md) | Micropub client |
+| [micropub-endpoint](./src/plugins/micropub-endpoint/README.md) | micropub endpoint |
+| [revocation-endpoint](./src/plugins/revocation-endpoint/README.md) | IndieAuth token revocation endpoint |
+| [syndicate-endpoint](./src/plugins/syndicate-endpoint/README.md) | syndicate endpoint |
+| [token-endpoint](./src/plugins/token-endpoint/README.md) | IndieAuth token endpoint |
+| [userinfo-endpoint](./src/plugins/userinfo-endpoint/README.md) | IndieAuth userinfo endpoint |
 
 ## Development
 
@@ -14,7 +48,9 @@ In one terminal, start the web server in watch mode:
 
 ```sh
 npm run watch
-# or just: dev
+
+# or, if you use devenv:
+dev
 ```
 
 In another terminal, make some requests to the `/micropub` endpoint.
@@ -37,7 +73,7 @@ curl "${BASE_URL}/micropub" \
 
 If you don't want to copy and paste curl commands in the terminal, you can make requests using API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).
 
-Obtain a valid access token using a micropub client, for example [Quill](https://quill.p3k.io/), [Micropublish](https://micropublish.net/) or [Indiekit](https://getindiekit.com/).
+You can obtain a valid access token using any micropub client, for example [the one in this repository](./src/plugins/micropub-client/README.md), [Quill](https://quill.p3k.io/), [Micropublish](https://micropublish.net/) or [Indiekit](https://getindiekit.com/).
 
 ## Test
 
@@ -106,7 +142,7 @@ curl "${BASE_URL}/micropub" \
 
 The CI takes care of deploying the app to Fly.io every time a new commit gets pushed to the `main` branch of the remote repository.
 
-Whenever you need to update secrets on Fly.io, use these commands (see `devenv.nix`):
+Whenever you need to update secrets on Fly.io, run these commands (see `devenv.nix`):
 
 ```sh
 fly-secrets-set-github
@@ -114,3 +150,7 @@ fly-secrets-set-cloudflare
 fly-secrets-set-secure-session-keys
 fly-secrets-set-telegram
 ```
+
+## TODO
+
+- Use [SimpleWebAuthn](https://github.com/MasterKale/SimpleWebAuthn) (`@simplewebauthn/server` and `@simplewebauthn/browser`) for passkey authentication.

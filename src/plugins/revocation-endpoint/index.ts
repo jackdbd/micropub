@@ -12,13 +12,13 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import { defRevokeJWT } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
-import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/revocation-config-get.js'
 import { defRevocationPost } from './routes/revocation-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
 const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
@@ -30,8 +30,11 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
-    config
+  const {
+    includeErrorDescription: include_error_description,
+    logPrefix: log_prefix,
+    reportAllAjvErrors: report_all_ajv_errors
+  } = config
 
   let ajv: Ajv
   if (config.ajv) {
@@ -43,7 +46,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   const {
-    isBlacklisted,
+    isAccessTokenBlacklisted,
     issuer,
     jwksUrl: jwks_url,
     markTokenAsRevoked,
@@ -63,9 +66,6 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(
     `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
-
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
@@ -95,7 +95,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   // === ROUTES ============================================================= //
   // https://indieauth.spec.indieweb.org/#x7-token-revocation
@@ -114,9 +114,8 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
         validateClaimJti,
         validateAccessTokenNotBlacklisted
       ]
-      // schema: revocation_post_request
     },
-    defRevocationPost({ log_prefix, me, revokeJWT })
+    defRevocationPost({ include_error_description, log_prefix, me, revokeJWT })
   )
 
   done()

@@ -1,5 +1,4 @@
 import type { RouteHandler } from 'fastify'
-import { clientAcceptsHtml } from '../../../lib/fastify-request-predicates/index.js'
 
 export interface Config {
   /**
@@ -39,18 +38,9 @@ export const defIdGet = (config: Config) => {
       logo_uri,
       redirect_uris
     }
-    request.log.debug(metadata, `${log_prefix}client metadata`)
 
-    if (clientAcceptsHtml(request)) {
-      return reply.successResponse(200, {
-        title: 'Client metadata',
-        description: 'Metadata of the IndieAuth/Micropub client',
-        summary: `Metadata of the IndieAuth/Micropub client ID ${client_id}.`,
-        payload: metadata
-      })
-    } else {
-      return reply.code(200).send(metadata)
-    }
+    request.log.debug(metadata, `${log_prefix}client metadata`)
+    return reply.code(200).send(metadata)
   }
 
   return idGet

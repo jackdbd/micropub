@@ -7,14 +7,14 @@ import { table } from 'table'
 import type {
   AddToIssuedTokens,
   GetIssuedTokens,
-  IsBlacklisted,
+  IsAccessTokenBlacklisted,
   MarkTokenAsRevoked,
   RevokeAllTokens
 } from '../src/lib/schemas/index.js'
 import {
-  defIssueJWT,
-  defRevokeJWT,
-  IssueTable
+  type AccessTokenTable,
+  defIssueAccessToken,
+  defRevokeJWT
 } from '../src/lib/token-storage-interface/index.js'
 import * as DEFAULT from '../src/defaults.js'
 
@@ -60,18 +60,18 @@ export const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
 interface StatusConfig {
   implementation: string
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   jtis: string[]
 }
 
 const status = async (config: StatusConfig) => {
-  const { implementation, isBlacklisted, jtis } = config
+  const { implementation, isAccessTokenBlacklisted, jtis } = config
 
   const entries = [['JTI', 'blacklisted?']]
 
   await Promise.all(
     jtis.map(async (jti) => {
-      const { error, value: blacklisted } = await isBlacklisted(jti)
+      const { error, value: blacklisted } = await isAccessTokenBlacklisted(jti)
       assert.ok(!error)
       if (blacklisted) {
         entries.push([jti, 'yes'])
@@ -92,7 +92,7 @@ interface Config {
   revoke_all?: boolean
 }
 
-const atom = defAtom<IssueTable>({})
+const atom = defAtom<AccessTokenTable>({})
 
 if (!fs.existsSync(filepath)) {
   console.log(`Creating fs token issue table at ${filepath}`)
@@ -104,14 +104,16 @@ const run = async (config: Config) => {
 
   let addToIssuedTokens: AddToIssuedTokens
   let getIssuedTokens: GetIssuedTokens
-  let isBlacklisted: IsBlacklisted
+  let isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   let markTokenAsRevoked: MarkTokenAsRevoked
   let revokeAllTokens: RevokeAllTokens
   switch (implementation) {
     case 'fs': {
       addToIssuedTokens = fs_impl.defAddToIssuedTokens({ filepath })
       getIssuedTokens = fs_impl.defGetIssuedTokens({ filepath })
-      isBlacklisted = fs_impl.defIsBlacklisted({ filepath })
+      isAccessTokenBlacklisted = fs_impl.defIsAccessTokenBlacklisted({
+        filepath
+      })
       markTokenAsRevoked = fs_impl.defMarkTokenAsRevoked({ filepath })
       revokeAllTokens = fs_impl.defRevokeAllTokens({ filepath })
       break
@@ -119,7 +121,7 @@ const run = async (config: Config) => {
     case 'mem': {
       addToIssuedTokens = mem_impl.defAddToIssuedTokens({ atom })
       getIssuedTokens = mem_impl.defGetIssuedTokens({ atom })
-      isBlacklisted = mem_impl.defIsBlacklisted({ atom })
+      isAccessTokenBlacklisted = mem_impl.defIsAccessTokenBlacklisted({ atom })
       markTokenAsRevoked = mem_impl.defMarkTokenAsRevoked({ atom })
       revokeAllTokens = mem_impl.defRevokeAllTokens({ atom })
       break
@@ -129,7 +131,12 @@ const run = async (config: Config) => {
     }
   }
 
-  const issueJWT = defIssueJWT({ addToIssuedTokens, expiration, issuer, jwks })
+  const issueJWT = defIssueAccessToken({
+    addToIssuedTokens,
+    expiration,
+    issuer,
+    jwks
+  })
 
   const revokeJWT = defRevokeJWT({
     markTokenAsRevoked,
@@ -169,7 +176,7 @@ const run = async (config: Config) => {
 
   const jtis = value.jtis
 
-  await status({ implementation, jtis, isBlacklisted })
+  await status({ implementation, jtis, isAccessTokenBlacklisted })
 
   if (revoke_all) {
     const { error, value } = await revokeAllTokens({
@@ -179,7 +186,7 @@ const run = async (config: Config) => {
     assert.ok(value)
     console.log(`${EMOJI.ALL_TOKENS_REVOKED} Revoked ALL tokens`)
 
-    await status({ implementation, jtis, isBlacklisted })
+    await status({ implementation, jtis, isAccessTokenBlacklisted })
 
     // Since we cannot inspect the state of the in-memory after this script
     // exits, we print it here.

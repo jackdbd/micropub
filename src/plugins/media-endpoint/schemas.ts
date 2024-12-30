@@ -3,8 +3,8 @@ import type Ajv from 'ajv'
 import { me } from '../../lib/indieauth/index.js'
 import {
   deleteContentOrMedia,
-  isBlacklisted,
-  type IsBlacklisted,
+  isAccessTokenBlacklisted,
+  type IsAccessTokenBlacklisted,
   report_all_ajv_errors,
   uploadMedia
 } from '../../lib/schemas/index.js'
@@ -41,7 +41,11 @@ export const options = Type.Object(
 
     delete: deleteContentOrMedia,
 
-    isBlacklisted,
+    includeErrorDescription: Type.Optional(
+      Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
+    ),
+
+    isAccessTokenBlacklisted,
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
@@ -72,5 +76,5 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
 }

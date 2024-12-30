@@ -11,14 +11,20 @@ import {
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
-import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/introspection-config-get.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
-// import { introspect_post_response_body } from './routes/schemas.js'
 import { options as options_schema, type Options } from './schemas.js'
 
+export {
+  introspection_request_body,
+  type IntrospectionRequestBody,
+  introspection_response_body_success,
+  type IntrospectionResponseBodySuccess
+} from './routes/schemas.js'
+
 const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
@@ -30,8 +36,11 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
 ) => {
   const config = applyToDefaults(defaults, options) as Required<Options>
 
-  const { logPrefix: log_prefix, reportAllAjvErrors: report_all_ajv_errors } =
-    config
+  const {
+    includeErrorDescription: include_error_description,
+    logPrefix: log_prefix,
+    reportAllAjvErrors: report_all_ajv_errors
+  } = config
 
   let ajv: Ajv
   if (config.ajv) {
@@ -42,16 +51,13 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
-  const { isBlacklisted, issuer, jwksUrl: jwks_url } = config
+  const { isAccessTokenBlacklisted, issuer, jwksUrl: jwks_url } = config
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
   fastify.log.debug(
     `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
-
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === DECORATORS ========================================================= //
 
@@ -88,7 +94,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
   // const validateScopeMedia = defValidateScope({ scope: 'introspect' })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   // === ROUTES ============================================================= //
   fastify.get('/introspect/config', defConfigGet(config))
@@ -106,7 +112,8 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     },
     defIntrospectPost({
       ajv,
-      isBlacklisted,
+      include_error_description,
+      isAccessTokenBlacklisted,
       issuer,
       jwks_url,
       log_prefix

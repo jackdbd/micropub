@@ -6,13 +6,11 @@ import {
   ServerError
 } from '../../../lib/fastify-errors/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
-import type {
-  TokenPostConfig as Config,
-  TokenPostRequestBody
-} from './schemas.js'
+import type { TokenPostConfig as Config } from './schemas.js'
+import { type AccessTokenRequestBody } from '../../authorization-endpoint/index.js'
 
 interface RouteGeneric extends RouteGenericInterface {
-  Body: TokenPostRequestBody
+  Body: AccessTokenRequestBody
 }
 
 /**
@@ -21,7 +19,12 @@ interface RouteGeneric extends RouteGenericInterface {
  * @see [Access Token Response - IndieAuth spec](https://indieauth.spec.indieweb.org/#access-token-response)
  */
 export const defTokenPost = (config: Config) => {
-  const { authorization_endpoint, issueJWT, log_prefix } = config
+  const {
+    authorization_endpoint,
+    include_error_description,
+    issueAccessToken,
+    log_prefix
+  } = config
 
   // OAuth 2.0 Access Token Request
   // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
@@ -50,7 +53,10 @@ export const defTokenPost = (config: Config) => {
 
     if (grant_type !== 'authorization_code') {
       const error_description = `This token endpoint only supports the 'authorization_code' grant type.`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     request.log.debug(
@@ -80,54 +86,62 @@ export const defTokenPost = (config: Config) => {
     if (!response.ok) {
       const msg = await errorMessageFromJSONResponse(response)
       const error_description = `Cannot verify authorization code: ${msg}`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     request.log.debug(
       `${log_prefix}the authorization endpoint ${authorization_endpoint} verified the authorization code`
     )
 
-    // After the authorization server verifies that the redirect_uri, client_id
-    // match the code given, the response will include the "me" and "scope"
-    // values.
+    // After the authorization server has verified that "redirect_uri" and
+    // "client_id" match "code", the response will include "me" and "scope".
     // https://indieweb.org/obtaining-an-access-token#Verifying_the_authorization_code
     let auth_res_body: { me: string; scope: string }
     try {
       auth_res_body = await response.json()
-    } catch (err: any) {
-      const error_description = `Cannot parse the JSON response received from the authorization endpoint: ${err.message}.`
+    } catch (ex: any) {
+      const error_description = `Cannot parse the JSON response received from the authorization endpoint: ${ex.message}.`
       // I don't think it's the client's fault if we couldn't parse the response
       // body, so we return a generic server error.
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const { me, scope } = auth_res_body
-    request.log.warn(
-      auth_res_body,
-      `${log_prefix} === response body from authorization endpoint ${authorization_endpoint} ===`
-    )
 
     if (!me) {
       const error_description = `Response body from authorization endpoint does not include 'me'.`
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // If the authorization code was issued with no scope, the token endpoint
     // MUST NOT issue an access token.
     // https://indieauth.spec.indieweb.org/#access-token-response
+    if (!scope) {
+      const error_description = `Response body from authorization endpoint does not include 'scope'`
+      request.log.error(`${log_prefix}${error_description}`)
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
+    }
 
-    // if (!scope) {
-    //   const error_description = `Response body from authorization endpoint does not include 'scope'`
-    //   request.log.error(`${log_prefix}${error_description}`)
-    //   throw new ServerError({ error_description })
-    // }
-
-    const payload = { me, scope }
-    const { error, value } = await issueJWT(payload)
+    const { error, value } = await issueAccessToken({ me, scope })
 
     if (error) {
       const error_description = `Cannot issue JWT: ${error.message}`
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const { claims, jwt, message } = value
@@ -142,8 +156,7 @@ export const defTokenPost = (config: Config) => {
       expires_in = exp - unixTimestampInSeconds()
     }
 
-    // OAuth 2.0 Access Token Response
-    // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.4
+    // https://indieauth.spec.indieweb.org/#profile-information
 
     return reply
       .header('Cache-Control', 'no-store')
@@ -153,6 +166,7 @@ export const defTokenPost = (config: Config) => {
         expires_in,
         me,
         payload: claims,
+        // profile: { email: '', name: '', photo: '', url: '' },
         refresh_token: nanoid(),
         scope,
         token_type: 'Bearer'

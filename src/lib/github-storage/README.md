@@ -1,3 +1,3 @@
 # GitHub storage
 
-todo
+Storage implementation (GitHub repository).

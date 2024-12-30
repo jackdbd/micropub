@@ -5,6 +5,7 @@ import { authorization_endpoint } from '../../lib/oauth2/index.js'
 import {
   addToIssuedTokens,
   type AddToIssuedTokens,
+  include_error_description,
   jwks_private,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
@@ -50,6 +51,11 @@ export const options = Type.Object(
     authorizationEndpoint: Type.Optional({
       ...authorization_endpoint,
       default: DEFAULT.AUTHORIZATION_ENDPOINT
+    }),
+
+    includeErrorDescription: Type.Optional({
+      ...include_error_description,
+      default: DEFAULT.INCLUDE_ERROR_DESCRIPTION
     }),
 
     issuer,

@@ -7,9 +7,6 @@
   <form id="web-sign-in-form" action="{{ authentication_start_path }}" method="get">
     <label for="url">Domain</label>
     <input id="url" type="text" name="me" placeholder="yourdomain.com" />
-
-    <input type="hidden" name="client_id" value="{{ client_id }}" />
-
     <p><button type="submit">Sign In</button></p>
   </form>
 </div>

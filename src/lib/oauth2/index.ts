@@ -19,13 +19,18 @@ export {
   type ErrorUri
 } from './error-response.js'
 
-export { grant_type } from './grant_type.js'
+export { grant_type, type GrantType } from './grant_type.js'
 
 export {
+  access_token,
   authorization_code,
+  expires_in,
   redirect_uri,
+  refresh_token,
   response_mode,
   response_type,
   scope,
-  state
+  state,
+  type ResponseMode,
+  type ResponseType
 } from './schemas.js'

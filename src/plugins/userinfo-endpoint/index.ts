@@ -3,20 +3,13 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-// import { unixTimestampInSeconds } from '../../lib/date.js'
-// import {
-//   defDecodeJwtAndSetClaims,
-//   defValidateAccessTokenNotBlacklisted,
-//   defValidateClaim,
-//   defValidateScope
-// } from '../../lib/fastify-hooks/index.js'
-import responseDecorators from '../response-decorators/index.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defUserinfoGet } from './routes/userinfo-get.js'
 import { options as options_schema, type Options } from './schemas.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 
 const defaults: Partial<Options> = {
+  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
@@ -29,7 +22,8 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   const config = applyToDefaults(defaults, options) as Required<Options>
 
   const {
-    // isBlacklisted,
+    // isAccessTokenBlacklisted,
+    includeErrorDescription: include_error_description,
     logPrefix: log_prefix,
     // me,
     reportAllAjvErrors: report_all_ajv_errors
@@ -45,8 +39,6 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   // === PLUGINS ============================================================ //
-  fastify.register(responseDecorators)
-  fastify.log.debug(`${log_prefix}registered plugin: responseDecorators`)
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
@@ -74,7 +66,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   // const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   // const validateAccessTokenNotBlacklisted =
-  //   defValidateAccessTokenNotBlacklisted({ ajv, isBlacklisted })
+  //   defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   // const validateScopeEmail = defValidateScope({ ajv, scope: 'email' })
 
@@ -100,7 +92,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
       ]
       // schema: userinfo_get_request
     },
-    defUserinfoGet({ log_prefix })
+    defUserinfoGet({ include_error_description, log_prefix })
   )
 
   done()

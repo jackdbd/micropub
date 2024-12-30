@@ -1,31 +1,35 @@
 import { Static, Type } from '@sinclair/typebox'
 import { me } from '../../../lib/indieauth/index.js'
 import { exp, iat, iss, jti } from '../../../lib/jwt/index.js'
-import { scope } from '../../../lib/oauth2/index.js'
+import {
+  access_token,
+  refresh_token,
+  scope
+} from '../../../lib/oauth2/index.js'
 
 const active = Type.Boolean({
   description: `Boolean indicator of whether or not the presented token is currently active.`,
   title: 'active'
 })
 
-export const introspect_post_request_body = Type.Object(
+export const introspection_request_body = Type.Object(
   {
-    token: Type.String({ minLength: 1 })
+    token: Type.Union([access_token, refresh_token])
   },
   {
-    $id: 'introspect-post-request',
-    // additionalProperties: true,
+    $id: 'introspection-request-body',
     additionalProperties: false,
     description: 'The body sent by the client with a POST request.',
     title: 'introspect POST request'
   }
 )
 
-export type IntrospectPostRequestBody = Static<
-  typeof introspect_post_request_body
->
+export type IntrospectionRequestBody = Static<typeof introspection_request_body>
 
-export const introspect_post_response_body = Type.Object(
+/**
+ * [Introspection Response](https://www.rfc-editor.org/rfc/rfc7662#section-2.2)
+ */
+export const introspection_response_body_success = Type.Object(
   {
     active,
     exp,
@@ -36,8 +40,7 @@ export const introspect_post_response_body = Type.Object(
     scope
   },
   {
-    $id: 'introspect-post-response',
-    // additionalProperties: true,
+    $id: 'introspection-response-body-success',
     additionalProperties: false,
     description:
       'The JSON response body that the server sends to a client upon receiving a valid POST request.',
@@ -45,6 +48,6 @@ export const introspect_post_response_body = Type.Object(
   }
 )
 
-export type IntrospectPostResponseBody = Static<
-  typeof introspect_post_response_body
+export type IntrospectionResponseBodySuccess = Static<
+  typeof introspection_response_body_success
 >

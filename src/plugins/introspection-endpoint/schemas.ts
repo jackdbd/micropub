@@ -2,8 +2,8 @@ import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import { issuer } from '../../lib/indieauth/index.js'
 import {
-  isBlacklisted,
-  type IsBlacklisted,
+  isAccessTokenBlacklisted,
+  type IsAccessTokenBlacklisted,
   jwks_url,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
@@ -15,7 +15,11 @@ export const options = Type.Object(
 
     ajv: Type.Optional(Type.Any()),
 
-    isBlacklisted,
+    includeErrorDescription: Type.Optional(
+      Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
+    ),
+
+    isAccessTokenBlacklisted,
 
     issuer,
 
@@ -37,5 +41,5 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
 }

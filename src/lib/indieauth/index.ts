@@ -28,6 +28,8 @@ export {
   jwks_uri,
   logo_uri,
   me,
+  profile,
+  type Profile,
   redirect_uri,
   redirect_uris,
   registration_endpoint,

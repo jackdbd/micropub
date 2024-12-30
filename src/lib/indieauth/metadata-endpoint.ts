@@ -1,7 +1,7 @@
 import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
 import { linkHeaderToLinkHref } from './parse-link-header.js'
 import { htmlToLinkHref } from './parse-link-html.js'
-import { canonicalUrl } from '../url-canonicalization/index.js'
+import { canonicalUrl } from '../url-canonicalization.js'
 
 /**
  * Discovers the user's indieauth-metadata endpoint by fetching the

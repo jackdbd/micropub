@@ -1,52 +1,67 @@
 import { Static, Type } from '@sinclair/typebox'
+import { client_id, me, redirect_uri } from '../indieauth/index.js'
 import { exp } from '../jwt/index.js'
-import { failure } from '../schemas/failure.js'
+import { scope } from '../oauth2/index.js'
 
-const success = Type.Object({
-  error: Type.Optional(Type.Undefined()),
-  value: Type.Object({ message: Type.Optional(Type.String({ minLength: 1 })) })
-})
-
-const result_promise = Type.Promise(Type.Union([failure, success]))
-
-// TODO: see OAuth 2.0 and IndieAuth to know how this authorization code is defined.
-const code = Type.String({
+/**
+ * Authorization code issued by the authorization endpoint.
+ *
+ * OAuth 2.0 does not define a specific format for the authorization code issued
+ * by the authorization endpoint. IndieAuth specifies that the authorization
+ * code should be a single-use, unguessable, random string. However, it does not
+ * prescribe a particular length, encoding, or algorithm to generate the code.
+ */
+export const code = Type.String({
   minLength: 10,
   maxLength: 128,
-  description: 'Authorization code. Should be single-use.'
+  description:
+    'Authorization code issued by the authorization endpoint. It should be a single-use, unguessable, random string.'
 })
 
-const payload = Type.Object({ code, exp })
+/**
+ * Authorization code issued by the authorization endpoint.
+ */
+export type Code = Static<typeof code>
 
-export type Payload = Static<typeof payload>
+/**
+ * Record of an issued authorization code. It contains details about the client
+ * and the user the code was issued for, ensuring the code can't be used outside
+ * its intended context. The `used` flag should be used to prevent replay
+ * attacks.
+ */
+export const code_record = Type.Object(
+  {
+    client_id,
+    exp,
+    me,
+    redirect_uri,
+    scope,
+    used: Type.Optional(Type.Boolean())
+  },
+  { description: 'Record of an issued authorization code' }
+)
 
-const addToIssuedCodes_ = Type.Function([payload], result_promise)
+export type CodeRecord = Static<typeof code_record>
 
-export type AddToIssuedCodes = Static<typeof addToIssuedCodes_>
-
-export const addToIssuedCodes = Type.Any()
-
-const issueCode_ = Type.Function([payload], result_promise)
-
-export type IssueCode = Static<typeof issueCode_>
-
-export const issueCode = Type.Any()
-
-const DESCRIPTION = 'Mark an authorization code as used.'
-
-export const markCodeAsUsed_ = Type.Function([code], result_promise, {
-  $id: 'mark-code-as-used!',
-  description: DESCRIPTION
+export const code_table = Type.Record(code, code_record, {
+  description:
+    'Data structure that contains all authorization codes that are not yet expired.'
 })
 
-export type MarkCodeAsUsed = Static<typeof markCodeAsUsed_>
+/**
+ * Data structure that contains all authorization codes that are not yet expired.
+ * Expired authorization codes should be removed from this table periodically.
+ */
+export type CodeTable = Static<typeof code_table>
 
-export const markCodeAsUsed = Type.Any({
-  description: DESCRIPTION
-})
+export type GetRecord = (
+  code: Code
+) => Promise<
+  | { error: Error; value: undefined }
+  | { error: undefined; value: CodeRecord | undefined }
+>
 
-// const verifyCode_ = Type.Function([code], result_promise)
-
-// export type VerifyCode = Static<typeof verifyCode_>
-
-// export const verifyCode = Type.Any()
+export type SetRecord = (
+  code: Code,
+  record: CodeRecord
+) => Promise<{ error: Error } | { error: undefined }>

@@ -1,5 +1,5 @@
 import type { AddToIssuedTokens } from '../schemas/index.js'
-import type { IssueTable } from '../token-storage-interface/index.js'
+import type { AccessTokenTable } from '../token-storage-interface/index.js'
 import { readJSON, writeJSON } from './json.js'
 
 interface Config {
@@ -10,9 +10,8 @@ export const defAddToIssuedTokens = (config: Config) => {
   const { filepath } = config
 
   const addToIssuedTokens: AddToIssuedTokens = async (claims) => {
-    const { error: read_error, value: table } = await readJSON<IssueTable>(
-      filepath
-    )
+    const { error: read_error, value: table } =
+      await readJSON<AccessTokenTable>(filepath)
 
     if (read_error) {
       return { error: read_error }

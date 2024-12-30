@@ -1,3 +1,3 @@
 # fs storage
 
-todo
+Storage implementation (filesystem).

@@ -1,9 +1,9 @@
 import type { FastifyRequest } from 'fastify'
 import { unixTimestampInSeconds } from '../date.js'
-import type { IsBlacklisted } from '../schemas/index.js'
+import type { IsAccessTokenBlacklisted } from '../schemas/index.js'
 
 export interface Config {
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   logPrefix: string
 }
 
@@ -12,7 +12,7 @@ export interface Config {
 // is a bit different and I cannot call my isBlacklisted function.
 
 export const defIsAuthenticated = (config: Config) => {
-  const { isBlacklisted } = config
+  const { isAccessTokenBlacklisted } = config
   const log_refix = config.logPrefix ?? 'is-authenticated? '
 
   return async function (request: FastifyRequest) {
@@ -37,7 +37,9 @@ export const defIsAuthenticated = (config: Config) => {
     request.log.debug(
       `${log_refix}checking if jti '${claims.jti}' is blacklisted`
     )
-    const { error, value: blacklisted } = await isBlacklisted(claims.jti)
+    const { error, value: blacklisted } = await isAccessTokenBlacklisted(
+      claims.jti
+    )
 
     if (error) {
       const error_description = error.message
@@ -54,7 +56,5 @@ export const defIsAuthenticated = (config: Config) => {
     }
 
     return true
-
-    // const access_token = request.session.get('access_token')
   }
 }

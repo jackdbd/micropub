@@ -56,15 +56,17 @@ export const githubUser = async (config: Config) => {
 
   if (!response.ok) {
     const error_description = `Error fetching GitHub profile.`
-    throw new UnauthorizedError({ error_description })
+    return { error: new UnauthorizedError({ error_description }) }
   }
 
   try {
-    return (await response.json()) as GitHubUser
-  } catch (err: any) {
-    const error_description = `Cannot parse the JSON response received from the GitHub API: ${err.message}.`
+    const value: GitHubUser = await response.json()
+    return { value }
+  } catch (ex: any) {
+    const original = ex.message
+    const error_description = `Cannot parse the JSON response received from the GitHub API: ${original}.`
     // I don't think it's the client's fault if we couldn't parse the response
     // body, so we return a generic server error.
-    throw new ServerError({ error_description })
+    return { error: new ServerError({ error_description }) }
   }
 }

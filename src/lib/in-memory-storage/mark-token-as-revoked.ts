@@ -1,9 +1,9 @@
 import type { Atom } from '@thi.ng/atom'
 import type { MarkTokenAsRevoked } from '../schemas/index.js'
-import type { IssueTable } from '../token-storage-interface/index.js'
+import type { AccessTokenTable } from '../token-storage-interface/index.js'
 
 interface Config {
-  atom: Atom<IssueTable>
+  atom: Atom<AccessTokenTable>
 }
 
 // TODO: make this function (and the associated interface) accept a list of IDs,

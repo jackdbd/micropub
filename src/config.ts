@@ -67,8 +67,8 @@ export interface Config {
   cloudflare_r2_secret_access_key: string
   github_oauth_client_id: string
   github_oauth_client_secret: string
-  github_oauth_auth_start: string
-  github_oauth_auth_callback: string
+  github_auth_start_path: string
+  github_auth_redirect_path: string
   github_owner: string
   github_repo: string
   github_token: string
@@ -211,6 +211,7 @@ export const defConfig = async (): Promise<Config> => {
   const indieauth_client_logo_uri = 'https://indiebookclub.biz/images/book.svg'
   const indieauth_client_name = 'Zephyr'
   const indieauth_client_uri = base_url
+  // authorization callback route
   const indieauth_client_redirect_uris = [`${base_url}/auth/callback`]
 
   const issuer = base_url
@@ -237,8 +238,8 @@ export const defConfig = async (): Promise<Config> => {
 
   const github_oauth_client_id = process.env.GITHUB_OAUTH_APP_CLIENT_ID!
   const github_oauth_client_secret = process.env.GITHUB_OAUTH_APP_CLIENT_SECRET!
-  const github_oauth_auth_start = '/auth/github'
-  const github_oauth_auth_callback = `${base_url}/auth/github/callback`
+  const github_auth_start_path = '/auth/github'
+  const github_auth_redirect_path = '/auth/github/callback'
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -260,8 +261,8 @@ export const defConfig = async (): Promise<Config> => {
     cloudflare_r2_secret_access_key: DEFAULT.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
     github_oauth_client_id,
     github_oauth_client_secret,
-    github_oauth_auth_start,
-    github_oauth_auth_callback,
+    github_auth_start_path,
+    github_auth_redirect_path,
     github_owner: DEFAULT.GITHUB_OWNER!,
     github_repo: DEFAULT.GITHUB_REPO!,
     github_token: DEFAULT.GITHUB_TOKEN!,

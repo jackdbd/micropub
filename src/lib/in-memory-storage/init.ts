@@ -1,11 +1,16 @@
 import { defAtom } from '@thi.ng/atom'
-import { IssueTable as IssueTableCodes } from '../../lib/authorization-code-storage-interface/index.js'
-import { IssueTable as IssueTableTokens } from '../../lib/token-storage-interface/index.js'
+import type { CodeTable } from '../../lib/authorization-code-storage-interface/index.js'
+import type { AccessTokenTable } from '../../lib/token-storage-interface/index.js'
+import type { ClientTable } from '../../lib/clients-storage-interface/index.js'
 
-export const initCodesStorage = async () => {
-  return defAtom<IssueTableCodes>({})
+export const initAuthorizationCodesStorage = async () => {
+  return defAtom<CodeTable>({})
 }
 
-export const initTokensStorage = async () => {
-  return defAtom<IssueTableTokens>({})
+export const initClientsStorage = async () => {
+  return defAtom<ClientTable>({})
+}
+
+export const initAccessTokensStorage = async () => {
+  return defAtom<AccessTokenTable>({})
 }

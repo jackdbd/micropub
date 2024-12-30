@@ -1,3 +1,3 @@
 # In-memory Storage
 
-todo
+Storage implementation (in-memory).

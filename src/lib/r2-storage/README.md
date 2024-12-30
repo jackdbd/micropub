@@ -1,3 +1,3 @@
 # R2 storage
 
-todo
+Storage implementation (Cloudflare R2).

@@ -18,12 +18,7 @@ export const defMicropubGet = (config: Config) => {
       'syndicate-to': syndicate_to
     }
 
-    return reply.successResponse(200, {
-      title: 'Micropub config',
-      description: 'Configuration page for this micropub endpoint.',
-      summary: 'Configuration for this micropub endpoint.',
-      payload
-    })
+    return reply.code(200).send(payload)
   }
 
   return micropubGet

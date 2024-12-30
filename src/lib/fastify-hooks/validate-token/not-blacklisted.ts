@@ -29,7 +29,7 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
     accessTokenSessionKey: access_token_session_key,
     header,
     headerKey: header_key,
-    isBlacklisted,
+    isAccessTokenBlacklisted,
     logPrefix: prefix,
     reportAllAjvErrors: allErrors,
     sessionKey: session_key
@@ -87,7 +87,8 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
       `${prefix}validating that token ID ${jti} is not blacklisted`
     )
 
-    const { error: black_err, value: blacklisted } = await isBlacklisted(jti)
+    const { error: black_err, value: blacklisted } =
+      await isAccessTokenBlacklisted(jti)
 
     if (black_err) {
       const error_description = black_err.message

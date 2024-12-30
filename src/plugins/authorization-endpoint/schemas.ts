@@ -1,19 +1,24 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import {
-  addToIssuedCodes,
-  markCodeAsUsed,
-  type AddToIssuedCodes,
-  type MarkCodeAsUsed
+  markAuthorizationCodeAsUsed,
+  retrieveAuthorizationCode,
+  storeAuthorizationCode,
+  type MarkAuthorizationCodeAsUsed,
+  type StoreAuthorizationCode,
+  type RetrieveAuthorizationCode
 } from '../../lib/authorization-code-storage-interface/index.js'
 import { issuer } from '../../lib/indieauth/index.js'
-import { report_all_ajv_errors } from '../../lib/schemas/index.js'
+import {
+  include_error_description,
+  report_all_ajv_errors
+} from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
 
-// TODO: I am not sure it's a good idea to show the expiration times for the
-// access token and the refresh token, because they are set by the token
-// endpoint. Showing their expiration times in the consent screen implies that
-// this authorization endpoint has some knowledge about the token endpoint.
+// I am torn about including, in the consent screen, the expiration times for
+// the access token and the refresh token. Showing their expiration times in the
+// consent screen implies that the authorization endpoint has some knowledge
+// about the token endpoint.
 
 export const options = Type.Object(
   {
@@ -23,14 +28,11 @@ export const options = Type.Object(
      *
      * @example '15 minutes'
      */
-    accessTokenExpiration: Type.String({ minLength: 1 }),
+    // accessTokenExpiration: Type.String({ minLength: 1 }),
 
     /**
-     * Function that will be called to persist an authorization code to some
-     * storage (e.g. a database).
+     * AJV instance, for validation.
      */
-    addToIssuedCodes,
-
     ajv: Type.Optional(Type.Any()),
 
     /**
@@ -39,7 +41,18 @@ export const options = Type.Object(
      *
      * @example '60 seconds'
      */
-    authorizationCodeExpiration: Type.String({ minLength: 1 }),
+    authorizationCodeExpiration: Type.String({
+      default: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
+      minLength: 1
+    }),
+
+    /**
+     * Whether to include an `error_description` property in all error responses.
+     */
+    includeErrorDescription: Type.Optional({
+      ...include_error_description,
+      default: DEFAULT.INCLUDE_ERROR_DESCRIPTION
+    }),
 
     /**
      * Issuer identifier. This is optional in OAuth 2.0 servers, but required in
@@ -53,10 +66,17 @@ export const options = Type.Object(
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
     /**
-     * Function that will be called to mark a previously generated authorization
-     * code as used (an authorization code should be single-use only).
+     * Function that marks as used a previously generated authorization code (an
+     * authorization code should be single-use only).
      */
-    markAuthorizationCodeAsUsed: markCodeAsUsed,
+    markAuthorizationCodeAsUsed,
+
+    redirectUrlOnDeny: Type.Optional(
+      Type.String({
+        default: DEFAULT.REDIRECT_URL_ON_DENY,
+        minLength: 1
+      })
+    ),
 
     /**
      * Human-readable expiration time for the refresh token. It will be shown in
@@ -64,12 +84,26 @@ export const options = Type.Object(
      *
      * @example '30 days'
      */
-    refreshTokenExpiration: Type.String({ minLength: 1 }),
+    // refreshTokenExpiration: Type.String({ minLength: 1 }),
 
+    /**
+     * Whether to include all AJV errors when validation fails.
+     */
     reportAllAjvErrors: Type.Optional({
       ...report_all_ajv_errors,
       default: DEFAULT.REPORT_ALL_AJV_ERRORS
-    })
+    }),
+
+    /**
+     * Function that retrieves an authorization code from some storage.
+     */
+    retrieveAuthorizationCode,
+
+    /**
+     * Function that persists an authorization code to some storage (e.g. a
+     * database).
+     */
+    storeAuthorizationCode
   },
   {
     $id: 'fastify-authorization-endpoint-options',
@@ -79,7 +113,8 @@ export const options = Type.Object(
 )
 
 export interface Options extends Static<typeof options> {
-  addToIssuedCodes: AddToIssuedCodes
   ajv?: Ajv
-  markAuthorizationCodeAsUsed: MarkCodeAsUsed
+  markAuthorizationCodeAsUsed: MarkAuthorizationCodeAsUsed
+  retrieveAuthorizationCode: RetrieveAuthorizationCode
+  storeAuthorizationCode: StoreAuthorizationCode
 }

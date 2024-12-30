@@ -7,8 +7,8 @@ import {
   type Create,
   deleteContentOrMedia,
   type DeleteContentOrMedia,
-  isBlacklisted,
-  type IsBlacklisted,
+  isAccessTokenBlacklisted,
+  type IsAccessTokenBlacklisted,
   syndicate_to_item,
   report_all_ajv_errors,
   undelete,
@@ -26,7 +26,11 @@ export const options = Type.Object(
 
     delete: deleteContentOrMedia,
 
-    isBlacklisted,
+    includeErrorDescription: Type.Optional(
+      Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
+    ),
+
+    isAccessTokenBlacklisted,
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
@@ -67,7 +71,7 @@ export interface Options extends Static<typeof options> {
   ajv?: Ajv
   create: Create
   delete: DeleteContentOrMedia
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   undelete?: Undelete
   update: Update
 }

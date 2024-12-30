@@ -6,14 +6,16 @@ import {
   InvalidTokenError,
   ServerError
 } from '../../../lib/fastify-errors/index.js'
-import type { IsBlacklisted } from '../../../lib/schemas/index.js'
-import { isExpired, safeDecode, verify } from '../../../lib/token/index.js'
+import { isExpired } from '../../../lib/predicates.js'
+import type { IsAccessTokenBlacklisted } from '../../../lib/schemas/index.js'
+import { safeDecode, verify } from '../../../lib/token/index.js'
 import { conformResult } from '../../../lib/validators.js'
-import { introspect_post_response_body } from './schemas.js'
+import { introspection_response_body_success } from './schemas.js'
 
 export interface Config {
   ajv: Ajv
-  isBlacklisted: IsBlacklisted
+  include_error_description: boolean
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   issuer: string
   jwks_url: any // URL
   log_prefix: string
@@ -32,16 +34,26 @@ interface RouteGeneric extends RouteGenericInterface {
 /**
  * Introspects a token.
  *
- * @see [OAuth 2.0 Token Introspection (RFC7662)](https://www.rfc-editor.org/rfc/rfc7662)
+ * @see [OAuth 2.0 Token Introspection (RFC 7662)](https://www.rfc-editor.org/rfc/rfc7662)
  */
 export const defIntrospectPost = (config: Config) => {
-  const { ajv, isBlacklisted, issuer, jwks_url, log_prefix, max_token_age } =
-    config
+  const {
+    ajv,
+    include_error_description,
+    isAccessTokenBlacklisted,
+    issuer,
+    jwks_url,
+    log_prefix,
+    max_token_age
+  } = config
 
   const introspectPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
       const error_description = 'Request has no body.'
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     const { token: jwt, token_type_hint } = request.body
@@ -49,12 +61,18 @@ export const defIntrospectPost = (config: Config) => {
     // TODO: allow to introspect refresh tokens?
     if (token_type_hint === 'refresh_token') {
       const error_description = `Introspecting refresh tokens is not supported by this introspection endpoint.`
-      throw new InvalidRequestError({ error_description })
+      const err = new InvalidRequestError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     if (!jwt) {
       const error_description = 'The `token` parameter is missing.'
-      throw new InvalidTokenError({ error_description })
+      const err = new InvalidTokenError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
     // const header = jose.decodeProtectedHeader(jwt)
@@ -63,7 +81,7 @@ export const defIntrospectPost = (config: Config) => {
     // SECURITY CONSIDERATIONS
     // https://www.rfc-editor.org/rfc/rfc7662#section-4
 
-    // RFC7662 says that if the token has been signed, the authorization server
+    // RFC 7662 says that if the token has been signed, the authorization server
     // MUST validate the signature. This means that just decoding the token is
     // not enough. We need to verify it.
     const { value: verified_claims } = await verify({
@@ -85,20 +103,23 @@ export const defIntrospectPost = (config: Config) => {
         // Having a verify_error is fine. E.g. if the token in the request body
         // is expired, we get a verify_error but NOT a decode_error.
         const error_description = decode_error.message
-        throw new InvalidTokenError({ error_description })
+        const err = new InvalidTokenError({ error_description })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       }
     }
 
     const { exp, jti } = claims
 
-    // RFC7662 says that if the token can expire, the authorization server MUST
+    // RFC 7662 says that if the token can expire, the authorization server MUST
     // determine whether or not the token has expired.
     let expired = false
     if (exp) {
       expired = isExpired(exp)
     }
 
-    // RFC7662 says that if the token can be revoked after it was issued, the
+    // RFC 7662 says that if the token can be revoked after it was issued, the
     // authorization server MUST determine whether or not such a revocation has
     // taken place.
     let blacklisted = false
@@ -106,11 +127,14 @@ export const defIntrospectPost = (config: Config) => {
       request.log.debug(
         `${log_prefix}check whether token ID ${jti} is blacklisted`
       )
-      const { error: black_err, value } = await isBlacklisted(jti)
+      const { error: black_err, value } = await isAccessTokenBlacklisted(jti)
 
       if (black_err) {
         const error_description = `Cannot determine whether token ID ${jti} is blacklisted or not: ${black_err.message}`
-        throw new ServerError({ error_description })
+        const err = new ServerError({ error_description })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       }
 
       blacklisted = value
@@ -123,21 +147,20 @@ export const defIntrospectPost = (config: Config) => {
     const { error: conform_error } = conformResult(
       { prefix: log_prefix },
       ajv,
-      introspect_post_response_body,
+      introspection_response_body_success,
       response_body
     )
 
     if (conform_error) {
       const preface = `The response the server was about to send to the client does not conform to the expected schema. This is probably a bug. Here are the details of the error:`
       const error_description = `${preface} ${conform_error.message}`
-      throw new ServerError({ error_description })
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
-    return reply.successResponse(200, {
-      title: 'Token introspection',
-      summary: active ? `Token is active.` : `Token is not active.`,
-      payload: response_body
-    })
+    return reply.code(200).send(response_body)
   }
 
   return introspectPost

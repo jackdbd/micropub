@@ -1,9 +1,9 @@
 import type { Atom } from '@thi.ng/atom'
 import type { AddToIssuedTokens } from '../schemas/index.js'
-import type { IssueTable } from '../token-storage-interface/index.js'
+import type { AccessTokenTable } from '../token-storage-interface/index.js'
 
 interface Config {
-  atom: Atom<IssueTable>
+  atom: Atom<AccessTokenTable>
 }
 
 export const defAddToIssuedTokens = (config: Config) => {

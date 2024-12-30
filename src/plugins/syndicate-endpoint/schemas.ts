@@ -4,8 +4,8 @@ import { me } from '../../lib/indieauth/index.js'
 import {
   get,
   type Get,
-  isBlacklisted,
-  type IsBlacklisted,
+  isAccessTokenBlacklisted,
+  type IsAccessTokenBlacklisted,
   publishedUrlToStorageLocation,
   type PublishedUrlToStorageLocation,
   report_all_ajv_errors,
@@ -22,7 +22,11 @@ export const options = Type.Object({
 
   get,
 
-  isBlacklisted,
+  includeErrorDescription: Type.Optional(
+    Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
+  ),
+
+  isAccessTokenBlacklisted,
 
   logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
@@ -43,7 +47,7 @@ export const options = Type.Object({
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
   get: Get
-  isBlacklisted: IsBlacklisted
+  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   update: Update
 }

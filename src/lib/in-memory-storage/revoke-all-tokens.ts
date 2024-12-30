@@ -1,9 +1,9 @@
 import type { Atom } from '@thi.ng/atom'
 import type { RevokeAllTokens } from '../schemas/index.js'
-import type { IssueTable } from '../token-storage-interface/index.js'
+import type { AccessTokenTable } from '../token-storage-interface/index.js'
 
 interface Config {
-  atom: Atom<IssueTable>
+  atom: Atom<AccessTokenTable>
 }
 
 export const defRevokeAllTokens = (config: Config) => {
@@ -22,7 +22,7 @@ export const defRevokeAllTokens = (config: Config) => {
           rec.revocation_reason = opt.revocation_reason
         }
         return { ...table, [jti]: rec }
-      }, {} as IssueTable)
+      }, {} as AccessTokenTable)
     })
 
     return { value: { message: `All tokens revoked` } }
