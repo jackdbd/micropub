@@ -1,5 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
-import { me, profile } from '../../../lib/indieauth/index.js'
+import type Ajv from 'ajv'
+import { issuer, me, profile } from '../../../lib/indieauth/index.js'
 import { exp, iat, iss, jti, jwt } from '../../../lib/jwt/index.js'
 import {
   authorization_endpoint,
@@ -7,21 +8,35 @@ import {
   refresh_token,
   scope
 } from '../../../lib/oauth2/index.js'
-import { include_error_description } from '../../../lib/schemas/index.js'
 import {
-  issueAccessToken,
-  type IssueAccessToken
+  include_error_description,
+  jwks_private,
+  report_all_ajv_errors
+} from '../../../lib/schemas/index.js'
+import {
+  storeAccessToken,
+  type StoreAccessToken
 } from '../../../lib/token-storage-interface/index.js'
+import { DEFAULT } from '../constants.js'
 
 export const token_post_config = Type.Object({
+  access_token_expiration: Type.String({ minLength: 1 }),
+  ajv: Type.Optional(Type.Any()),
   authorization_endpoint,
   include_error_description,
-  issueAccessToken,
-  log_prefix: Type.String()
+  issuer,
+  jwks: jwks_private,
+  log_prefix: Type.String(),
+  report_all_ajv_errors: Type.Optional({
+    ...report_all_ajv_errors,
+    default: DEFAULT.REPORT_ALL_AJV_ERRORS
+  }),
+  storeAccessToken
 })
 
 export interface TokenPostConfig extends Static<typeof token_post_config> {
-  issueAccessToken: IssueAccessToken
+  ajv?: Ajv
+  storeAccessToken: StoreAccessToken
 }
 
 /**

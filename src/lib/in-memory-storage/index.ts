@@ -1,5 +1,3 @@
-export { defAddToIssuedTokens } from './add-to-issued-tokens.js'
-
 export { defGetIssuedTokens } from './get-issued-tokens.js'
 
 export {
@@ -19,5 +17,7 @@ export { defRegisterClient } from './register-client.js'
 export { defRetrieveAuthorizationCode } from './retrieve-authorization-code.js'
 
 export { defRevokeAllTokens } from './revoke-all-tokens.js'
+
+export { defStoreAccessToken } from './store-access-token.js'
 
 export { defStoreAuthorizationCode } from './store-authorization-code.js'

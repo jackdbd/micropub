@@ -1,6 +1,6 @@
 import type Ajv from 'ajv'
-import { defStoreAuthorizationCode as defImplementation } from '../authorization-code-storage-interface/index.js'
-import { defStorage } from './code-storage.js'
+import { defStoreAccessToken as defImplementation } from '../token-storage-interface/index.js'
+import { defStorage } from './token-storage.js'
 
 interface Config {
   ajv?: Ajv
@@ -9,7 +9,7 @@ interface Config {
   report_all_ajv_errors: boolean
 }
 
-export const defStoreAuthorizationCode = (config: Config) => {
+export const defStoreAccessToken = (config: Config) => {
   const { ajv, filepath, prefix, report_all_ajv_errors } = config
 
   const { getRecord, setRecord } = defStorage({ filepath })

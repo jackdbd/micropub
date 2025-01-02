@@ -1,3 +1,5 @@
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
@@ -5,9 +7,16 @@ import {
   InvalidRequestError,
   ServerError
 } from '../../../lib/fastify-errors/index.js'
+import {
+  AccessTokenClaims,
+  randomKid,
+  safeDecode,
+  sign
+} from '../../../lib/token/index.js'
 import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
-import type { TokenPostConfig as Config } from './schemas.js'
+import { throwIfDoesNotConform } from '../../../lib/validators.js'
 import { type AccessTokenRequestBody } from '../../authorization-endpoint/index.js'
+import { token_post_config, type TokenPostConfig } from './schemas.js'
 
 interface RouteGeneric extends RouteGenericInterface {
   Body: AccessTokenRequestBody
@@ -16,15 +25,36 @@ interface RouteGeneric extends RouteGenericInterface {
 /**
  * Verifies the authorization code and issues an access token.
  *
+ * To be able to revoke tokens, we must keep track of the tokens we issued. We
+ * do this by assigning a unique identifier to each token we issue, and by
+ * storing this identifier—along with some other piece of information—in some
+ * persistent storage (e.g. a database, a service that provides object storage).
+ *
  * @see [Access Token Response - IndieAuth spec](https://indieauth.spec.indieweb.org/#access-token-response)
  */
-export const defTokenPost = (config: Config) => {
+export const defTokenPost = (config: TokenPostConfig) => {
   const {
+    access_token_expiration,
     authorization_endpoint,
     include_error_description,
-    issueAccessToken,
-    log_prefix
+    issuer,
+    jwks,
+    log_prefix,
+    report_all_ajv_errors,
+    storeAccessToken
   } = config
+
+  let ajv: Ajv
+  if (config.ajv) {
+    ajv = config.ajv
+  } else {
+    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), [
+      'email',
+      'uri'
+    ])
+  }
+
+  throwIfDoesNotConform({ prefix: log_prefix }, ajv, token_post_config, config)
 
   // OAuth 2.0 Access Token Request
   // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.3
@@ -134,21 +164,56 @@ export const defTokenPost = (config: Config) => {
         .send(err.payload({ include_error_description }))
     }
 
-    const { error, value } = await issueAccessToken({ me, scope })
+    const { error: kid_error, value: kid } = randomKid(jwks.keys)
 
-    if (error) {
-      const error_description = `Cannot issue JWT: ${error.message}`
+    if (kid_error) {
+      const error_description = kid_error.message
       const err = new ServerError({ error_description })
       return reply
         .code(err.statusCode)
         .send(err.payload({ include_error_description }))
     }
 
-    const { claims, jwt, message } = value
+    const { error: sign_error, value: access_token } = await sign({
+      expiration: access_token_expiration,
+      issuer,
+      jwks,
+      kid,
+      payload: { me, scope }
+    })
 
-    if (message) {
-      request.log.debug(`${log_prefix}${message}`)
+    if (sign_error) {
+      const error_description = sign_error.message
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
+
+    // We need to decode the token we have just issued because we need to store
+    // a few of its claims in the issue table.
+    const { error: decode_error, value: claims } =
+      await safeDecode<AccessTokenClaims>(access_token)
+
+    if (decode_error) {
+      const error_description = decode_error.message
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
+    }
+
+    const { error } = await storeAccessToken(claims)
+
+    if (error) {
+      const error_description = error.message
+      const err = new ServerError({ error_description })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
+    }
+
+    request.log.debug(`${log_prefix}issued access token`)
 
     const { exp } = claims
     let expires_in: number | undefined
@@ -162,7 +227,7 @@ export const defTokenPost = (config: Config) => {
       .header('Cache-Control', 'no-store')
       .header('Pragma', 'no-cache')
       .send({
-        access_token: jwt,
+        access_token,
         expires_in,
         me,
         payload: claims,

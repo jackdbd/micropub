@@ -10,7 +10,7 @@ import {
   defValidateAccessTokenNotBlacklisted,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
-import { defRevokeJWT } from '../../lib/token-storage-interface/index.js'
+import { defRevokeAccessToken } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/revocation-config-get.js'
@@ -54,7 +54,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
     me
   } = config
 
-  const revokeJWT = defRevokeJWT({
+  const revokeAccessToken = defRevokeAccessToken({
     issuer,
     jwks_url,
     markTokenAsRevoked,
@@ -115,7 +115,12 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
         validateAccessTokenNotBlacklisted
       ]
     },
-    defRevocationPost({ include_error_description, log_prefix, me, revokeJWT })
+    defRevocationPost({
+      include_error_description,
+      log_prefix,
+      me,
+      revokeAccessToken
+    })
   )
 
   done()

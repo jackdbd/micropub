@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import type { ValidateFunction } from 'ajv'
+import * as jose from 'jose'
 import { table } from 'table'
 import type { TSchema } from '@sinclair/typebox'
 import * as DEFAULT from '../src/defaults.js'
@@ -14,6 +15,17 @@ if (!jwks_private) {
   throw new Error('JWKS not set')
 }
 export const JWKS = JSON.parse(jwks_private)
+
+export const privateJWKS = async () => {
+  // In some environments (e.g. Fly.io) we need to set JWKS as an escaped JSON
+  // string (e.g. "{\"keys\":[]}"). So in those environments we need to call
+  // JSON.parse twice to build the actual JS object.
+  let jwks: { keys: jose.JWK[] } = JSON.parse(DEFAULT.JWKS!)
+  if (typeof jwks === 'string') {
+    jwks = JSON.parse(jwks)
+  }
+  return jwks
+}
 
 export const check = (what: string, value: any, validate: ValidateFunction) => {
   const valid = validate(value)

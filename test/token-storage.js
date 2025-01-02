@@ -4,10 +4,8 @@ import { describe, it, beforeEach } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import tmp from 'tmp'
 import { defAtom } from '@thi.ng/atom'
-import {
-  defIssueAccessToken,
-  defRevokeJWT
-} from '../dist/lib/token-storage-interface/index.js'
+import { defRevokeAccessToken } from '../dist/lib/token-storage-interface/index.js'
+import { defIssueAccessToken } from '../dist/lib/issue-access-token.js'
 import * as fs_impl from '../dist/lib/fs-storage/index.js'
 import * as mem_impl from '../dist/lib/in-memory-storage/index.js'
 import {
@@ -24,24 +22,35 @@ const expiration = '5 seconds'
 
 const IMPLEMENTATIONS = ['fs', 'mem']
 
+const report_all_ajv_errors = true
+
 const init = async (impl) => {
   switch (impl) {
     case 'fs': {
       const { name: filepath } = tmp.fileSync({ postfix: '.json' })
       await fs.writeFile(filepath, '{}')
 
-      const addToIssuedTokens = fs_impl.defAddToIssuedTokens({ filepath })
-      const isBlacklisted = fs_impl.defIsAccessTokenBlacklisted({ filepath })
-      const markTokenAsRevoked = fs_impl.defMarkTokenAsRevoked({ filepath })
-
-      const issueAccessToken = defIssueAccessToken({
-        addToIssuedTokens,
-        expiration,
-        issuer,
-        jwks
+      const isBlacklisted = fs_impl.defIsAccessTokenBlacklisted({
+        filepath,
+        report_all_ajv_errors
+      })
+      const markTokenAsRevoked = fs_impl.defMarkTokenAsRevoked({
+        filepath,
+        report_all_ajv_errors
+      })
+      const storeAccessToken = fs_impl.defStoreAccessToken({
+        filepath,
+        report_all_ajv_errors
       })
 
-      const revokeJWT = defRevokeJWT({
+      const issueAccessToken = defIssueAccessToken({
+        expiration,
+        issuer,
+        jwks,
+        storeAccessToken
+      })
+
+      const revokeAccessToken = defRevokeAccessToken({
         issuer,
         jwks_url,
         markTokenAsRevoked,
@@ -51,13 +60,13 @@ const init = async (impl) => {
       const totalBlacklisted = defTotalBlacklisted(isBlacklisted)
 
       return {
-        addToIssuedTokens,
         getIssuedTokens: fs_impl.defGetIssuedTokens({ filepath }),
         isBlacklisted,
         issueAccessToken,
         markTokenAsRevoked,
+        revokeAccessToken,
         revokeAllTokens: fs_impl.defRevokeAllTokens({ filepath }),
-        revokeJWT,
+        storeAccessToken,
         totalBlacklisted
       }
     }
@@ -65,18 +74,21 @@ const init = async (impl) => {
     case 'mem': {
       const atom = defAtom({})
 
-      const addToIssuedTokens = mem_impl.defAddToIssuedTokens({ atom })
       const isBlacklisted = mem_impl.defIsAccessTokenBlacklisted({ atom })
       const markTokenAsRevoked = mem_impl.defMarkTokenAsRevoked({ atom })
-
-      const issueAccessToken = defIssueAccessToken({
-        addToIssuedTokens,
-        expiration,
-        issuer,
-        jwks
+      const storeAccessToken = mem_impl.defStoreAccessToken({
+        atom,
+        report_all_ajv_errors
       })
 
-      const revokeJWT = defRevokeJWT({
+      const issueAccessToken = defIssueAccessToken({
+        expiration,
+        issuer,
+        jwks,
+        storeAccessToken
+      })
+
+      const revokeAccessToken = defRevokeAccessToken({
         issuer,
         jwks_url,
         markTokenAsRevoked,
@@ -86,13 +98,13 @@ const init = async (impl) => {
       const totalBlacklisted = defTotalBlacklisted(isBlacklisted)
 
       return {
-        addToIssuedTokens,
         getIssuedTokens: mem_impl.defGetIssuedTokens({ atom }),
         isBlacklisted,
         issueAccessToken,
         markTokenAsRevoked,
+        revokeAccessToken,
         revokeAllTokens: mem_impl.defRevokeAllTokens({ atom }),
-        revokeJWT,
+        storeAccessToken,
         totalBlacklisted
       }
     }
@@ -113,10 +125,6 @@ IMPLEMENTATIONS.forEach((label) => {
     })
 
     describe(`once initialized, this implementation${suffix}`, () => {
-      it('has a addToIssuedTokens method', () => {
-        assert.ok(impl.addToIssuedTokens)
-      })
-
       it('has a getIssuedTokens method', () => {
         assert.ok(impl.getIssuedTokens)
       })
@@ -133,12 +141,16 @@ IMPLEMENTATIONS.forEach((label) => {
         assert.ok(impl.revokeAllTokens)
       })
 
+      it('has a storeAccessToken method', () => {
+        assert.ok(impl.storeAccessToken)
+      })
+
       it('has a issueAccessToken method', () => {
         assert.ok(impl.issueAccessToken)
       })
 
-      it('has a revokeJWT method', () => {
-        assert.ok(impl.revokeJWT)
+      it('has a revokeAccessToken method', () => {
+        assert.ok(impl.revokeAccessToken)
       })
     })
 
@@ -155,7 +167,7 @@ IMPLEMENTATIONS.forEach((label) => {
         const { error: issue_error, value } = await impl.issueAccessToken()
         assert.ok(!issue_error)
 
-        await assertTokenHasRequiredClaims(value.jwt)
+        await assertTokenHasRequiredClaims(value.access_token)
       })
 
       it(`issues a JWT that has required+custom claims when a payload is passed`, async () => {
@@ -165,7 +177,7 @@ IMPLEMENTATIONS.forEach((label) => {
         )
         assert.ok(!issue_error)
 
-        await assertTokenHasRequiredAndCustomClaims(value.jwt, payload)
+        await assertTokenHasRequiredAndCustomClaims(value.access_token, payload)
       })
     })
 
@@ -180,12 +192,12 @@ IMPLEMENTATIONS.forEach((label) => {
           payload
         )
         assert.ok(!issue_error)
-        const { jwt } = value
-        assert.ok(jwt)
-        await assertTokenHasRequiredAndCustomClaims(jwt, payload)
+        const { access_token } = value
+        assert.ok(access_token)
+        await assertTokenHasRequiredAndCustomClaims(access_token, payload)
 
         const { error: revoke_error, value: revoke_value } =
-          await impl.revokeJWT(jwt)
+          await impl.revokeAccessToken(access_token)
 
         assert.ok(revoke_error)
         assert.equal(revoke_value, undefined)
@@ -201,12 +213,12 @@ IMPLEMENTATIONS.forEach((label) => {
           payload
         )
         assert.ok(!issue_error)
-        const { jwt } = value
-        assert.ok(jwt)
-        await assertTokenHasRequiredAndCustomClaims(jwt, payload)
+        const { access_token } = value
+        assert.ok(access_token)
+        await assertTokenHasRequiredAndCustomClaims(access_token, payload)
 
         const { error: revoke_error, value: revoke_value } =
-          await impl.revokeJWT(jwt)
+          await impl.revokeAccessToken(access_token)
 
         assert.ok(revoke_error)
         assert.equal(revoke_value, undefined)
@@ -221,20 +233,19 @@ IMPLEMENTATIONS.forEach((label) => {
         const { error: issue_err0, value: issue_val0 } =
           await impl.issueAccessToken(payload)
         assert.ok(!issue_err0)
-        const { jwt: jwt0, claims: claims0 } = issue_val0
-        assert.ok(jwt0)
-        await assertTokenHasRequiredAndCustomClaims(jwt0, payload)
+        const { access_token: access_token0, claims: claims0 } = issue_val0
+        assert.ok(access_token0)
+        await assertTokenHasRequiredAndCustomClaims(access_token0, payload)
 
         const { error: issue_err1, value: issue_val1 } =
           await impl.issueAccessToken(payload)
         assert.ok(!issue_err1)
-        const { jwt: jwt1, claims: claims1 } = issue_val1
-        assert.ok(jwt1)
-        await assertTokenHasRequiredAndCustomClaims(jwt1, payload)
+        const { access_token: access_token1, claims: claims1 } = issue_val1
+        assert.ok(access_token1)
+        await assertTokenHasRequiredAndCustomClaims(access_token1, payload)
 
-        const { error: revoke_err0, value: revoke_val0 } = await impl.revokeJWT(
-          jwt0
-        )
+        const { error: revoke_err0, value: revoke_val0 } =
+          await impl.revokeAccessToken(access_token0)
 
         assert.ok(!revoke_err0)
         assert.ok(revoke_val0)
@@ -260,10 +271,10 @@ IMPLEMENTATIONS.forEach((label) => {
         const r1 = await impl.issueAccessToken(payload)
         const r2 = await impl.issueAccessToken(payload)
 
-        const jwts = [r0, r1, r2].map((r) => {
+        const access_tokens = [r0, r1, r2].map((r) => {
           assert.ok(!r.error)
           assert.ok(r.value)
-          return r.value.jwt
+          return r.value.access_token
         })
 
         const { value: state_before_revoke_one } = await impl.getIssuedTokens()
@@ -272,7 +283,9 @@ IMPLEMENTATIONS.forEach((label) => {
         const b0 = await impl.totalBlacklisted(state_before_revoke_one.jtis)
         assert.strictEqual(b0, 0)
 
-        const { error: revoke_one_error } = await impl.revokeJWT(jwts[0])
+        const { error: revoke_one_error } = await impl.revokeAccessToken(
+          access_tokens[0]
+        )
         assert.ok(!revoke_one_error)
 
         const { value: state_after_revoke_one } = await impl.getIssuedTokens()

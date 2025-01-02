@@ -4,7 +4,7 @@ import {
   defRetrieveAuthorizationCode as defImplementation,
   type CodeTable
 } from '../authorization-code-storage-interface/index.js'
-import { defStorage } from './storage.js'
+import { defStorage } from './code-storage.js'
 
 interface Config {
   ajv?: Ajv

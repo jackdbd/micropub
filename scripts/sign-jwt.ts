@@ -1,17 +1,12 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import * as jose from 'jose'
-import * as DEFAULT from '../src/defaults.js'
 import { randomKid, sign } from '../src/lib/token/sign-jwt.js'
+import { privateJWKS } from './utils.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const secrets_dir = path.join(__dirname, '..', 'secrets')
-
-const privateJWKS = async () => {
-  return JSON.parse(DEFAULT.JWKS!) as { keys: jose.JWK[] }
-}
 
 const run = async () => {
   const jwks = await privateJWKS()

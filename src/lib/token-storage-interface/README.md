@@ -8,10 +8,8 @@ Each JWT is verified with RS256, using the associated JWK from a given **public*
 
 The functions defined in this module leave to the user the responsibility of persisting information related to the issued/revoked tokens. These functions provide an interface, a protocol for persisting the tokens to some storage (e.g. the filesystem, a database). The actual implementation must be provided via dependency injection.
 
-| Interface | implementation |
-| :--- | :--- |
-| `defIssueAccessToken` | `addToIssuedTokens` |
-| `defRevokeJWT` | `markTokenAsRevoked` |
+- `markAccessTokenAsRevoked` (TODO: remove `revokeAccessToken`)
+- `storeAccessToken`
 
 Token storage implementations:
 

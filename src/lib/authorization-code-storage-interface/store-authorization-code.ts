@@ -22,7 +22,7 @@ export type StoreAuthorizationCodeParam = Static<
 >
 
 const DESCRIPTION =
-  'Function that performs the effect of persisting the authorization code to some storage (e.g. a database).'
+  'Persists an authorization code to some storage (e.g. a database).'
 
 const store_authorization_code_success = Type.Object({
   error: Type.Optional(Type.Undefined()),
@@ -43,8 +43,7 @@ const storeAuthorizationCode_ = Type.Function(
 )
 
 /**
- * Function that performs the effect of persisting the authorization code to
- * some storage (e.g. a database).
+ * Persists an authorization code to some storage (e.g. a database).
  */
 export type StoreAuthorizationCode = Static<typeof storeAuthorizationCode_>
 
@@ -109,7 +108,7 @@ export const defStoreAuthorizationCode = (config: Config) => {
       return { error: write_error }
     }
 
-    return { value: { message: `issued authorization code ${code}` } }
+    return { value: { message: `stored authorization code ${code}` } }
   }
 
   return storeAuthorizationCode

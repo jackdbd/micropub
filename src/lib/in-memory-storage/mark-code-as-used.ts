@@ -2,7 +2,7 @@ import type { Atom } from '@thi.ng/atom'
 import type Ajv from 'ajv'
 import { defMarkAuthorizationCodeAsUsed as defImplementation } from '../authorization-code-storage-interface/index.js'
 import type { CodeTable } from '../authorization-code-storage-interface/index.js'
-import { defStorage } from './storage.js'
+import { defStorage } from './code-storage.js'
 
 interface Config {
   ajv?: Ajv

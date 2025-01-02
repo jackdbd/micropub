@@ -1,8 +1,3 @@
-export {
-  addToIssuedTokens,
-  type AddToIssuedTokens
-} from './add-to-issued-tokens.js'
-
 export { create, type Create } from './create-content.js'
 
 export { deleteContent, type Delete } from './delete-content.js'
@@ -61,8 +56,6 @@ export {
 } from './published-url-to-storage-location.js'
 
 export { revokeAllTokens, type RevokeAllTokens } from './revoke-all-tokens.js'
-
-export { revokeJWT, type RevokeJWT } from './revoke-jwt.js'
 
 export { syndicate_to_item, type SyndicateToItem } from './syndicate-to.js'
 

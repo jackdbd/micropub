@@ -4,7 +4,6 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { defIssueAccessToken } from '../../lib/token-storage-interface/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { access_token_request_body } from '../authorization-endpoint/index.js'
 import { access_token_response_body_success } from './routes/schemas.js'
@@ -36,14 +35,14 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
 
   const {
     accessTokenExpiration: access_token_expiration,
-    addToIssuedTokens,
     authorizationEndpoint: authorization_endpoint,
     includeErrorDescription: include_error_description,
     issuer,
     jwks,
     logPrefix: log_prefix,
     refreshTokenExpiration: refresh_token_expiration,
-    reportAllAjvErrors: report_all_ajv_errors
+    reportAllAjvErrors: report_all_ajv_errors,
+    storeAccessToken
   } = config
 
   let ajv: Ajv
@@ -80,13 +79,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  const issueAccessToken = defIssueAccessToken({
-    addToIssuedTokens,
-    expiration: access_token_expiration,
-    issuer,
-    jwks
-  })
-
   fastify.get('/token/config', defConfigGet(config))
 
   fastify.post(
@@ -98,10 +90,14 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       }
     },
     defTokenPost({
+      access_token_expiration,
+      ajv,
       authorization_endpoint,
       include_error_description,
-      issueAccessToken,
-      log_prefix
+      issuer,
+      jwks,
+      log_prefix,
+      storeAccessToken
     })
   )
 

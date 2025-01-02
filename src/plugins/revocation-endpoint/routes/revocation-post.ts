@@ -8,7 +8,7 @@ import {
   InvalidRequestError,
   ServerError
 } from '../../../lib/fastify-errors/index.js'
-import type { RevokeJWT } from '../../../lib/schemas/index.js'
+import type { RevokeAccessToken } from '../../../lib/token-storage-interface/index.js'
 import { safeDecode } from '../../../lib/token/decode.js'
 
 interface RequestBody {
@@ -24,7 +24,7 @@ interface Config {
   include_error_description: boolean
   log_prefix: string
   me: string
-  revokeJWT: RevokeJWT
+  revokeAccessToken: RevokeAccessToken
 }
 
 /**
@@ -33,7 +33,8 @@ interface Config {
  * @see [Token revocation - IndieAuth spec](https://indieauth.spec.indieweb.org/#token-revocation)
  */
 export const defRevocationPost = (config: Config) => {
-  const { include_error_description, log_prefix, me, revokeJWT } = config
+  const { include_error_description, log_prefix, me, revokeAccessToken } =
+    config
 
   const revocationPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     if (!request.body) {
@@ -108,7 +109,8 @@ export const defRevocationPost = (config: Config) => {
     request.log.debug(
       `${log_prefix}try revoking token ${claims.jti} (token_type_hint: ${token_type_hint})`
     )
-    const { error: revoke_error, value: revoke_value } = await revokeJWT(token)
+    const { error: revoke_error, value: revoke_value } =
+      await revokeAccessToken(token)
 
     // The revocation itself can fail, and if it's not the client's fault, it
     // does not make sense to return a 4xx. A generic server error is more

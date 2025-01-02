@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { defAtom } from '@thi.ng/atom'
 import { table } from 'table'
 import type {
-  AddToIssuedTokens,
   GetIssuedTokens,
   IsAccessTokenBlacklisted,
   MarkTokenAsRevoked,
@@ -13,10 +12,12 @@ import type {
 } from '../src/lib/schemas/index.js'
 import {
   type AccessTokenTable,
-  defIssueAccessToken,
-  defRevokeJWT
+  defRevokeAccessToken,
+  type StoreAccessToken
 } from '../src/lib/token-storage-interface/index.js'
 import * as DEFAULT from '../src/defaults.js'
+import { defIssueAccessToken } from '../src/lib/issue-access-token.js'
+import { privateJWKS } from './utils.js'
 
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'
@@ -39,7 +40,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const assets_dir = path.join(__dirname, '..', 'assets')
 
-const filepath = path.join(assets_dir, 'issued-access-tokens.json')
+const filepath = path.join(assets_dir, 'access-tokens.json')
 
 const expiration = '5 minutes'
 const issuer = __filename
@@ -50,13 +51,6 @@ const EMOJI = {
   TOKEN_REVOKED: '🚫',
   ALL_TOKENS_REVOKED: '🚧'
 }
-
-if (!DEFAULT.JWKS) {
-  throw new Error('JWKS not set')
-}
-export const jwks = JSON.parse(DEFAULT.JWKS)
-
-export const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
 interface StatusConfig {
   implementation: string
@@ -101,29 +95,40 @@ if (!fs.existsSync(filepath)) {
 
 const run = async (config: Config) => {
   const { implementation, revoke_all } = config
+  const report_all_ajv_errors = true
 
-  let addToIssuedTokens: AddToIssuedTokens
+  const jwks = await privateJWKS()
+
+  const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
+
   let getIssuedTokens: GetIssuedTokens
   let isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   let markTokenAsRevoked: MarkTokenAsRevoked
   let revokeAllTokens: RevokeAllTokens
+  let storeAccessToken: StoreAccessToken
   switch (implementation) {
     case 'fs': {
-      addToIssuedTokens = fs_impl.defAddToIssuedTokens({ filepath })
       getIssuedTokens = fs_impl.defGetIssuedTokens({ filepath })
       isAccessTokenBlacklisted = fs_impl.defIsAccessTokenBlacklisted({
         filepath
       })
       markTokenAsRevoked = fs_impl.defMarkTokenAsRevoked({ filepath })
       revokeAllTokens = fs_impl.defRevokeAllTokens({ filepath })
+      storeAccessToken = fs_impl.defStoreAccessToken({
+        filepath,
+        report_all_ajv_errors
+      })
       break
     }
     case 'mem': {
-      addToIssuedTokens = mem_impl.defAddToIssuedTokens({ atom })
       getIssuedTokens = mem_impl.defGetIssuedTokens({ atom })
       isAccessTokenBlacklisted = mem_impl.defIsAccessTokenBlacklisted({ atom })
       markTokenAsRevoked = mem_impl.defMarkTokenAsRevoked({ atom })
       revokeAllTokens = mem_impl.defRevokeAllTokens({ atom })
+      storeAccessToken = mem_impl.defStoreAccessToken({
+        atom,
+        report_all_ajv_errors
+      })
       break
     }
     default: {
@@ -131,14 +136,14 @@ const run = async (config: Config) => {
     }
   }
 
-  const issueJWT = defIssueAccessToken({
-    addToIssuedTokens,
+  const issueAccessToken = defIssueAccessToken({
     expiration,
     issuer,
-    jwks
+    jwks,
+    storeAccessToken
   })
 
-  const revokeJWT = defRevokeJWT({
+  const revokeAccessToken = defRevokeAccessToken({
     markTokenAsRevoked,
     issuer,
     jwks_url,
@@ -150,23 +155,28 @@ const run = async (config: Config) => {
     scope: 'create update' // required
   }
 
-  const { error: issue_err0, value: issue_val0 } = await issueJWT(payload)
+  const { error: issue_err0, value: issue_val0 } = await issueAccessToken(
+    payload
+  )
   assert.ok(!issue_err0)
   console.log(`${EMOJI.TOKEN_ISSUED} Issued token ${issue_val0.claims.jti}`)
 
-  const { error: issue_err1, value: issue_val1 } = await issueJWT({
+  const { error: issue_err1, value: issue_val1 } = await issueAccessToken({
     ...payload,
     foo: 'bar' // any additional claim you want...
   })
   assert.ok(!issue_err1)
   console.log(`${EMOJI.TOKEN_ISSUED} Issued token ${issue_val1.claims.jti}`)
 
-  const jwt0 = issue_val0.jwt
+  const jwt0 = issue_val0.access_token
 
   // revoke only the first JWT
-  const { error: revoke_err0, value: revoke_val0 } = await revokeJWT(jwt0, {
-    revocation_reason: 'revoke_one (e.g. user_logout)' // optional
-  })
+  const { error: revoke_err0, value: revoke_val0 } = await revokeAccessToken(
+    jwt0,
+    {
+      revocation_reason: 'revoke_one (e.g. user_logout)' // optional
+    }
+  )
   assert.ok(!revoke_err0)
   console.log(`${EMOJI.TOKEN_REVOKED} Revoked token ${revoke_val0.jti}`)
 

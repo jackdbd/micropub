@@ -1,5 +1,47 @@
-import type { MarkTokenAsRevoked, RevokeJWT } from '../schemas/index.js'
+import { Static, Type } from '@sinclair/typebox'
+import { jti } from '../jwt/index.js'
+import { access_token as access_token_schema } from '../oauth2/index.js'
+import { MarkTokenAsRevoked } from '../schemas/index.js'
+import { failure } from '../schemas/failure.js'
 import { verify } from '../token/index.js'
+
+const revoke_access_token_success = Type.Object({
+  error: Type.Optional(Type.Undefined()),
+  value: Type.Object({
+    jti,
+    message: Type.Optional(Type.String({ minLength: 1 }))
+  })
+})
+
+// This CANNOT be used with a standard JSON Schema validator.
+// https://github.com/sinclairzx81/typebox?tab=readme-ov-file#javascript-types
+const revoke_access_token_result_promise = Type.Promise(
+  Type.Union([failure, revoke_access_token_success])
+)
+
+export const options = Type.Object({
+  revocation_reason: Type.Optional(Type.String({ minLength: 1 }))
+})
+
+export type Options = Static<typeof options>
+
+const DESCRIPTION =
+  'Revokes an access token from some storage (e.g. a database).'
+
+// This would be ideal, but it CANNOT be used with a standard JSON Schema
+// validator. However, we can still use its TypeScript type.
+const revokeAccessToken_ = Type.Function(
+  [access_token_schema, Type.Optional(options)],
+  revoke_access_token_result_promise,
+  {
+    $id: 'revoke-access-token',
+    description: DESCRIPTION
+  }
+)
+
+export type RevokeAccessToken = Static<typeof revokeAccessToken_>
+
+export const revokeAccessToken = Type.Any({ description: DESCRIPTION })
 
 export interface Config {
   /**
@@ -27,17 +69,17 @@ export interface Config {
 }
 
 /**
- * Factory function for creating a `revokeJWT` function.
+ * Factory function for creating a `revokeAccessToken` function.
  *
  * To be able to revoke tokens, we must keep track of the tokens we issued. We
  * do this by assigning a unique identifier to each token we issue, and by
  * storing this identifier—along with some other piece of information—in some
  * persistent storage (e.g. a database, a service that provides object storage).
  */
-export const defRevokeJWT = (config: Config) => {
+export const defRevokeAccessToken = (config: Config) => {
   const { issuer, jwks_url, markTokenAsRevoked, max_token_age } = config
 
-  const revokeJWT: RevokeJWT = async (jwt, options) => {
+  const revokeAccessToken: RevokeAccessToken = async (jwt, options) => {
     const { error: verify_error, value: claims } = await verify({
       issuer,
       jwks_url,
@@ -72,5 +114,5 @@ export const defRevokeJWT = (config: Config) => {
     return { value: { jti, message } }
   }
 
-  return revokeJWT
+  return revokeAccessToken
 }

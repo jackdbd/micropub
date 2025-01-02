@@ -50,29 +50,28 @@ import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
 
 // Filesystem storage backend //////////////////////////////////////////////////
-import {
-  defAddToIssuedTokens,
-  defIsAccessTokenBlacklisted,
-  defMarkAuthorizationCodeAsUsed,
-  defMarkTokenAsRevoked,
-  defRetrieveAuthorizationCode,
-  defStoreAuthorizationCode,
-  init
-} from './lib/fs-storage/index.js'
-////////////////////////////////////////////////////////////////////////////////
-
-// In-memory storage backend ///////////////////////////////////////////////////
 // import {
-//   defAddToIssuedTokens,
 //   defIsAccessTokenBlacklisted,
 //   defMarkAuthorizationCodeAsUsed,
 //   defMarkTokenAsRevoked,
 //   defRetrieveAuthorizationCode,
+//   defStoreAccessToken,
 //   defStoreAuthorizationCode,
-//   initAccessTokensStorage,
-//   initAuthorizationCodesStorage,
-//   initClientsStorage
-// } from './lib/in-memory-storage/index.js'
+//   init
+// } from './lib/fs-storage/index.js'
+////////////////////////////////////////////////////////////////////////////////
+
+// In-memory storage backend ///////////////////////////////////////////////////
+import {
+  defIsAccessTokenBlacklisted,
+  defMarkAuthorizationCodeAsUsed,
+  defMarkTokenAsRevoked,
+  defRetrieveAuthorizationCode,
+  defStoreAccessToken,
+  defStoreAuthorizationCode,
+  initAccessTokensStorage,
+  initAuthorizationCodesStorage
+} from './lib/in-memory-storage/index.js'
 ////////////////////////////////////////////////////////////////////////////////
 
 const __filename = fileURLToPath(import.meta.url)
@@ -206,71 +205,87 @@ export async function defFastify(config: Config) {
   // console.log(config)
 
   // Authorization code storage - Filesystem backend ///////////////////////////
-  const filepath_codes = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'authorization-codes.json'
-  })
+  // const filepath_codes = await init({
+  //   dirpath: path.join(__dirname, '..', 'assets'),
+  //   filename: 'authorization-codes.json'
+  // })
 
-  const storeAuthorizationCode = defStoreAuthorizationCode({
+  // const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
+  //   ajv,
+  //   filepath: filepath_codes,
+  //   report_all_ajv_errors: reportAllAjvErrors
+  // })
+
+  // const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
+  //   ajv,
+  //   filepath: filepath_codes,
+  //   report_all_ajv_errors: reportAllAjvErrors
+  // })
+
+  // const storeAuthorizationCode = defStoreAuthorizationCode({
+  //   ajv,
+  //   filepath: filepath_codes,
+  //   report_all_ajv_errors: reportAllAjvErrors
+  // })
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Authorization code storage - In-memory backend ////////////////////////////
+  const atom_codes = await initAuthorizationCodesStorage()
+
+  const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
     ajv,
-    filepath: filepath_codes,
+    atom: atom_codes,
     report_all_ajv_errors: reportAllAjvErrors
   })
 
   const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
     ajv,
-    filepath: filepath_codes,
+    atom: atom_codes,
     report_all_ajv_errors: reportAllAjvErrors
   })
 
-  const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
+  const storeAuthorizationCode = defStoreAuthorizationCode({
     ajv,
-    filepath: filepath_codes,
+    atom: atom_codes,
     report_all_ajv_errors: reportAllAjvErrors
   })
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Authorization code storage - In-memory backend ////////////////////////////
-  // const atom_codes = await initCodesStorage()
-  // const storeAuthorizationCode = defStoreAuthorizationCode({
-  //   ajv,
-  //   atom: atom_codes,
-  //   report_all_ajv_errors: reportAllAjvErrors
-  // })
-  // const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
-  //   atom: atom_codes
-  // })
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Clients storage - Filesystem backend //////////////////////////////////////
-  // const filepath_clients = await init({
-  //   dirpath: path.join(__dirname, '..', 'assets'),
-  //   filename: 'clients.json'
-  // })
-  // const registerClient = defRegisterClient({ filepath: filepath_clients })
   //////////////////////////////////////////////////////////////////////////////
 
   // Token storage - Filesystem backend ////////////////////////////////////////
-  const filepath_tokens = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'access-tokens.json'
-  })
-  const addToIssuedTokens = defAddToIssuedTokens({ filepath: filepath_tokens })
-  const isAccessTokenBlacklisted = defIsAccessTokenBlacklisted({
-    filepath: filepath_tokens
-  })
-  const markTokenAsRevoked = defMarkTokenAsRevoked({
-    filepath: filepath_tokens
-  })
+  // const filepath_access_tokens = await init({
+  //   dirpath: path.join(__dirname, '..', 'assets'),
+  //   filename: 'access-tokens.json'
+  // })
+
+  // const storeAccessToken = defStoreAccessToken({
+  //   ajv,
+  //   filepath: filepath_access_tokens,
+  //   report_all_ajv_errors: reportAllAjvErrors
+  // })
+
+  // const isAccessTokenBlacklisted = defIsAccessTokenBlacklisted({
+  //   filepath: filepath_access_tokens
+  // })
+
+  // const markTokenAsRevoked = defMarkTokenAsRevoked({
+  //   filepath: filepath_access_tokens
+  // })
   //////////////////////////////////////////////////////////////////////////////
 
   // Token storage - In-memory backend /////////////////////////////////////////
-  // const atom_tokens = await initAccessTokensStorage()
-  // const addToIssuedTokens = defAddToIssuedTokens({ atom: atom_tokens })
-  // const isAccessTokenBlacklisted = defIsAccessTokenBlacklisted({
-  //   atom: atom_tokens
-  // })
-  // const markTokenAsRevoked = defMarkTokenAsRevoked({ atom: atom_tokens })
+  const atom_tokens = await initAccessTokensStorage()
+
+  const storeAccessToken = defStoreAccessToken({
+    ajv,
+    atom: atom_tokens,
+    report_all_ajv_errors: reportAllAjvErrors
+  })
+
+  const isAccessTokenBlacklisted = defIsAccessTokenBlacklisted({
+    atom: atom_tokens
+  })
+
+  const markTokenAsRevoked = defMarkTokenAsRevoked({ atom: atom_tokens })
   //////////////////////////////////////////////////////////////////////////////
 
   const fastify = Fastify({
@@ -413,14 +428,14 @@ export async function defFastify(config: Config) {
 
   fastify.register(token, {
     accessTokenExpiration: access_token_expiration,
-    addToIssuedTokens,
     ajv,
     authorizationEndpoint,
     includeErrorDescription,
     issuer,
     jwks,
     refreshTokenExpiration: refresh_token_expiration,
-    reportAllAjvErrors
+    reportAllAjvErrors,
+    storeAccessToken
   })
 
   fastify.register(userinfo, {
