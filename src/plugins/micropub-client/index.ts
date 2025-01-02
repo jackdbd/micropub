@@ -6,7 +6,6 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-// import { InvalidRequestError } from '../../lib/fastify-errors/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { errorResponse, successResponse } from './decorators/index.js'
@@ -128,7 +127,8 @@ const micropubClient: FastifyPluginCallback<Options> = (
     },
     startRedirectPath: github_auth_start_path,
     callbackUri: (req) => {
-      return `${req.protocol}://${req.host}${github_auth_redirect_path}`
+      const scheme = req.host.includes('localhost') ? 'http' : 'https'
+      return `${scheme}://${req.host}${github_auth_redirect_path}`
     },
     // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app#using-the-web-application-flow-to-generate-a-user-access-token
     callbackUriParams: {
@@ -170,8 +170,10 @@ const micropubClient: FastifyPluginCallback<Options> = (
   //     auth: oauth2.GOOGLE_CONFIGURATION
   //   },
   //   startRedirectPath: google_auth_start_path,
-  //   callbackUri: (req) =>
-  //     `${req.protocol}://${req.host}${google_auth_redirect_path}`,
+  //   callbackUri: (req) => {
+  //     const scheme = req.host.includes('localhost') ? 'http' : 'https'
+  //     return `${scheme}://${req.host}${google_auth_redirect_path}`
+  //   },
   //   callbackUriParams: {
   //     // https://developers.google.com/identity/protocols/oauth2/web-server#httprest_1
   //     access_type: 'offline',
@@ -179,26 +181,6 @@ const micropubClient: FastifyPluginCallback<Options> = (
   //   },
   //   pkce: 'S256'
   // })
-
-  //   fastify.register(oauth2, {
-  //     name: 'indieAuth',
-  //     scope: ['email', 'profile'],
-  //     credentials: {
-  //       client: {
-  //         id: indieauth_client_id,
-  //         secret: 'not-used'
-  //       }
-  //     },
-  //     // when options.discovery.issuer is configured, credentials.auth should not be used
-  //     discovery: {
-  //       issuer:
-  //         'https://giacomodebidda.com/.well-known/oauth-authorization-server'
-  //     },
-  //     startRedirectPath: indieauth_start_path,
-  //     callbackUri: (req) => {
-  //       return `${req.protocol}://${req.host}${indieauth_redirect_path}`
-  //     }
-  //   })
 
   // === DECORATORS ========================================================= //
   fastify.decorateReply('errorResponse', errorResponse)
