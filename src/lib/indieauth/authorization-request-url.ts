@@ -11,15 +11,15 @@ export interface Config {
   state: string
 }
 
-export interface AuthRequestQuery
-  extends Omit<
-    Config,
-    'authorization_endpoint' | 'code_verifier_length' | 'scopes'
-  > {
-  code_challenge: string
-  response_type: 'code'
-  scope?: string
-}
+// interface AuthRequestQuery
+//   extends Omit<
+//     Config,
+//     'authorization_endpoint' | 'code_verifier_length' | 'scopes'
+//   > {
+//   code_challenge: string
+//   response_type: 'code'
+//   scope?: string
+// }
 
 /**
  * Builds the URL for the authorization endpoint.
@@ -52,8 +52,6 @@ export const authorizationRequestUrl = (config: Config) => {
     code_verifier,
     method: code_challenge_method
   })
-
-  // Which one should it be? scopes.join(' ') or scopes.join('+')
 
   const query = {
     client_id,

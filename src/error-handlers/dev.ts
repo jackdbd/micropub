@@ -2,7 +2,7 @@ import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type {
-  FastifyError,
+  // FastifyError,
   FastifyInstance,
   FastifyReply,
   FastifyRequest
@@ -99,7 +99,23 @@ export const defErrorHandler = (options?: Options) => {
     reply: FastifyReply
   ) {
     const status_code = statusCode(error, request, reply)
-    const message = `${prefix}${error.error}: ${error.error_description} (status: ${status_code}, error code: ${error.code})`
+
+    const default_error =
+      status_code >= 500 ? 'server_error' : 'invalid_request'
+
+    const parts = [
+      prefix,
+      error.error || error.message || default_error,
+      error.error_description ?? 'no error description',
+      `(status: ${status_code}, error code: ${error.code})`
+    ]
+
+    const message = parts.join(' ')
+
+    const error_response = {
+      error: error.error || error.message || default_error,
+      error_description: error.error_description
+    }
 
     if (status_code >= 500) {
       request.log.error(message)
@@ -116,8 +132,8 @@ export const defErrorHandler = (options?: Options) => {
 
     const youch = new Youch(error, request.raw, { preLines, postLines })
 
-    const claims = request.session.get('claims')
-    const jf2 = request.requestContext.get('jf2')
+    // const claims = request.session.get('claims')
+    // const jf2 = request.requestContext.get('jf2')
 
     // Maybe allow to customise this CSS with as an option for this plugin.
     const sharedStyle = `vertical-align: middle; margin-right: 0.25rem; color: var(--primary-color);`
@@ -163,24 +179,28 @@ export const defErrorHandler = (options?: Options) => {
         return reply.code(status_code).send(err)
       }
     } else {
-      const err = error as FastifyError
-      return reply.code(status_code).type(APPLICATION_JSON).send({
-        error: err.name,
-        error_description: err.message,
-        error_validation: err.validation,
-        error_validationContext: err.validationContext,
-        access_token_claims: claims,
-        jf2
-      })
+      return reply.code(status_code).type(APPLICATION_JSON).send(error_response)
+      // const err = error as FastifyError
+      // return reply.code(status_code).type(APPLICATION_JSON).send({
+      //   error: err.name,
+      //   error_description: err.message,
+      //   error_validation: err.validation,
+      //   error_validationContext: err.validationContext,
+      //   access_token_claims: claims,
+      //   jf2
+      // })
       // Uncomment this if you want to see the stack trace. It might be useful
       // to see the stack trace in graphical API clients like Postman or Bruno.
-      // youch
+      // return youch
       //   .toJSON()
       //   .then((json) => {
-      //     reply.code(status).type('application/json; charset=utf-8').send(json)
+      //     reply
+      //       .code(status_code)
+      //       .type('application/json; charset=utf-8')
+      //       .send(json)
       //   })
       //   .catch((err) => {
-      //     reply.code(status).send(err)
+      //     reply.code(status_code).send(err)
       //   })
     }
   }

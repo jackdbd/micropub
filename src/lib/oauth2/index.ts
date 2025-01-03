@@ -5,13 +5,12 @@ export {
   token_endpoint
 } from './endpoints.js'
 
-export { errorMessageFromJSONResponse } from './error-message-from-response.js'
-
 export {
   error_description,
   error_response,
   error_type,
   error_uri,
+  errorResponseFromJSONResponse,
   type ErrorDescription,
   type ErrorResponse,
   type ErrorResponseLoose,

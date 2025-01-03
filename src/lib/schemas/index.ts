@@ -46,11 +46,6 @@ export {
 export { location, type Location } from './location.js'
 
 export {
-  markTokenAsRevoked,
-  type MarkTokenAsRevoked
-} from './mark-token-as-revoked.js'
-
-export {
   publishedUrlToStorageLocation,
   type PublishedUrlToStorageLocation
 } from './published-url-to-storage-location.js'

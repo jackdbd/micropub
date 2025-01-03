@@ -35,7 +35,7 @@ export interface MicropubPostConfig {
   delete: DeleteContentOrMedia
   include_error_description: boolean
   log_prefix: string
-  me: string
+  // me: string
   media_endpoint: string
   micropub_endpoint: string
   undelete?: Undelete

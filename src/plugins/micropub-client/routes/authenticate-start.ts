@@ -116,7 +116,7 @@ export const defAuthenticate = (config: Config) => {
     )
 
     hrefs.forEach((str) => {
-      request.log.info(`${log_prefix}found rel="me" link: ${str}`)
+      request.log.debug(`${log_prefix}found rel="me" link: ${str}`)
       if (str.includes('mailto:')) {
         providers.push({ href: email_auth_start_path, text: 'Email' })
       } else if (str.includes('github.com')) {

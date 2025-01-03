@@ -24,6 +24,8 @@ const defaults: Partial<Options> = {
   sessionKey: DEFAULT.SESSION_KEY
 }
 
+// const include_error_description = true
+
 export const defValidateClaim = (assertion: Assertion, options?: Options) => {
   const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
@@ -95,7 +97,11 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
       case '==': {
         if (actual !== given) {
           const error_description = `claim '${key}' is '${actual}', but it should be '${given}'`
-          throw new ForbiddenError({ error_description })
+          const err = new ForbiddenError({ error_description })
+          throw err
+          // return reply
+          //   .code(err.statusCode)
+          //   .send(err.payload({ include_error_description }))
         } else {
           return done()
         }

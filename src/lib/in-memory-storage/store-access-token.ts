@@ -4,7 +4,7 @@ import {
   defStoreAccessToken as defImplementation,
   type AccessTokenTable
 } from '../token-storage-interface/index.js'
-import { defStorage } from './token-storage.js'
+import { defStorage } from './access-token-storage.js'
 
 interface Config {
   ajv?: Ajv
@@ -16,13 +16,13 @@ interface Config {
 export const defStoreAccessToken = (config: Config) => {
   const { ajv, atom, prefix, report_all_ajv_errors } = config
 
-  const { getRecord, setRecord } = defStorage({ atom })
+  const { retrieveRecord, storeRecord } = defStorage({ atom })
 
   return defImplementation({
     ajv,
-    getRecord,
     prefix,
     report_all_ajv_errors,
-    setRecord
+    retrieveRecord,
+    storeRecord
   })
 }

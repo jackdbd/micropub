@@ -1,6 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { me } from '../../lib/indieauth/index.js'
+import {
+  me_before_url_canonicalization,
+  me_after_url_canonicalization
+} from '../../lib/indieauth/index.js'
 import { media_endpoint, micropub_endpoint } from '../../lib/micropub/index.js'
 import {
   create,
@@ -34,7 +37,10 @@ export const options = Type.Object(
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
-    me,
+    me: Type.Union([
+      me_before_url_canonicalization,
+      me_after_url_canonicalization
+    ]),
 
     mediaEndpoint: Type.Optional(media_endpoint),
 

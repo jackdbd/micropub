@@ -1,0 +1,35 @@
+meta {
+  name: profile URL request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{authorization_endpoint}}
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  Accept: text/html
+}
+
+body:form-urlencoded {
+  client_id: {{client_id}}
+  code: {{code}}
+  redirect_uri: {{redirect_uri}}
+  code_verifier: {{code_verifier}}
+}
+
+script:post-response {
+  const cookies = res.getHeader('set-cookie');
+  
+  if(cookies) {
+    const arr = cookies.filter(c => c.includes('indieauth.com'))
+    if (arr) {
+      const code = arr.at(0).split(';').at(0).replace('indieauth.com=', '')
+      // console.log('code', code)
+      bru.setEnvVar('authorization_code', code);
+    }
+  }
+}

@@ -1,8 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
-import { client_id, me, redirect_uri } from '../indieauth/index.js'
+import { client_id, me_after_url_canonicalization } from '../indieauth/index.js'
+import { redirect_uri } from '../oauth2/index.js'
 
 export const client_record = Type.Object({
-  me,
+  me: me_after_url_canonicalization,
   redirect_uri
 })
 

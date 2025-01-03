@@ -211,7 +211,6 @@ export const defConfig = async (): Promise<Config> => {
   const indieauth_client_logo_uri = 'https://indiebookclub.biz/images/book.svg'
   const indieauth_client_name = 'Zephyr'
   const indieauth_client_uri = base_url
-  // authorization callback route
   const indieauth_client_redirect_uris = [`${base_url}/auth/callback`]
 
   const issuer = base_url

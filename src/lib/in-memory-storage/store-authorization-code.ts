@@ -16,13 +16,12 @@ interface Config {
 export const defStoreAuthorizationCode = (config: Config) => {
   const { ajv, atom, prefix, report_all_ajv_errors } = config
 
-  const { getRecord, setRecord } = defStorage({ atom })
+  const { storeRecord } = defStorage({ atom })
 
   return defImplementation({
     ajv,
-    getRecord,
     prefix,
     report_all_ajv_errors,
-    setRecord
+    storeRecord
   })
 }

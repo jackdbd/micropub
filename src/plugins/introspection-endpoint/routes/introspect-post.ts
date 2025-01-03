@@ -10,7 +10,7 @@ import { isExpired } from '../../../lib/predicates.js'
 import type { IsAccessTokenBlacklisted } from '../../../lib/schemas/index.js'
 import { safeDecode, verify } from '../../../lib/token/index.js'
 import { conformResult } from '../../../lib/validators.js'
-import { introspection_response_body_success } from './schemas.js'
+import { introspection_response_body_success } from '../schemas.js'
 
 export interface Config {
   ajv: Ajv

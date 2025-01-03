@@ -1,7 +1,16 @@
-# Token revocation endpoint
+# Token Revocation endpoint
 
-Fastify plugin that adds a token revocation endpoint to a Fastify server.
+Fastify plugin that adds an [IndieAuth Token Revocation endpoint](https://indieauth.spec.indieweb.org/#token-revocation) to a Fastify server.
 
-- [RFC7009 OAuth 2.0 Token Revocation](https://www.rfc-editor.org/rfc/rfc7009.html)
+## Installation
+
+TODO
+
+## Configuration
+
+TODO: add AJV schema with documentation generated automatically.
+
+## References
+
+- [OAuth 2.0 Token Revocation (RFC 7009)](https://www.rfc-editor.org/rfc/rfc7009.html)
 - [Token revocation on OAuth.net](https://oauth.net/2/token-revocation/)
-- [IndieAuth Token Revocation](https://indieauth.spec.indieweb.org/#token-revocation)

@@ -1,4 +1,4 @@
-<form id="consent-form" action="/consent" method="get">
+<form id="consent-form" action="{{ redirect_path_on_submit }}" method="get">
   
   <p>
     {% if logo_uri %}
@@ -21,22 +21,20 @@
     <p><a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> supports PKCE (code challenge with method <code>{{ code_challenge_method }}</code>).</p>
   {% endif %}
 
-  <p>If you <strong>deny</strong> this request you will be redirected to <a href="{{ redirect_url_on_deny }}" target="_blank" rel="noopener noreferrer">{{ redirect_url_on_deny }}</a>.</p>
+  <p>If you <strong>deny</strong> this request, you will redirect you to <a href="{{ redirect_uri_on_deny }}" target="_blank" rel="noopener noreferrer">{{ redirect_uri_on_deny }}</a></p>
 
   <p>If you <strong>approve</strong> this request:</p>
   <ul>
-    <li>this authorization endpoint will generate an authorization code that will be valid for {{ authorization_code_expiration }}</li>
+    <li>this authorization server will generate an authorization code that will be valid for {{ authorization_code_expiration }}</li>
     <li>you will be redirected to <a href="{{ redirect_uri }}" target="_blank" rel="noopener noreferrer">{{ redirect_uri }}</a></li>
   </ul>
 
-  {# I am not sure the consent screen should display this information to the
-  user. This information should only be known to the token endpoint, not to the
-  authorization endpoint. #}
-  {# <p><a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> will have access for {{ access_token_expiration }}, or for {{ refresh_token_expiration }} if it implements <a href="https://datatracker.ietf.org/doc/html/rfc6749#section-1.5" target="_blank" rel="noopener noreferrer">OAuth 2.0 Refresh Token Flow</a>.</p> #}
-
   <input type="hidden" name="client_id" value="{{ client_id }}" />
+    <input type="hidden" name="code_challenge" value="{{ code_challenge }}" />
+    <input type="hidden" name="code_challenge_method" value="{{ code_challenge_method }}" />
   <input type="hidden" name="me" value="{{ me }}" />
   <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
+  <input type="hidden" name="redirect_uri_on_deny" value="{{ redirect_uri_on_deny }}" />
   <input type="hidden" name="state" value="{{ state }}" />
 
   <button class="deny" type="submit" name="action" value="deny">Deny</button>

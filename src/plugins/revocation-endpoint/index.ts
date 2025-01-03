@@ -10,12 +10,22 @@ import {
   defValidateAccessTokenNotBlacklisted,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
-import { defRevokeAccessToken } from '../../lib/token-storage-interface/index.js'
+import { error_response } from '../../lib/oauth2/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/revocation-config-get.js'
 import { defRevocationPost } from './routes/revocation-post.js'
-import { options as options_schema, type Options } from './schemas.js'
+import {
+  options as options_schema,
+  type Options,
+  revocation_request_body,
+  revocation_response_body_success
+} from './schemas.js'
+
+export type {
+  RevocationRequestBody,
+  RevocationResponseBodySuccess
+} from './schemas.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
@@ -32,8 +42,17 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
 
   const {
     includeErrorDescription: include_error_description,
+    isAccessTokenBlacklisted,
+    issuer,
+    jwksUrl: jwks_url,
     logPrefix: log_prefix,
-    reportAllAjvErrors: report_all_ajv_errors
+    maxAccessTokenAge: max_access_token_age,
+    me,
+    reportAllAjvErrors: report_all_ajv_errors,
+    retrieveAccessToken,
+    retrieveRefreshToken,
+    storeAccessToken,
+    storeRefreshToken
   } = config
 
   let ajv: Ajv
@@ -44,22 +63,6 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   }
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
-
-  const {
-    isAccessTokenBlacklisted,
-    issuer,
-    jwksUrl: jwks_url,
-    markTokenAsRevoked,
-    maxTokenAge: max_token_age,
-    me
-  } = config
-
-  const revokeAccessToken = defRevokeAccessToken({
-    issuer,
-    jwks_url,
-    markTokenAsRevoked,
-    max_token_age
-  })
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
@@ -98,10 +101,6 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
     defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
 
   // === ROUTES ============================================================= //
-  // https://indieauth.spec.indieweb.org/#x7-token-revocation
-  // The token to be revoked is NOT NECESSARILY the same token found in the
-  // Authorization header is the access token to be revoked.
-
   fastify.get('/revoke/config', defConfigGet(config))
 
   fastify.post(
@@ -113,13 +112,27 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
         validateClaimMe,
         validateClaimJti,
         validateAccessTokenNotBlacklisted
-      ]
+      ],
+      schema: {
+        body: revocation_request_body,
+        response: {
+          200: revocation_response_body_success,
+          '4xx': error_response,
+          '5xx': error_response
+        }
+      }
     },
     defRevocationPost({
       include_error_description,
+      issuer,
+      jwks_url,
       log_prefix,
+      max_access_token_age,
       me,
-      revokeAccessToken
+      retrieveAccessToken,
+      retrieveRefreshToken,
+      storeAccessToken,
+      storeRefreshToken
     })
   )
 

@@ -1,0 +1,32 @@
+meta {
+  name: IndieAuth client metadata
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/id
+  body: none
+  auth: none
+}
+
+headers {
+  ~Accept: text/html
+}
+
+script:pre-request {
+  const cookie = bru.getEnvVar("session-cookie");
+  
+  if(cookie) {
+    req.setHeader("Cookie", cookie)
+  }
+}
+
+script:post-response {
+  const cookies = res.getHeader('set-cookie');
+  
+  if(cookies) {
+    // bru.setVar("cookie", cookies.join('; '));
+    bru.setEnvVar("session-cookie", cookies.join('; '));
+  }
+}

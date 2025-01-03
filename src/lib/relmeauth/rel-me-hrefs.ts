@@ -1,4 +1,3 @@
-import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
 import { canonicalUrl } from '../url-canonicalization.js'
 import { htmlToLinkHrefs } from './parse-html.js'
 
@@ -11,13 +10,13 @@ export const relMeHrefs = async (me: string) => {
   let response: Response
   try {
     response = await fetch(url, { method: 'GET' })
-  } catch (err) {
-    return { error: new Error(`Failed to fetch ${url}`) }
+  } catch (ex: any) {
+    return { error: new Error(`Failed to fetch ${url}: ${ex.message}`) }
   }
 
   if (!response.ok) {
-    const msg = await errorMessageFromJSONResponse(response)
-    return { error: new Error(`Failed to fetch ${url}: ${msg}`) }
+    const details = `${response.statusText} (${response.status})`
+    return { error: new Error(`Failed to fetch ${url}: ${details}`) }
   }
 
   const content_type = response.headers.get('content-type')
@@ -27,8 +26,8 @@ export const relMeHrefs = async (me: string) => {
     try {
       const res = await fetch(url, { method: 'GET' })
       html = await res.text()
-    } catch (err: any) {
-      return { error: new Error(`Failed to fetch ${url}: ${err.message}`) }
+    } catch (ex: any) {
+      return { error: new Error(`Failed to fetch ${url}: ${ex.message}`) }
     }
 
     const { error, value } = htmlToLinkHrefs(html)

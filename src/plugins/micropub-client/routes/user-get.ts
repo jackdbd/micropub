@@ -1,12 +1,10 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import { APPLICATION_JSON, TEXT_HTML } from '../../../lib/content-type.js'
 import {
   InvalidRequestError,
   ServerError,
   UnauthorizedError
 } from '../../../lib/fastify-errors/index.js'
-import { clientAcceptsHtml } from '../../../lib/fastify-request-predicates/index.js'
-import { errorMessageFromJSONResponse } from '../../../lib/oauth2/error-message-from-response.js'
+import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 
 interface RouteGeneric extends RouteGenericInterface {
   Querystring: {
@@ -61,24 +59,9 @@ export const defUserGet = (config: Config) => {
     })
 
     if (!response.ok) {
-      const msg = await errorMessageFromJSONResponse(response)
-      const error = `Error from userinfo endpoint`
-      const error_description = msg
-
-      reply.code(response.status)
-
-      if (clientAcceptsHtml(request)) {
-        reply.header('Content-Type', TEXT_HTML)
-        return reply.view('error.njk', {
-          title: 'Error',
-          description: 'Error page',
-          error,
-          error_description
-        })
-      } else {
-        reply.header('Content-Type', APPLICATION_JSON)
-        return reply.send({ error, error_description })
-      }
+      const err = await errorResponseFromJSONResponse(response)
+      const payload = err.payload({ include_error_description })
+      return reply.errorResponse(err.statusCode, payload)
     }
 
     let payload: any

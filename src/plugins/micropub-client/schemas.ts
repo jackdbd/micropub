@@ -3,6 +3,11 @@ import type Ajv from 'ajv'
 import {
   client_id,
   issuer,
+  client_name,
+  client_uri,
+  logo_uri,
+  me_before_url_canonicalization,
+  me_after_url_canonicalization,
   redirect_uris,
   userinfo_endpoint
 } from '../../lib/indieauth/index.js'
@@ -44,6 +49,22 @@ export const options = Type.Object(
      * @see [Authorization - IndieAuth spec](https://indieauth.spec.indieweb.org/#authorization)
      */
     authorizationEndpoint: Type.Optional(authorization_endpoint),
+
+    /**
+     * IndieAuth/Micropub client identifier. It MUST be a URL.
+     *
+     * @see [Client Identifier - IndieAuth](https://indieauth.spec.indieweb.org/#client-identifier)
+     */
+    clientId: client_id,
+
+    clientLogoUri: Type.Optional({
+      ...logo_uri,
+      default: DEFAULT.INDIEAUTH_CLIENT_LOGO_URI
+    }),
+
+    clientName: Type.Optional(client_name),
+
+    clientUri: Type.Optional(client_uri),
 
     /**
      * Length for the code verifier to use when generating the PKCE code challenge.
@@ -120,13 +141,6 @@ export const options = Type.Object(
     includeErrorDescription: Type.Optional(
       Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
     ),
-
-    /**
-     * IndieAuth client identifier. It MUST be a URL.
-     *
-     * @see [Client Identifier - IndieAuth](https://indieauth.spec.indieweb.org/#client-identifier)
-     */
-    indieAuthClientId: Type.Optional(client_id),
 
     indieAuthStartPath: Type.Optional(
       Type.String({
@@ -225,3 +239,25 @@ export interface Options extends Static<typeof options> {
   ajv?: Ajv
   isAccessTokenBlacklisted: IsAccessTokenBlacklisted
 }
+
+// export const consent_get_request_querystring = Type.Object({
+//   me: me_after_url_canonicalization
+// })
+
+// export type ConsentGetRequestQuerystring = Static<
+//   typeof consent_get_request_querystring
+// >
+
+export const auth_start_get_request_querystring = Type.Object({
+  client_id,
+  me: Type.Union(
+    [me_before_url_canonicalization, me_after_url_canonicalization],
+    {
+      description: `The 'me' value that the user typed in the login form for Web sign-in.`
+    }
+  )
+})
+
+export type AuthStartGetRequestQuerystring = Static<
+  typeof auth_start_get_request_querystring
+>

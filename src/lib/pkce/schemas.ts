@@ -9,7 +9,6 @@ export const code_verifier_length = Type.Number({
 })
 
 export const code_verifier = Type.String({
-  $id: 'pkce-code-verifier',
   description:
     'PKCE code verifier. A high-entropy cryptographic random string. See [Client Creates a Code Verifier](https://datatracker.ietf.org/doc/html/rfc7636#section-4.1).',
   minLength: 43,

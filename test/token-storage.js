@@ -4,8 +4,8 @@ import { describe, it, beforeEach } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import tmp from 'tmp'
 import { defAtom } from '@thi.ng/atom'
-import { defRevokeAccessToken } from '../dist/lib/token-storage-interface/index.js'
 import { defIssueAccessToken } from '../dist/lib/issue-access-token.js'
+import { defRevokeAccessToken } from '../dist/lib/revoke-access-token.js'
 import * as fs_impl from '../dist/lib/fs-storage/index.js'
 import * as mem_impl from '../dist/lib/in-memory-storage/index.js'
 import {
@@ -34,10 +34,12 @@ const init = async (impl) => {
         filepath,
         report_all_ajv_errors
       })
-      const markTokenAsRevoked = fs_impl.defMarkTokenAsRevoked({
+
+      const retrieveAccessToken = fs_impl.defRetrieveAccessToken({
         filepath,
         report_all_ajv_errors
       })
+
       const storeAccessToken = fs_impl.defStoreAccessToken({
         filepath,
         report_all_ajv_errors
@@ -53,8 +55,9 @@ const init = async (impl) => {
       const revokeAccessToken = defRevokeAccessToken({
         issuer,
         jwks_url,
-        markTokenAsRevoked,
-        max_token_age: expiration
+        max_token_age: expiration,
+        retrieveAccessToken,
+        storeAccessToken
       })
 
       const totalBlacklisted = defTotalBlacklisted(isBlacklisted)
@@ -63,7 +66,7 @@ const init = async (impl) => {
         getIssuedTokens: fs_impl.defGetIssuedTokens({ filepath }),
         isBlacklisted,
         issueAccessToken,
-        markTokenAsRevoked,
+        retrieveAccessToken,
         revokeAccessToken,
         revokeAllTokens: fs_impl.defRevokeAllTokens({ filepath }),
         storeAccessToken,
@@ -75,7 +78,12 @@ const init = async (impl) => {
       const atom = defAtom({})
 
       const isBlacklisted = mem_impl.defIsAccessTokenBlacklisted({ atom })
-      const markTokenAsRevoked = mem_impl.defMarkTokenAsRevoked({ atom })
+
+      const retrieveAccessToken = mem_impl.defRetrieveAccessToken({
+        atom,
+        report_all_ajv_errors
+      })
+
       const storeAccessToken = mem_impl.defStoreAccessToken({
         atom,
         report_all_ajv_errors
@@ -91,8 +99,9 @@ const init = async (impl) => {
       const revokeAccessToken = defRevokeAccessToken({
         issuer,
         jwks_url,
-        markTokenAsRevoked,
-        max_token_age: expiration
+        max_token_age: expiration,
+        retrieveAccessToken,
+        storeAccessToken
       })
 
       const totalBlacklisted = defTotalBlacklisted(isBlacklisted)
@@ -101,7 +110,7 @@ const init = async (impl) => {
         getIssuedTokens: mem_impl.defGetIssuedTokens({ atom }),
         isBlacklisted,
         issueAccessToken,
-        markTokenAsRevoked,
+        retrieveAccessToken,
         revokeAccessToken,
         revokeAllTokens: mem_impl.defRevokeAllTokens({ atom }),
         storeAccessToken,
@@ -131,10 +140,6 @@ IMPLEMENTATIONS.forEach((label) => {
 
       it('has a isBlacklisted method', () => {
         assert.ok(impl.isBlacklisted)
-      })
-
-      it('has a markTokenAsRevoked method', () => {
-        assert.ok(impl.markTokenAsRevoked)
       })
 
       it('has a revokeAllTokens method', () => {

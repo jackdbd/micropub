@@ -1,4 +1,3 @@
-import { errorMessageFromJSONResponse } from '../oauth2/error-message-from-response.js'
 import { linkHeaderToLinkHref } from './parse-link-header.js'
 import { htmlToLinkHref } from './parse-link-html.js'
 import { canonicalUrl } from '../url-canonicalization.js'
@@ -23,13 +22,13 @@ export const metadataEndpoint = async (me: string) => {
   try {
     // We are only interested in the response headers, so HEAD is enough.
     response = await fetch(url, { method: 'HEAD' })
-  } catch (err) {
-    return { error: new Error(`Failed to fetch ${url}`) }
+  } catch (ex: any) {
+    return { error: new Error(`Failed to fetch ${url}: ${ex.message}`) }
   }
 
   if (!response.ok) {
-    const msg = await errorMessageFromJSONResponse(response)
-    return { error: new Error(`Failed to fetch ${url}: ${msg}`) }
+    const details = `${response.statusText} (${response.status})`
+    return { error: new Error(`Failed to fetch ${url}: ${details}`) }
   }
 
   // TODO: follow redirects
@@ -64,8 +63,8 @@ export const metadataEndpoint = async (me: string) => {
       // We did not found a Link header, so we now try downloading the page.
       const res = await fetch(url, { method: 'GET' })
       html = await res.text()
-    } catch (err: any) {
-      return { error: new Error(`Failed to fetch ${url}: ${err.message}`) }
+    } catch (ex: any) {
+      return { error: new Error(`Failed to fetch ${url}: ${ex.message}`) }
     }
 
     const { error, value: href } = htmlToLinkHref(html)

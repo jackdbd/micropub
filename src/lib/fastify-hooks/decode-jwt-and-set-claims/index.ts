@@ -6,7 +6,7 @@ import {
   InvalidTokenError,
   UnauthorizedError
 } from '../../fastify-errors/index.js'
-import { accessTokenFromRequestHeader } from '../../fastify-request-utils/index.js'
+import { accessTokenFromRequestHeader } from '../../fastify-utils/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
 import { throwIfDoesNotConform } from '../../validators.js'
 import { DEFAULT } from './constants.js'
@@ -78,9 +78,8 @@ export const defDecodeJwtAndSetClaims = (options?: Options) => {
 
     if (decode_error) {
       const error_description = `Error while decoding access token: ${decode_error.message}`
-      // Which one is more appropriate? UnauthorizedError or InvalidTokenError?
-      // throw new UnauthorizedError({ error_description })
-      throw new InvalidTokenError({ error_description })
+      const error_uri = undefined
+      throw new InvalidTokenError({ error_description, error_uri })
     }
 
     session.set(claims_session_key as keyof SessionData, claims)

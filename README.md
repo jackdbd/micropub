@@ -14,6 +14,7 @@ Packages for implementing an authorization server that supports the [IndieAuth p
 | [clients-storage-interface](./src/lib/clients-storage-interface/README.md) | Storage interface for IndieAuth clients |
 | [fastify-errors](./src/lib/fastify-errors/README.md) | Consistent errors for OAuth 2.0 / IndieAuth / Micropub servers |
 | [fastify-hooks](./src/lib/fastify-hooks/README.md) | Hooks shared by several Fastify plugins |
+| [fastify-utils](./src/lib/fastify-utils/README.md) | Miscellaneous utilities for Fastify servers |
 | [fs-storage](./src/lib/fs-storage/README.md) | Storage implementation (filesystem) |
 | [github-storage](./src/lib/github-storage/README.md) | Storage implementation (GitHub repository) |
 | [in-memory-storage](./src/lib/in-memory-storage/README.md) | Storage implementation (in-memory) |
@@ -53,22 +54,14 @@ npm run watch
 dev
 ```
 
-In another terminal, make some requests to the `/micropub` endpoint.
-
-```sh
-curl "${BASE_URL}/micropub" \
-  -X POST \
-  -d h=entry \
-  -d "content=Hello World" \
-  -H "Accept: application/json" | jq
-```
+In another terminal, make some requests to the `/micropub` endpoint. For example:
 
 ```sh
 curl "${BASE_URL}/micropub" \
   -d h=entry \
   -d "content=Hello World" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer invalid-token" | jq
+  -H "Authorization: Bearer some-access-token" | jq
 ```
 
 If you don't want to copy and paste curl commands in the terminal, you can make requests using API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).

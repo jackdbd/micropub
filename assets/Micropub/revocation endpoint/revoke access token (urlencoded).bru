@@ -1,0 +1,30 @@
+meta {
+  name: revoke access token (urlencoded)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/revoke
+  body: formUrlEncoded
+  auth: bearer
+}
+
+headers {
+  Accept: text/html
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "token": "{{access_token}}"
+  }
+}
+
+body:form-urlencoded {
+  token: {{access_token}}
+  revocation_reason: testing
+}

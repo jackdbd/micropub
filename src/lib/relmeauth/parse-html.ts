@@ -51,8 +51,8 @@ export const htmlToLinkHrefs = (html: string) => {
   let nodes: Node[] = []
   try {
     nodes = parser(html)
-  } catch (err: any) {
-    return { error: new Error(`Failed to parse HTML: ${err.message}`) }
+  } catch (ex: any) {
+    return { error: new Error(`Failed to parse HTML: ${ex.message}`) }
   }
 
   return { value: collectMeHrefs(nodes) }

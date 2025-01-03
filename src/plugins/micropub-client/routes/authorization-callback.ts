@@ -5,10 +5,11 @@ import {
   ServerError,
   UnauthorizedError
 } from '../../../lib/fastify-errors/index.js'
-import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
+import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 import { safeDecode } from '../../../lib/token/decode.js'
 import { AccessTokenClaims } from '../../../lib/token/claims.js'
 import type { AuthorizationResponseQuerystring } from '../../authorization-endpoint/index.js'
+// import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
 import type { AccessTokenResponseBodySuccess } from '../../token-endpoint/index.js'
 
 export interface Config {
@@ -16,6 +17,7 @@ export interface Config {
   include_error_description: boolean
   log_prefix: string
   redirect_uri: string
+  revocation_endpoint?: string
   token_endpoint?: string
 }
 
@@ -38,20 +40,6 @@ export const defAuthorizationCallback = (config: Config) => {
     request,
     reply
   ) => {
-    const session_data = { code_verifier: '', issuer: '', state: '' }
-    type SessionKey = keyof typeof session_data
-    for (const key of Object.keys(session_data) as SessionKey[]) {
-      const value = request.session.get(key)
-      if (value) {
-        session_data[key] = value
-      } else {
-        const error_description = `Key '${key}' not found in session or it is undefined.`
-        const err = new InvalidRequestError({ error_description })
-        const payload = err.payload({ include_error_description })
-        return reply.errorResponse(err.statusCode, payload)
-      }
-    }
-
     const query_data = { code: '', iss: '', state: '' }
     type QueryKey = keyof typeof query_data
     for (const key of Object.keys(query_data) as QueryKey[]) {
@@ -60,7 +48,36 @@ export const defAuthorizationCallback = (config: Config) => {
         query_data[key] = value
       } else {
         const error_description = `Key '${key}' not found in query string or it is undefined.`
-        const err = new InvalidRequestError({ error_description })
+        const error_uri = undefined
+        const state = query_data.state
+        const err = new InvalidRequestError({
+          error_description,
+          error_uri,
+          state
+        })
+        const payload = err.payload({ include_error_description })
+        return reply.errorResponse(err.statusCode, payload)
+      }
+    }
+
+    const session_data = { code_verifier: '', issuer: '', state: '' }
+    type SessionKey = keyof typeof session_data
+    for (const key of Object.keys(session_data) as SessionKey[]) {
+      const value = request.session.get(key)
+      if (value) {
+        session_data[key] = value
+      } else {
+        const error_description = `Key '${key}' not found in session or it is undefined.`
+        const error_uri = undefined
+        // If we need to include 'state' in the error response, it's always the
+        // 'state' received from the client, never the one found in session.
+        // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2.1
+        const state = query_data.state
+        const err = new InvalidRequestError({
+          error_description,
+          error_uri,
+          state
+        })
         const payload = err.payload({ include_error_description })
         return reply.errorResponse(err.statusCode, payload)
       }
@@ -75,7 +92,13 @@ export const defAuthorizationCallback = (config: Config) => {
         { query_string: query_data.iss, session: session_data.issuer },
         `${log_prefix}${error_description}`
       )
-      const err = new InvalidRequestError({ error_description })
+      const error_uri = undefined
+      const state = query_data.state
+      const err = new InvalidRequestError({
+        error_description,
+        error_uri,
+        state
+      })
       const payload = err.payload({ include_error_description })
       return reply.errorResponse(err.statusCode, payload)
     }
@@ -129,29 +152,47 @@ export const defAuthorizationCallback = (config: Config) => {
       return reply.errorResponse(err.statusCode, payload)
     }
 
-    const response = await fetch(token_endpoint, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        client_id,
-        code: query_data.code,
-        code_verifier: session_data.code_verifier,
-        grant_type: 'authorization_code',
-        redirect_uri
-      })
-    })
+    let revocation_endpoint = config.revocation_endpoint
+    if (!revocation_endpoint) {
+      request.log.debug(
+        `${log_prefix}revocation_endpoint not provided in config. Trying to find it in the session.`
+      )
+      revocation_endpoint = request.session.get('revocation_endpoint')
+    }
 
-    if (!response.ok) {
-      const msg = await errorMessageFromJSONResponse(response)
-      const error_description = `Failed to exchange authorization code for access token: ${msg}`
+    if (!revocation_endpoint) {
+      const error_description = `Revocation endpoint not set. It was neither provided in the configuration, nor it was found in the session.`
       const err = new InvalidRequestError({ error_description })
       const payload = err.payload({ include_error_description })
-      // return reply
-      //   .code(err.statusCode)
-      //   .send(err.payload({ include_error_description }))
+      return reply.errorResponse(err.statusCode, payload)
+    }
+
+    let response: Response
+    try {
+      response = await fetch(token_endpoint, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          client_id,
+          code: query_data.code,
+          code_verifier: session_data.code_verifier,
+          grant_type: 'authorization_code',
+          redirect_uri
+        })
+      })
+
+      if (!response.ok) {
+        const err = await errorResponseFromJSONResponse(response)
+        const payload = err.payload({ include_error_description })
+        return reply.errorResponse(err.statusCode, payload)
+      }
+    } catch (ex: any) {
+      const error_description = `Failed to obtain an access token from the token endpoint: ${ex.message}`
+      const err = new ServerError({ error_description })
+      const payload = err.payload({ include_error_description })
       return reply.errorResponse(err.statusCode, payload)
     }
 

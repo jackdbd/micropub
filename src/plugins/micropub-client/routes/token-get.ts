@@ -1,9 +1,6 @@
 import type { RouteHandler } from 'fastify'
-import {
-  InvalidRequestError,
-  UnauthorizedError
-} from '../../../lib/fastify-errors/index.js'
-import { errorMessageFromJSONResponse } from '../../../lib/oauth2/index.js'
+import { UnauthorizedError } from '../../../lib/fastify-errors/index.js'
+import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type { IntrospectionResponseBodySuccess } from '../../introspection-endpoint/index.js'
 
 export interface TokenGetConfig {
@@ -40,7 +37,7 @@ export const defTokenGet = (config: TokenGetConfig) => {
     const token = access_token
     // const token_type_hint = 'refresh_token'
     // const token = refresh_token!
-    request.log.warn(
+    request.log.debug(
       `${log_prefix}calling ${introspection_endpoint} to introspect token (token_type_hint: ${token_type_hint})`
     )
 
@@ -55,9 +52,7 @@ export const defTokenGet = (config: TokenGetConfig) => {
     })
 
     if (!response.ok) {
-      const msg = await errorMessageFromJSONResponse(response)
-      const error_description = `Cannot introspect ${token_type_hint}: ${msg}`
-      const err = new InvalidRequestError({ error_description })
+      const err = await errorResponseFromJSONResponse(response)
       return reply
         .code(err.statusCode)
         .send(err.payload({ include_error_description }))

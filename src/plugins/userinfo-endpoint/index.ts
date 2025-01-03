@@ -3,10 +3,12 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
+import { profile } from '../../lib/indieauth/index.js'
+import { error_response } from '../../lib/oauth2/index.js'
+import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defUserinfoGet } from './routes/userinfo-get.js'
 import { options as options_schema, type Options } from './schemas.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
@@ -89,8 +91,11 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
         // validateScopeEmail,
         // validateScopeProfile,
         // validateAccessTokenNotBlacklisted
-      ]
-      // schema: userinfo_get_request
+      ],
+      schema: {
+        // body: '',
+        response: { 200: profile, '4xx': error_response, '5xx': error_response }
+      }
     },
     defUserinfoGet({ include_error_description, log_prefix })
   )

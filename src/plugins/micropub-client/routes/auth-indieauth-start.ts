@@ -7,7 +7,7 @@ import {
   metadataEndpoint,
   serverMetadata
 } from '../../../lib/indieauth/index.js'
-import type { AuthStartGetRequestQuerystring } from './schemas.js'
+import type { AuthStartGetRequestQuerystring } from '../schemas.js'
 
 export interface Config {
   /**
@@ -137,6 +137,14 @@ export const defIndieAuthStart = (config: Config) => {
       const error_description = `The OAuth Client ID Metadata Document published at ${metadata_endpoint} does not include 'code_challenge_methods_supported'. This is a problem, since all IndieAuth clients MUST use PKCE.`
       throw new InvalidRequestError({ error_description })
     }
+
+    request.session.set(
+      'code_challenge_methods_supported',
+      code_challenge_methods_supported
+    )
+    request.log.debug(
+      `${prefix}includes 'code_challenge_methods_supported'. Set it in session.`
+    )
 
     // The "code_challenge_method" value must be set either to "S256" or a value
     // defined by a cryptographically secure "code_challenge_method" extension.

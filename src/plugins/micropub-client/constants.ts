@@ -18,6 +18,7 @@ export const DEFAULT = {
   INDIEAUTH_START_PATH: '/auth/indieauth',
   INDIEAUTH_REDIRECT_PATH: '/auth/indieauth/callback',
   INDIEAUTH_CLIENT_ID: process.env.INDIEAUTH_CLIENT_ID!,
+  INDIEAUTH_CLIENT_LOGO_URI: 'https://www.svgrepo.com/show/148626/test.svg',
   // LINKEDIN_AUTH_START_PATH: '/auth/linkedin',
   // LINKEDIN_AUTH_REDIRECT_PATH: '/auth/linkedin/callback',
   // LINKEDIN_OAUTH_CLIENT_ID: process.env.LINKEDIN_OAUTH_CLIENT_ID!,

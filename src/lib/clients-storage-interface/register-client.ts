@@ -1,10 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import { client_id, me, redirect_uri } from '../indieauth/index.js'
+import { client_id } from '../indieauth/index.js'
 import { failure } from '../schemas/failure.js'
 import { conformResult } from '../validators.js'
-import { type ClientRecord } from './schemas.js'
+import { client_record, type ClientRecord } from './schemas.js'
 
 const success = Type.Object({
   error: Type.Optional(Type.Undefined()),
@@ -18,9 +18,8 @@ const register_client_result_promise = Type.Promise(
 const DESCRIPTION = `Function that stores the IndieAuth client metadata to some storage (e.g. a database).`
 
 export const register_client_param = Type.Object({
-  client_id,
-  me,
-  redirect_uri
+  ...client_record.properties,
+  client_id
 })
 
 export type RegisterClientParam = Static<typeof register_client_param>

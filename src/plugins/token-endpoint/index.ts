@@ -1,31 +1,40 @@
 import formbody from '@fastify/formbody'
 import { applyToDefaults } from '@hapi/hoek'
+import { Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
+// import { defRedirectWhenNotAuthenticated } from '../../lib/fastify-hooks/index.js'
+import { error_response } from '../../lib/oauth2/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { access_token_request_body } from '../authorization-endpoint/index.js'
-import { access_token_response_body_success } from './routes/schemas.js'
 import { defConfigGet } from './routes/token-config-get.js'
 import { defTokenPost } from './routes/token-post.js'
 import { DEFAULT, NAME } from './constants.js'
-import { options as options_schema, type Options } from './schemas.js'
+import {
+  access_token_response_body_success,
+  options as options_schema,
+  refresh_request_body,
+  type Options
+} from './schemas.js'
 
 export {
   access_token_response_body_success,
   type AccessTokenResponseBodySuccess
-} from './routes/schemas.js'
+} from './schemas.js'
 
 const defaults: Partial<Options> = {
   accessTokenExpiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
-  authorizationEndpoint: DEFAULT.AUTHORIZATION_ENDPOINT,
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
   refreshTokenExpiration: DEFAULT.REFRESH_TOKEN_EXPIRATION,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
+/**
+ * Adds an IndieAuth Token Endpoint to a Fastify server.
+ */
 const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify,
   options,
@@ -34,49 +43,60 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   const config = applyToDefaults(defaults, options) as Required<Options>
 
   const {
-    accessTokenExpiration: access_token_expiration,
-    authorizationEndpoint: authorization_endpoint,
-    includeErrorDescription: include_error_description,
+    accessTokenExpiration,
+    authorizationEndpoint,
+    includeErrorDescription,
+    // isAccessTokenBlacklisted,
     issuer,
     jwks,
-    logPrefix: log_prefix,
-    refreshTokenExpiration: refresh_token_expiration,
-    reportAllAjvErrors: report_all_ajv_errors,
-    storeAccessToken
+    logPrefix: prefix,
+    refreshTokenExpiration,
+    reportAllAjvErrors,
+    retrieveRefreshToken,
+    storeAccessToken,
+    storeRefreshToken,
+    revocationEndpoint,
+    userinfoEndpoint
   } = config
 
   let ajv: Ajv
   if (config.ajv) {
     ajv = config.ajv
   } else {
-    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), [
+    ajv = addFormats(new Ajv({ allErrors: reportAllAjvErrors }), [
       'email',
       'uri'
     ])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
 
   fastify.log.debug(
-    `${log_prefix}access token expiration: ${access_token_expiration}`
+    `${prefix}access token expiration: ${accessTokenExpiration}`
   )
   fastify.log.debug(
-    `${log_prefix}refresh token expiration: ${refresh_token_expiration}`
+    `${prefix}refresh token expiration: ${refreshTokenExpiration}`
   )
 
   // === PLUGINS ============================================================ //
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
-  fastify.log.debug(`${log_prefix}registered plugin: formbody`)
+  fastify.log.debug(`${prefix}registered plugin: formbody`)
 
   // === DECORATORS ========================================================= //
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
     fastify.log.debug(
-      `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
+      `${prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
+
+  // const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
+  //   isAccessTokenBlacklisted,
+  //   logPrefix: `${prefix}[hook] `,
+  //   redirectPath: '/login'
+  // })
 
   // === ROUTES ============================================================= //
   fastify.get('/token/config', defConfigGet(config))
@@ -84,20 +104,43 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/token',
     {
+      preHandler: function (_request, _reply, done) {
+        // const { grant_type } = request.body
+        // console.log('=== preHandler request.body ===', request.body)
+        // Require authentication for refresh token requests.
+        // https://datatracker.ietf.org/doc/html/rfc6749#section-3.2.1
+        // if (grant_type === 'refresh_token') {
+        // request.log.warn(
+        //   `${prefix}require authentication for refresh token requests`
+        // )
+        // TODO: do NOT redirect here. This is an API endpoint! A redirect
+        // might be ok for browser clients, but not for API clients (e.g. Bruno).
+        // await redirectWhenNotAuthenticated(request, reply)
+        // }
+        done()
+      },
       schema: {
-        body: access_token_request_body,
-        response: { '2xx': access_token_response_body_success }
+        body: Type.Union([access_token_request_body, refresh_request_body]),
+        response: {
+          200: access_token_response_body_success,
+          '4xx': error_response,
+          '5xx': error_response
+        }
       }
     },
     defTokenPost({
-      access_token_expiration,
+      accessTokenExpiration,
       ajv,
-      authorization_endpoint,
-      include_error_description,
+      authorizationEndpoint,
+      includeErrorDescription,
       issuer,
       jwks,
-      log_prefix,
-      storeAccessToken
+      logPrefix: prefix,
+      retrieveRefreshToken,
+      storeAccessToken,
+      storeRefreshToken,
+      revocationEndpoint,
+      userinfoEndpoint
     })
   )
 

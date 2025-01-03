@@ -13,6 +13,8 @@ export interface BaseErrorResponseBody {
   description?: string
   error: string
   error_description?: string
+  error_uri?: string
+  state?: string
   title?: string
 }
 
@@ -21,7 +23,9 @@ export function errorResponse<
 >(this: FastifyReply, code: number, body: B) {
   const title = body.title || 'Error'
   const description = body.description || 'Error page'
-  const error_description = body.error_description || undefined
+  const error_description = body.error_description
+  const error_uri = body.error_uri
+  const state = body.state
 
   // TODO: handle i18n here?
   let error: string
@@ -73,10 +77,12 @@ export function errorResponse<
       title,
       description,
       error,
-      error_description
+      error_description,
+      error_uri,
+      state
     })
   } else {
     this.header('Content-Type', APPLICATION_JSON)
-    return this.send({ error, error_description })
+    return this.send({ error, error_description, error_uri, state })
   }
 }

@@ -1,16 +1,17 @@
 import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import { client_id, me, redirect_uri } from '../indieauth/index.js'
-import { exp } from '../jwt/index.js'
-import { scope } from '../oauth2/index.js'
 import { failure } from '../schemas/failure.js'
 import { conformResult } from '../validators.js'
-import { code as code_schema, type GetRecord } from './schemas.js'
+import {
+  code as code_schema,
+  code_record,
+  type RetrieveRecord
+} from './schemas.js'
 
 const retrieve_authorization_code_success = Type.Object({
   error: Type.Optional(Type.Undefined()),
-  value: Type.Object({ client_id, exp, me, redirect_uri, scope })
+  value: code_record
 })
 
 const retrieve_authorization_code_result_promise = Type.Promise(
@@ -39,15 +40,14 @@ export const retrieveAuthorizationCode = Type.Any({ description: DESCRIPTION })
 
 export interface Config {
   ajv?: Ajv
-  getRecord: GetRecord
-  log?: (payload: any, message: string) => void
+  log?: (message: string, payload?: any) => void
   prefix?: string
   report_all_ajv_errors: boolean
+  retrieveRecord: RetrieveRecord
 }
 
 export const defRetrieveAuthorizationCode = (config: Config) => {
-  const { getRecord, report_all_ajv_errors } = config
-  //   const log = config.log || console.log
+  const { report_all_ajv_errors, retrieveRecord } = config
   const log = config.log || (() => {})
   const prefix = config.prefix ?? 'retrieve-authorization-code '
 
@@ -59,15 +59,14 @@ export const defRetrieveAuthorizationCode = (config: Config) => {
   }
 
   const retrieveAuthorizationCode: RetrieveAuthorizationCode = async (code) => {
-    log(code, `${prefix}code`)
-
     const { error } = conformResult({ prefix }, ajv, code_schema, code)
 
     if (error) {
       return { error }
     }
 
-    const { error: read_error, value: record } = await getRecord(code)
+    log(`${prefix}retrieve record about authorization code ${code}`)
+    const { error: read_error, value: record } = await retrieveRecord(code)
 
     if (read_error) {
       return { error: read_error }

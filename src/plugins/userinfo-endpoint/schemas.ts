@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { me } from '../../lib/indieauth/index.js'
+// import { me_after_url_canonicalization } from '../../lib/indieauth/index.js'
 import {
   isAccessTokenBlacklisted,
   type IsAccessTokenBlacklisted,
@@ -19,7 +19,7 @@ export const options = Type.Object({
 
   logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
-  me,
+  // me,
 
   reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,

@@ -1,14 +1,17 @@
 import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import { exp, iat, jti } from '../jwt/index.js'
+import { jti } from '../jwt/index.js'
 import { failure } from '../schemas/failure.js'
 import { conformResult } from '../validators.js'
-import { type GetRecord, type SetRecord } from './schemas.js'
+import {
+  access_token_record,
+  type RetrieveAccessTokenRecord,
+  type StoreAccessTokenRecord
+} from './schemas.js'
 
 export const store_access_token_param = Type.Object({
-  exp,
-  iat,
+  ...access_token_record.properties,
   jti
 })
 
@@ -42,15 +45,18 @@ export const storeAccessToken = Type.Any({ description: DESCRIPTION })
 
 export interface Config {
   ajv?: Ajv
-  getRecord: GetRecord
   log?: (payload: any, message: string) => void
   prefix?: string
   report_all_ajv_errors: boolean
-  setRecord: SetRecord
+  retrieveRecord: RetrieveAccessTokenRecord
+  storeRecord: StoreAccessTokenRecord
 }
 
+// TODO: decide what to do if the record already exists. Myabe allow configuring
+// the behavior using options?
+
 export const defStoreAccessToken = (config: Config) => {
-  const { getRecord, report_all_ajv_errors, setRecord } = config
+  const { report_all_ajv_errors, storeRecord } = config
   //   const log = config.log || console.log
   const log = config.log || (() => {})
   const prefix = config.prefix ?? 'store-access-token '
@@ -79,19 +85,19 @@ export const defStoreAccessToken = (config: Config) => {
     const { jti, ...record } = param
 
     log(jti, `${prefix}jti`)
-    const { error: read_error, value } = await getRecord(jti)
+    // const { error: read_error, value } = await retrieveRecord(jti)
 
-    if (read_error) {
-      return { error: read_error }
-    }
+    // if (read_error) {
+    //   return { error: read_error }
+    // }
 
-    if (value) {
-      return {
-        value: { message: `access token jti ${jti} has already been stored` }
-      }
-    }
+    // if (value) {
+    //   return {
+    //     value: { message: `access token jti ${jti} has already been stored` }
+    //   }
+    // }
 
-    const { error: write_error } = await setRecord(jti, record)
+    const { error: write_error } = await storeRecord(jti, record)
 
     if (write_error) {
       return { error: write_error }

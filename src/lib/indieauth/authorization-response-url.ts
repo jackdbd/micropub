@@ -6,7 +6,7 @@ export interface Config {
   state: string
 }
 
-export type AuthResponseQuery = Omit<Config, 'redirect_uri'>
+// type AuthResponseQuery = Omit<Config, 'redirect_uri'>
 
 /**
  * Builds the URL for the authorization callback.

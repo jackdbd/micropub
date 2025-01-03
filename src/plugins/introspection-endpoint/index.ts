@@ -21,7 +21,7 @@ export {
   type IntrospectionRequestBody,
   introspection_response_body_success,
   type IntrospectionResponseBodySuccess
-} from './routes/schemas.js'
+} from './schemas.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,

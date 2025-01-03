@@ -1,6 +1,8 @@
 import type Ajv from 'ajv'
 import type { Schema } from 'ajv'
 
+// Probably it's better to use ajv-errors instead of this function.
+// https://ajv.js.org/packages/ajv-errors.html
 export const validationErrors = <V>(ajv: Ajv, schema: Schema, value: V) => {
   const validate = ajv.compile(schema)
 
@@ -20,6 +22,9 @@ interface Config {
   prefix?: string
 }
 
+/**
+ * Validates that a value conforms to a schema. Returns a result object.
+ */
 export const conformResult = <V>(
   config: Config,
   ajv: Ajv,
@@ -52,6 +57,9 @@ export const conformResult = <V>(
   }
 }
 
+/**
+ * Throws if a value does not conform to a schema.
+ */
 export const throwIfDoesNotConform = <V>(
   config: Config,
   ajv: Ajv,

@@ -1,0 +1,51 @@
+{% extends "base.njk" %}
+
+{% block content %}
+<div>
+  <form id="token-refresh-form" action="{{ submit_path }}" method="get">
+    <p>Refresh your access token using the refresh token found in the session.</p>
+
+    <details>
+      <summary>Token identifiers</summary>
+      <ul>
+        <li>Access Token (jti)<code>{{ jti }}</code></li>
+        <li>Refresh Token<code>{{ refresh_token }}</code></li>
+      </ul>
+    </details>
+
+    <p>
+      If you submit this form,
+      {% if client_logo_uri %}
+      <span class="icon">
+        <img src="{{ client_logo_uri }}" alt="{{ client_name}} icon">
+      </span>
+      {% endif %}
+      <a href="{{ client_uri }}" target="_blank" rel="noopener noreferrer">{{ client_name }}</a> will ask <a href="{{ token_endpoint }}" target="_blank" rel="noopener noreferrer">{{ token_endpoint }}</a> to refresh the current access token.
+    </p>
+
+    <p>The new access token will have the following scopes:</p>
+    <ul>
+      {% for scope in scopes | sort %}
+        <li>{{ scope }}</li>
+      {% endfor %}
+    </ul>
+    <small>If you want to obtain a new access token with more scopes of the original access token, you will need to reauthorize.</small>
+
+    <p>
+      On success, you will be redirected to <a href="{{ redirect_path_on_success }}" target="_blank" rel="noopener noreferrer">{{ redirect_path_on_success }}</a>.
+    </p>
+
+    <p><button type="submit">Refresh Access Token</button></p>
+
+    <input type="hidden" name="authorization_endpoint" value="{{ authorization_endpoint }}" />
+    <input type="hidden" name="client_id" value="{{ client_id }}" />
+    <input type="hidden" name="grant_type" value="refresh_token" />
+    <input type="hidden" name="me" value="{{ me }}" />
+    <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
+    <input type="hidden" name="refresh_token" value="{{ refresh_token }}" />
+    <input type="hidden" name="revocation_endpoint" value="{{ revocation_endpoint }}" />
+    <input type="hidden" name="scope" value="{{ scope }}" />
+    <input type="hidden" name="token_endpoint" value="{{ token_endpoint }}" />
+  </form>
+</div>
+{% endblock %}

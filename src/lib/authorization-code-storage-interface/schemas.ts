@@ -1,7 +1,8 @@
 import { Static, Type } from '@sinclair/typebox'
-import { client_id, me, redirect_uri } from '../indieauth/index.js'
-import { exp } from '../jwt/index.js'
-import { scope } from '../oauth2/index.js'
+import { client_id, me_after_url_canonicalization } from '../indieauth/index.js'
+import { exp, iss } from '../jwt/index.js'
+import { redirect_uri, scope } from '../oauth2/index.js'
+import { code_challenge, code_challenge_method } from '../pkce/index.js'
 
 /**
  * Authorization code issued by the authorization endpoint.
@@ -32,8 +33,11 @@ export type Code = Static<typeof code>
 export const code_record = Type.Object(
   {
     client_id,
+    code_challenge,
+    code_challenge_method,
     exp,
-    me,
+    iss: Type.Optional(iss),
+    me: me_after_url_canonicalization,
     redirect_uri,
     scope,
     used: Type.Optional(Type.Boolean())
@@ -54,14 +58,14 @@ export const code_table = Type.Record(code, code_record, {
  */
 export type CodeTable = Static<typeof code_table>
 
-export type GetRecord = (
+export type RetrieveRecord = (
   code: Code
 ) => Promise<
   | { error: Error; value: undefined }
   | { error: undefined; value: CodeRecord | undefined }
 >
 
-export type SetRecord = (
+export type StoreRecord = (
   code: Code,
   record: CodeRecord
 ) => Promise<{ error: Error } | { error: undefined }>

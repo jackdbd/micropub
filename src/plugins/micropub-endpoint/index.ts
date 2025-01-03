@@ -5,6 +5,7 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
+import { canonicalUrl } from '../../lib/url-canonicalization.js'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
@@ -46,7 +47,6 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     includeErrorDescription: include_error_description,
     isAccessTokenBlacklisted,
     logPrefix: log_prefix,
-    me,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
     multipartFormDataMaxFileSize,
@@ -108,6 +108,8 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   const logIatAndExpClaims = defLogIatAndExpClaims({ ajv })
 
+  const me = canonicalUrl(config.me)
+
   const validateClaimMe = defValidateClaim(
     { claim: 'me', op: '==', value: me },
     { ajv }
@@ -154,7 +156,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
       delete: deleteContent,
       include_error_description,
       log_prefix,
-      me,
+      // me,
       media_endpoint,
       micropub_endpoint,
       undelete,

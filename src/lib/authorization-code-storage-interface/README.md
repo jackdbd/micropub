@@ -1,7 +1,11 @@
 # Authorization code storage interface
 
-This interface defines the methods that must be implemented by a storage class that will be used to store authorization codes.
+This library defines a protocol for storing and retrieving authorization codes.
 
-- `markAuthorizationCodeAsUsed`
-- `retrieveIssuedCode`
+- `retrieveAuthorizationCode`
 - `storeAuthorizationCode`
+
+Implementations:
+
+- [Filesystem](../fs-storage/README.md)
+- [In-Memory](../in-memory-storage/README.md)

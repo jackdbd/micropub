@@ -16,12 +16,12 @@ interface Config {
 export const defRetrieveAuthorizationCode = (config: Config) => {
   const { ajv, atom, prefix, report_all_ajv_errors } = config
 
-  const { getRecord } = defStorage({ atom })
+  const { retrieveRecord } = defStorage({ atom })
 
   return defImplementation({
     ajv,
-    getRecord,
     prefix,
-    report_all_ajv_errors
+    report_all_ajv_errors,
+    retrieveRecord
   })
 }

@@ -1,4 +1,3 @@
-import { errorMessageFromJSONResponse } from '../oauth2/index.js'
 import { canonicalUrl } from '../url-canonicalization.js'
 import type { ClientMetadata } from './schemas.js'
 
@@ -22,19 +21,19 @@ export const clientMetadata = async (client_id: string) => {
       method: 'GET',
       headers: { Accept: 'application/json' }
     })
-  } catch (err) {
-    return { error: new Error(`failed to fetch ${url}`) }
+  } catch (ex: any) {
+    return { error: new Error(`Failed to fetch ${url}: ${ex.message}`) }
   }
 
   if (!response.ok) {
-    const msg = await errorMessageFromJSONResponse(response)
-    return { error: new Error(`failed to fetch ${url}: ${msg}`) }
+    const details = `${response.statusText} (${response.status})`
+    return { error: new Error(`Failed to fetch ${url}: ${details}`) }
   }
 
   try {
     const metadata: ClientMetadata = await response.json()
     return { value: metadata }
-  } catch (err) {
-    return { error: new Error(`failed to parse JSON response`) }
+  } catch (ex: any) {
+    return { error: new Error(`Failed to parse JSON response: ${ex.message}`) }
   }
 }

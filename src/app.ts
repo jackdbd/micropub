@@ -21,7 +21,6 @@ import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/index.js'
 
 import auth from './plugins/authorization-endpoint/index.js'
-import indieauthClient from './plugins/indieauth-client/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropubClient, {
   type BaseErrorResponseBody,
@@ -50,28 +49,25 @@ import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
 
 // Filesystem storage backend //////////////////////////////////////////////////
-// import {
-//   defIsAccessTokenBlacklisted,
-//   defMarkAuthorizationCodeAsUsed,
-//   defMarkTokenAsRevoked,
-//   defRetrieveAuthorizationCode,
-//   defStoreAccessToken,
-//   defStoreAuthorizationCode,
-//   init
-// } from './lib/fs-storage/index.js'
+import {
+  defRetrieveAccessToken,
+  defRetrieveAuthorizationCode,
+  defRetrieveRefreshToken,
+  defStoreAccessToken,
+  defStoreAuthorizationCode,
+  defStoreRefreshToken,
+  init
+} from './lib/fs-storage/index.js'
 ////////////////////////////////////////////////////////////////////////////////
 
 // In-memory storage backend ///////////////////////////////////////////////////
-import {
-  defIsAccessTokenBlacklisted,
-  defMarkAuthorizationCodeAsUsed,
-  defMarkTokenAsRevoked,
-  defRetrieveAuthorizationCode,
-  defStoreAccessToken,
-  defStoreAuthorizationCode,
-  initAccessTokensStorage,
-  initAuthorizationCodesStorage
-} from './lib/in-memory-storage/index.js'
+// import {
+//   defRetrieveAuthorizationCode,
+//   defStoreAccessToken,
+//   defStoreAuthorizationCode,
+//   initAccessTokensStorage,
+//   initAuthorizationCodesStorage
+// } from './lib/in-memory-storage/index.js'
 ////////////////////////////////////////////////////////////////////////////////
 
 const __filename = fileURLToPath(import.meta.url)
@@ -114,6 +110,7 @@ declare module '@fastify/secure-session' {
     access_token: string
     claims: AccessTokenClaims
     code_challenge: string
+    code_challenge_methods_supported: string[]
     code_verifier: string
     introspection_endpoint: string
     issuer: string
@@ -147,11 +144,11 @@ export async function defFastify(config: Config) {
     github_repo,
     github_token,
     include_error_description: includeErrorDescription,
-    indieauth_client_id: indieAuthClientId,
-    indieauth_client_logo_uri: indieAuthLogoUri,
-    indieauth_client_name: indieAuthClientName,
-    indieauth_client_redirect_uris: indieAuthRedirectUris,
-    indieauth_client_uri: indieAuthClientUri,
+    indieauth_client_id,
+    indieauth_client_logo_uri,
+    indieauth_client_name,
+    indieauth_client_redirect_uris,
+    indieauth_client_uri,
     introspection_endpoint: introspectionEndpoint,
     issuer,
     jwks,
@@ -204,89 +201,82 @@ export async function defFastify(config: Config) {
   // console.log(`=== app config ===`)
   // console.log(config)
 
-  // Authorization code storage - Filesystem backend ///////////////////////////
-  // const filepath_codes = await init({
-  //   dirpath: path.join(__dirname, '..', 'assets'),
-  //   filename: 'authorization-codes.json'
-  // })
-
-  // const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
-  //   ajv,
-  //   filepath: filepath_codes,
-  //   report_all_ajv_errors: reportAllAjvErrors
-  // })
+  // Authorization code storage - In-memory backend ////////////////////////////
+  // const atom_codes = await initAuthorizationCodesStorage()
 
   // const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
   //   ajv,
-  //   filepath: filepath_codes,
+  //   atom: atom_codes,
   //   report_all_ajv_errors: reportAllAjvErrors
   // })
 
   // const storeAuthorizationCode = defStoreAuthorizationCode({
   //   ajv,
-  //   filepath: filepath_codes,
+  //   atom: atom_codes,
   //   report_all_ajv_errors: reportAllAjvErrors
   // })
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Authorization code storage - In-memory backend ////////////////////////////
-  const atom_codes = await initAuthorizationCodesStorage()
-
-  const markAuthorizationCodeAsUsed = defMarkAuthorizationCodeAsUsed({
-    ajv,
-    atom: atom_codes,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
-
-  const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
-    ajv,
-    atom: atom_codes,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
-
-  const storeAuthorizationCode = defStoreAuthorizationCode({
-    ajv,
-    atom: atom_codes,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
   //////////////////////////////////////////////////////////////////////////////
 
   // Token storage - Filesystem backend ////////////////////////////////////////
-  // const filepath_access_tokens = await init({
-  //   dirpath: path.join(__dirname, '..', 'assets'),
-  //   filename: 'access-tokens.json'
-  // })
+  const filepath_access_tokens = await init({
+    dirpath: path.join(__dirname, '..', 'assets'),
+    filename: 'access-tokens.json'
+  })
 
-  // const storeAccessToken = defStoreAccessToken({
-  //   ajv,
-  //   filepath: filepath_access_tokens,
-  //   report_all_ajv_errors: reportAllAjvErrors
-  // })
+  const filepath_refresh_tokens = await init({
+    dirpath: path.join(__dirname, '..', 'assets'),
+    filename: 'refresh-tokens.json'
+  })
 
-  // const isAccessTokenBlacklisted = defIsAccessTokenBlacklisted({
-  //   filepath: filepath_access_tokens
-  // })
-
-  // const markTokenAsRevoked = defMarkTokenAsRevoked({
-  //   filepath: filepath_access_tokens
-  // })
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Token storage - In-memory backend /////////////////////////////////////////
-  const atom_tokens = await initAccessTokensStorage()
-
-  const storeAccessToken = defStoreAccessToken({
+  const retrieveAccessToken = defRetrieveAccessToken({
     ajv,
-    atom: atom_tokens,
+    filepath: filepath_access_tokens,
     report_all_ajv_errors: reportAllAjvErrors
   })
 
-  const isAccessTokenBlacklisted = defIsAccessTokenBlacklisted({
-    atom: atom_tokens
+  const retrieveRefreshToken = defRetrieveRefreshToken({
+    ajv,
+    filepath: filepath_refresh_tokens,
+    report_all_ajv_errors: reportAllAjvErrors
   })
 
-  const markTokenAsRevoked = defMarkTokenAsRevoked({ atom: atom_tokens })
+  const storeAccessToken = defStoreAccessToken({
+    ajv,
+    filepath: filepath_access_tokens,
+    report_all_ajv_errors: reportAllAjvErrors
+  })
+
+  const storeRefreshToken = defStoreRefreshToken({
+    ajv,
+    filepath: filepath_refresh_tokens,
+    report_all_ajv_errors: reportAllAjvErrors
+  })
+
   //////////////////////////////////////////////////////////////////////////////
+
+  // Token storage - In-memory backend /////////////////////////////////////////
+  // const atom_tokens = await initAccessTokensStorage()
+
+  // const storeAccessToken = defStoreAccessToken({
+  //   ajv,
+  //   atom: atom_tokens,
+  //   report_all_ajv_errors: reportAllAjvErrors
+  // })
+  //////////////////////////////////////////////////////////////////////////////
+
+  const isAccessTokenBlacklisted = async (jti: string) => {
+    const { error, value: record } = await retrieveAccessToken(jti)
+
+    if (error) {
+      return { error }
+    }
+
+    if (!record) {
+      return { value: false }
+    }
+
+    return { value: record.revoked ? true : false }
+  }
 
   const fastify = Fastify({
     logger: {
@@ -301,6 +291,35 @@ export async function defFastify(config: Config) {
       level: log_level
     }
   })
+
+  // Authorization code storage - Filesystem backend ///////////////////////////
+  const filepath_codes = await init({
+    dirpath: path.join(__dirname, '..', 'assets'),
+    filename: 'authorization-codes.json'
+  })
+
+  const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
+    ajv,
+    filepath: filepath_codes,
+    // I don't know why, but I need to close over the fastify instance.
+    // This means that this does not work:
+    // log: fastify.log.debug,
+    // While this works:
+    log: (message: string, payload: any) => {
+      fastify.log.debug(payload, message)
+    },
+    report_all_ajv_errors: reportAllAjvErrors
+  })
+
+  const storeAuthorizationCode = defStoreAuthorizationCode({
+    ajv,
+    filepath: filepath_codes,
+    log: (message: string, payload: any) => {
+      fastify.log.debug(payload, message)
+    },
+    report_all_ajv_errors: reportAllAjvErrors
+  })
+  //////////////////////////////////////////////////////////////////////////////
 
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
@@ -371,35 +390,28 @@ export async function defFastify(config: Config) {
     authorizationCodeExpiration,
     includeErrorDescription,
     issuer,
-    markAuthorizationCodeAsUsed,
     reportAllAjvErrors,
     retrieveAuthorizationCode,
     storeAuthorizationCode
   })
 
-  fastify.register(indieauthClient, {
-    ajv,
-    clientId: indieAuthClientId,
-    clientName: indieAuthClientName,
-    clientUri: indieAuthClientUri,
-    logoUri: indieAuthLogoUri,
-    redirectUris: indieAuthRedirectUris,
-    reportAllAjvErrors
-  })
-
   fastify.register(micropubClient, {
     ajv,
     authorizationEndpoint,
+    clientId: indieauth_client_id,
+    clientName: indieauth_client_name,
+    clientLogoUri: indieauth_client_logo_uri,
+    clientUri: indieauth_client_uri,
     githubAuthStartPath,
     githubAuthRedirectPath,
     githubOAuthClientId,
     githubOAuthClientSecret,
-    indieAuthClientId,
+    includeErrorDescription,
     introspectionEndpoint,
     isAccessTokenBlacklisted,
     issuer,
     micropubEndpoint,
-    redirectUris: indieAuthRedirectUris,
+    redirectUris: indieauth_client_redirect_uris,
     reportAllAjvErrors,
     revocationEndpoint,
     submitEndpoint,
@@ -409,6 +421,7 @@ export async function defFastify(config: Config) {
 
   fastify.register(introspection, {
     ajv,
+    includeErrorDescription,
     isAccessTokenBlacklisted,
     issuer,
     jwksUrl: jwks_url,
@@ -417,13 +430,17 @@ export async function defFastify(config: Config) {
 
   fastify.register(revocation, {
     ajv,
+    includeErrorDescription,
     isAccessTokenBlacklisted,
     issuer,
     jwksUrl: jwks_url,
-    markTokenAsRevoked,
-    maxTokenAge: access_token_expiration,
+    maxAccessTokenAge: access_token_expiration,
     me,
-    reportAllAjvErrors
+    reportAllAjvErrors,
+    retrieveAccessToken,
+    retrieveRefreshToken,
+    storeAccessToken,
+    storeRefreshToken
   })
 
   fastify.register(token, {
@@ -431,17 +448,23 @@ export async function defFastify(config: Config) {
     ajv,
     authorizationEndpoint,
     includeErrorDescription,
+    isAccessTokenBlacklisted,
     issuer,
     jwks,
     refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors,
-    storeAccessToken
+    retrieveRefreshToken,
+    revocationEndpoint,
+    storeAccessToken,
+    storeRefreshToken,
+    userinfoEndpoint
   })
 
   fastify.register(userinfo, {
     ajv,
+    includeErrorDescription,
     isAccessTokenBlacklisted,
-    me,
+    // me,
     reportAllAjvErrors
   })
 
@@ -485,6 +508,7 @@ export async function defFastify(config: Config) {
   fastify.register(media, {
     ajv,
     delete: r2.delete,
+    includeErrorDescription,
     isAccessTokenBlacklisted,
     me,
     multipartFormDataMaxFileSize,
@@ -496,6 +520,7 @@ export async function defFastify(config: Config) {
     ajv,
     create: github.create,
     delete: github.delete,
+    includeErrorDescription,
     isAccessTokenBlacklisted,
     me,
     mediaEndpoint,
@@ -518,6 +543,7 @@ export async function defFastify(config: Config) {
   fastify.register(syndicate, {
     ajv,
     get: github.get,
+    includeErrorDescription,
     isAccessTokenBlacklisted,
     me,
     publishedUrlToStorageLocation: github.publishedUrlToStorageLocation,
@@ -526,6 +552,7 @@ export async function defFastify(config: Config) {
     update: github.update
   })
 
+  // TODO: register this plugin in micropub-client, not here.
   fastify.register(view, {
     engine: { nunjucks },
     templates: [path.join(__dirname, 'templates')],
@@ -556,14 +583,6 @@ export async function defFastify(config: Config) {
   // === HOOKS ============================================================== //
 
   // === ROUTES ============================================================= //
-  fastify.get('/', async (_request, reply) => {
-    // request.log.warn(request.session.data(), `${LOG_PREFIX}session_data`)
-    return reply.view('home.njk', {
-      title: 'Home page',
-      description: 'Home page',
-      name: 'World'
-    })
-  })
 
   fastify.get('/config', async (_request, reply) => {
     return reply.successResponse(200, {

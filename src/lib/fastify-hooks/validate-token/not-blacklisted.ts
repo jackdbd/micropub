@@ -4,10 +4,9 @@ import Ajv from 'ajv'
 import type { onRequestAsyncHookHandler } from 'fastify'
 import {
   InvalidTokenError,
-  ServerError,
   UnauthorizedError
 } from '../../fastify-errors/index.js'
-import { accessTokenFromRequestHeader } from '../../fastify-request-utils/index.js'
+import { accessTokenFromRequestHeader } from '../../fastify-utils/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
 import { throwIfDoesNotConform } from '../../validators.js'
 import { DEFAULT } from './constants.js'
@@ -71,7 +70,8 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
 
     if (!access_token) {
       const error_description = `Access token not found, neither in session key '${session_key}', nor in request header '${hkey}' (in '${header_key}').`
-      throw new UnauthorizedError({ error_description })
+      const error_uri = undefined
+      throw new UnauthorizedError({ error_description, error_uri })
     }
 
     const { error: decode_error, value: claims } =
@@ -79,7 +79,8 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
 
     if (decode_error) {
       const error_description = `Error while decoding access token: ${decode_error.message}`
-      throw new InvalidTokenError({ error_description })
+      const error_uri = undefined
+      throw new InvalidTokenError({ error_description, error_uri })
     }
 
     const { jti } = claims
@@ -87,17 +88,21 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
       `${prefix}validating that token ID ${jti} is not blacklisted`
     )
 
+    // TODO: replace with retrieveAccessToken?
+
     const { error: black_err, value: blacklisted } =
       await isAccessTokenBlacklisted(jti)
 
     if (black_err) {
       const error_description = black_err.message
-      throw new ServerError({ error_description })
+      const error_uri = undefined
+      throw new InvalidTokenError({ error_description, error_uri })
     }
 
     if (blacklisted) {
       const error_description = `Token ${jti} is blacklisted.`
-      throw new InvalidTokenError({ error_description })
+      const error_uri = undefined
+      throw new InvalidTokenError({ error_description, error_uri })
     }
   }
 

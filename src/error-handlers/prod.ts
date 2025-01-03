@@ -132,7 +132,7 @@ export const defErrorHandler = (options?: Options) => {
       )
 
       if (result.delivered) {
-        request.log.info(`${prefix}result.message`)
+        request.log.debug(`${prefix}result.message`)
       } else {
         request.log.warn(`${prefix}result.message`)
       }

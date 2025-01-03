@@ -1,8 +1,5 @@
-export {
-  defMarkAuthorizationCodeAsUsed,
-  markAuthorizationCodeAsUsed,
-  type MarkAuthorizationCodeAsUsed
-} from './mark-code-as-used.js'
+import type { RetrieveAuthorizationCode } from './retrieve-authorization-code.js'
+import type { StoreAuthorizationCode } from './store-authorization-code.js'
 
 export {
   defRetrieveAuthorizationCode,
@@ -15,8 +12,8 @@ export {
   type CodeRecord,
   code_table,
   type CodeTable,
-  type GetRecord,
-  type SetRecord
+  type RetrieveRecord,
+  type StoreRecord
 } from './schemas.js'
 
 export {
@@ -24,3 +21,8 @@ export {
   storeAuthorizationCode,
   type StoreAuthorizationCode
 } from './store-authorization-code.js'
+
+export interface AuthorizationCodeStorage {
+  retrieveAuthorizationCode: RetrieveAuthorizationCode
+  storeAuthorizationCode: StoreAuthorizationCode
+}

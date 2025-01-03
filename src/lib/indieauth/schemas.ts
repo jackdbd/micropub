@@ -4,6 +4,7 @@ import {
   grant_type,
   introspection_endpoint,
   response_mode,
+  redirect_uri,
   response_type,
   revocation_endpoint,
   scope,
@@ -27,16 +28,21 @@ export const issuer = Type.String({
 })
 
 /**
- * Profile URL.
- *
- * The client SHOULD provide the "me" query string parameter to the
- * authorization endpoint, either the exact value the user entered, or the value
- * after applying [URL Canonicalization](https://indieauth.spec.indieweb.org/#url-canonicalization).
+ * The `me` parameter. It might not be a canonical URL.
  */
-export const me = Type.String({
-  description: `Profile URL`,
+export const me_before_url_canonicalization = Type.String({
+  description: `Profile URL (before URL Canonicalization)`,
+  minLength: 1,
+  title: 'me (not canonicalized)'
+})
+
+/**
+ * Profile URL (after [URL Canonicalization](https://indieauth.spec.indieweb.org/#url-canonicalization)).
+ */
+export const me_after_url_canonicalization = Type.String({
+  description: `Profile URL (after URL Canonicalization)`,
   format: 'uri',
-  title: 'me'
+  title: 'me (canonicalized)'
 })
 
 export const jwks_uri = Type.String({
@@ -46,13 +52,13 @@ export const jwks_uri = Type.String({
 })
 
 /**
- * [Profile information](https://indieauth.spec.indieweb.org/#profile-information).
+ * [IndieAuth profile information](https://indieauth.spec.indieweb.org/#profile-information).
  */
 export const profile = Type.Object({
   name: Type.String({ minLength: 1 }),
   url: Type.String({ format: 'uri' }),
   photo: Type.String({ format: 'uri' }),
-  email: Type.String({ format: 'email' })
+  email: Type.Optional(Type.String({ format: 'email' }))
 })
 
 export type Profile = Static<typeof profile>
@@ -257,24 +263,34 @@ export const server_metadata = Type.Object({
 export type ServerMetadata = Static<typeof server_metadata>
 
 /**
- * The ID of the application that asks for authorization. An IndieAuth client ID
- * is a URL.
+ * The ID of the application that asks for authorization.
+ *
+ * An IndieAuth client ID is always a URL.
  */
 export const client_id = Type.String({
-  $id: 'indieauth-client-id',
   description:
     'The ID of the application that asks for authorization. An IndieAuth client ID is a URL.',
   format: 'uri'
 })
 
+/**
+ * Human readable name of the client to be presented on the consent screen.
+ */
 export const client_name = Type.String({ minLength: 1 })
 
+/**
+ * URL of a webpage providing information about the client.
+ */
 export const client_uri = Type.String({ format: 'uri' })
 
+/**
+ * URL that references a logo or icon for the client.
+ */
 export const logo_uri = Type.String({ format: 'uri' })
 
-export const redirect_uri = Type.String({ format: 'uri' })
-
+/**
+ * An array of redirect URIs.
+ */
 export const redirect_uris = Type.Array(redirect_uri, { minItems: 1 })
 
 /**
@@ -285,10 +301,33 @@ export const redirect_uris = Type.Array(redirect_uri, { minItems: 1 })
  */
 export const client_metadata = Type.Object(
   {
+    /**
+     * The client identifier. The authorization server MUST verify that the
+     * client_id in the document matches the client_id of the URL where the
+     * document was retrieved.
+     */
     client_id,
+
+    /**
+     * Human readable name of the client to be presented on the consent screen.
+     */
     client_name: Type.Optional(client_name),
+
+    /**
+     * URL of a webpage providing information about the client.
+     *
+     * The client_uri MUST be a prefix of the client_id.
+     */
     client_uri,
+
+    /**
+     * URL that references a logo or icon for the client.
+     */
     logo_uri: Type.Optional(logo_uri),
+
+    /**
+     * An array of redirect URIs.
+     */
     redirect_uris: Type.Optional(redirect_uris)
   },
   {

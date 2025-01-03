@@ -1,7 +1,7 @@
 import {
   type CodeTable,
-  type GetRecord,
-  type SetRecord
+  type RetrieveRecord,
+  type StoreRecord
 } from '../authorization-code-storage-interface/index.js'
 import { readJSON, writeJSON } from './json.js'
 
@@ -12,7 +12,7 @@ interface Config {
 export const defStorage = (config: Config) => {
   const { filepath } = config
 
-  const getRecord: GetRecord = async (code) => {
+  const retrieveRecord: RetrieveRecord = async (code) => {
     const { error, value: table } = await readJSON<CodeTable>(filepath)
 
     if (error) {
@@ -22,7 +22,7 @@ export const defStorage = (config: Config) => {
     return { value: table[code] }
   }
 
-  const setRecord: SetRecord = async (code, record) => {
+  const storeRecord: StoreRecord = async (code, record) => {
     const { error, value: table } = await readJSON<CodeTable>(filepath)
 
     if (error) {
@@ -40,5 +40,5 @@ export const defStorage = (config: Config) => {
     return { error: undefined }
   }
 
-  return { getRecord, setRecord }
+  return { retrieveRecord, storeRecord }
 }

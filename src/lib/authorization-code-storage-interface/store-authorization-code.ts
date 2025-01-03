@@ -1,20 +1,13 @@
 import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import { client_id, me, redirect_uri } from '../indieauth/index.js'
-import { exp } from '../jwt/index.js'
-import { scope } from '../oauth2/index.js'
 import { failure } from '../schemas/failure.js'
 import { conformResult } from '../validators.js'
-import { code, type GetRecord, type SetRecord } from './schemas.js'
+import { code, code_record, type StoreRecord } from './schemas.js'
 
 export const store_authorization_code_param = Type.Object({
-  client_id,
-  code,
-  exp,
-  me,
-  redirect_uri,
-  scope
+  ...code_record.properties,
+  code
 })
 
 export type StoreAuthorizationCodeParam = Static<
@@ -53,16 +46,14 @@ export const storeAuthorizationCode = Type.Any({
 
 export interface Config {
   ajv?: Ajv
-  getRecord: GetRecord
-  log?: (payload: any, message: string) => void
+  log?: (message: string, payload?: any) => void
   prefix?: string
   report_all_ajv_errors: boolean
-  setRecord: SetRecord
+  storeRecord: StoreRecord
 }
 
 export const defStoreAuthorizationCode = (config: Config) => {
-  const { getRecord, report_all_ajv_errors, setRecord } = config
-  //   const log = config.log || console.log
+  const { report_all_ajv_errors, storeRecord } = config
   const log = config.log || (() => {})
   const prefix = config.prefix ?? 'store-authorization-code '
 
@@ -74,8 +65,6 @@ export const defStoreAuthorizationCode = (config: Config) => {
   }
 
   const storeAuthorizationCode: StoreAuthorizationCode = async (param) => {
-    log(param, `${prefix}param`)
-
     const { error } = conformResult(
       { prefix },
       ajv,
@@ -89,20 +78,8 @@ export const defStoreAuthorizationCode = (config: Config) => {
 
     const { code, ...record } = param
 
-    log(code, `${prefix}code`)
-    const { error: read_error, value } = await getRecord(code)
-
-    if (read_error) {
-      return { error: read_error }
-    }
-
-    if (value) {
-      return {
-        value: { message: `authorization code ${code} has already been stored` }
-      }
-    }
-
-    const { error: write_error } = await setRecord(code, record)
+    log(`${prefix}store record about authorization code ${code}`, record)
+    const { error: write_error } = await storeRecord(code, record)
 
     if (write_error) {
       return { error: write_error }
