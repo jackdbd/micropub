@@ -51,14 +51,22 @@ export const jwks_uri = Type.String({
   title: 'JWKS URI'
 })
 
+export const name = Type.String({ minLength: 1 })
+
+export const url = Type.String({ format: 'uri' })
+
+export const photo = Type.String({ format: 'uri' })
+
+export const email = Type.String({ format: 'email' })
+
 /**
  * [IndieAuth profile information](https://indieauth.spec.indieweb.org/#profile-information).
  */
 export const profile = Type.Object({
-  name: Type.String({ minLength: 1 }),
-  url: Type.String({ format: 'uri' }),
-  photo: Type.String({ format: 'uri' }),
-  email: Type.Optional(Type.String({ format: 'email' }))
+  name,
+  url,
+  photo,
+  email: Type.Optional(email)
 })
 
 export type Profile = Static<typeof profile>

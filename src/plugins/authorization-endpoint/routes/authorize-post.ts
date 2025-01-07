@@ -65,10 +65,10 @@ export const defAuthorizePost = (config: Config) => {
     request.log.debug(
       `${prefix}verifying that ${code} is among stored authorization codes`
     )
-    const { error: read_error, value: record } =
+    const { error: retrieve_error, value: record } =
       await retrieveAuthorizationCode(code)
 
-    if (read_error) {
+    if (retrieve_error) {
       const error_description = `Cannot find ${code} among the authorization codes issued by this server.`
       request.log.warn(`${prefix}${error_description}`)
       const error_uri = undefined

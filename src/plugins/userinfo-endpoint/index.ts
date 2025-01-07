@@ -28,7 +28,8 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
     includeErrorDescription: include_error_description,
     logPrefix: log_prefix,
     // me,
-    reportAllAjvErrors: report_all_ajv_errors
+    reportAllAjvErrors: report_all_ajv_errors,
+    retrieveProfile
   } = config
 
   let ajv: Ajv
@@ -97,7 +98,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
         response: { 200: profile, '4xx': error_response, '5xx': error_response }
       }
     },
-    defUserinfoGet({ include_error_description, log_prefix })
+    defUserinfoGet({ include_error_description, log_prefix, retrieveProfile })
   )
 
   done()

@@ -52,6 +52,7 @@ import { tap } from './nunjucks/filters.js'
 import {
   defRetrieveAccessToken,
   defRetrieveAuthorizationCode,
+  defRetrieveProfile,
   defRetrieveRefreshToken,
   defStoreAccessToken,
   defStoreAuthorizationCode,
@@ -223,6 +224,11 @@ export async function defFastify(config: Config) {
     filename: 'access-tokens.json'
   })
 
+  const filepath_profiles = await init({
+    dirpath: path.join(__dirname, '..', 'assets'),
+    filename: 'profiles.json'
+  })
+
   const filepath_refresh_tokens = await init({
     dirpath: path.join(__dirname, '..', 'assets'),
     filename: 'refresh-tokens.json'
@@ -231,6 +237,12 @@ export async function defFastify(config: Config) {
   const retrieveAccessToken = defRetrieveAccessToken({
     ajv,
     filepath: filepath_access_tokens,
+    report_all_ajv_errors: reportAllAjvErrors
+  })
+
+  const retrieveProfile = defRetrieveProfile({
+    ajv,
+    filepath: filepath_profiles,
     report_all_ajv_errors: reportAllAjvErrors
   })
 
@@ -465,7 +477,8 @@ export async function defFastify(config: Config) {
     includeErrorDescription,
     isAccessTokenBlacklisted,
     // me,
-    reportAllAjvErrors
+    reportAllAjvErrors,
+    retrieveProfile
   })
 
   const domain = me.split('https://').at(-1)?.replace('/', '') as string

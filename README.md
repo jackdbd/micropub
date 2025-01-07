@@ -22,6 +22,7 @@ Packages for implementing an authorization server that supports the [IndieAuth p
 | [microformats2](./src/lib/microformats2/README.md) | Schemas for microformats2 |
 | [micropub](./src/lib/micropub/README.md) | Schemas and functions for implementing Micropub |
 | [pkce](./src/lib/pkce/README.md) | Schemas and functions for implementing Authorization Code Flow with Proof Key for Code Exchange (PKCE) |
+| [profile-storage-interface](./src/lib/profile-storage-interface/README.md) | Storage interface for profile URLs |
 | [r2-storage](./src/lib/r2-storage/README.md) | Storage implementation (Cloudflare R2) |
 | [relmeauth](./src/lib/relmeauth/README.md) | Schemas and functions for working with RelMeAuth |
 | [schemas](./src/lib/schemas/README.md) | Miscellaneous schemas |

@@ -1,6 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 // import { me_after_url_canonicalization } from '../../lib/indieauth/index.js'
+import { retrieveProfile } from '../../lib/profile-storage-interface/index.js'
 import {
   isAccessTokenBlacklisted,
   type IsAccessTokenBlacklisted,
@@ -24,7 +25,12 @@ export const options = Type.Object({
   reportAllAjvErrors: Type.Optional({
     ...report_all_ajv_errors,
     default: DEFAULT.REPORT_ALL_AJV_ERRORS
-  })
+  }),
+
+  /**
+   * Function that retrieves a user's profile from some storage.
+   */
+  retrieveProfile
 })
 
 export interface Options extends Static<typeof options> {

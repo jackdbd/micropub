@@ -111,7 +111,7 @@ const run = async (config: Config) => {
 
   const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
-  let getIssuedTokens: GetIssuedTokens
+  let getIssuedTokens: GetIssuedTokens // TODO: implement retrieveAccessTokens
   let isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   let retrieveAccessToken: RetrieveAccessToken
   let revokeAllTokens: RevokeAllTokens

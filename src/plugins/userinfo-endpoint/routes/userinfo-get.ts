@@ -1,11 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import {
   InsufficientScopeError,
+  InvalidRequestError,
   InvalidTokenError,
+  ServerError,
   UnauthorizedError
 } from '../../../lib/fastify-errors/index.js'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
 import type { Profile } from '../../../lib/indieauth/index.js'
+import type { RetrieveRecord } from '../../../lib/profile-storage-interface/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../../lib/token/index.js'
 // import { githubUser } from './github.js'
 
@@ -24,10 +27,11 @@ interface Querystring {
 export interface Config {
   include_error_description: boolean
   log_prefix: string
+  retrieveProfile: RetrieveRecord<Profile>
 }
 
 export const defUserinfoGet = (config: Config) => {
-  const { include_error_description, log_prefix } = config
+  const { include_error_description, retrieveProfile } = config
 
   return async function userinfoGet(
     this: FastifyInstance,
@@ -79,15 +83,32 @@ export const defUserinfoGet = (config: Config) => {
 
     // TODO: use the 'me' claim of the access token (the claim in the JWT or the
     // access token record) to fetch the user's profile from storage
+    const { error: retrieve_error, value: profile } = await retrieveProfile(
+      claims.me
+    )
 
-    const profile: Profile = {
-      name: 'John Smith',
-      photo: 'https://picsum.photos/id/237/200/300',
-      url: 'https://example.com/'
+    if (retrieve_error) {
+      const error_description = `Failed to retrieve ${claims.me} from storage: ${retrieve_error.message}`
+      const error_uri = undefined
+      // const err = new InvalidRequestError({ error_description, error_uri })
+      const err = new ServerError({ error_description, error_uri })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
     }
 
-    if (scopes.includes('email')) {
-      profile.email = 'john.smith@acme.com'
+    if (!profile) {
+      const error_description = `Cannot find ${claims.me} among the user profiles.`
+      const error_uri = undefined
+      const err = new InvalidRequestError({ error_description, error_uri })
+      // const err = new ServerError({ error_description, error_uri })
+      return reply
+        .code(err.statusCode)
+        .send(err.payload({ include_error_description }))
+    }
+
+    if (!scopes.includes('email')) {
+      profile.email = undefined
     }
 
     // const { provider } = request.query
@@ -113,7 +134,6 @@ export const defUserinfoGet = (config: Config) => {
     //     .send(error.payload({ include_error_description }))
     // }
 
-    request.log.warn(`${log_prefix}returning hardcoded profile for now`)
     return reply.code(200).send(profile)
   }
 }

@@ -16,7 +16,7 @@ Generate JSON schemas from TypeBox schemas, then generate HTML pages from those 
 npx tsm ./scripts/schemas-to-html.ts
 ```
 
-## JWT
+## JSON Web Tokens
 
 Sign a JWT using a random private key from the private JWKS.
 
@@ -37,7 +37,7 @@ npx tsm ./scripts/issue-and-revoke-jwt.ts --impl fs
 npx tsm ./scripts/issue-and-revoke-jwt.ts --impl mem
 ```
 
-## JWKS
+## JSON Web Key Set (JWKS)
 
 Generate a public [JWKS](https://datatracker.ietf.org/doc/html/rfc7517#section-5) and a private JWKS and store them on the filesystem. The public JWKS will be stored in [assets](../assets/README.md). The private JWKS will be stored in [secrets](../secrets/README.md).
 
@@ -87,4 +87,23 @@ npx tsm ./scripts/register-client.ts \
   --me https://giacomodebidda.com/ \
   --client-id http://localhost:3001/id \
   --redirect-id http://localhost:3001/auth/callback
+```
+
+Store information about a profile URL.
+
+```sh
+npx tsm ./scripts/store-profile.ts --impl fs \
+  --me https://giacomodebidda.com/ \
+  --name "Giacomo Debidda" \
+  --photo "https://avatars.githubusercontent.com/u/5048090" \
+  --url "https://www.giacomodebidda.com/" \
+  --email "giacomo@giacomodebidda.com"
+```
+
+Should my profile URL be something like `https://giacomodebidda.com/me`?
+
+Retrieve information about a profile URL.
+
+```sh
+npx tsm ./scripts/retrieve-profile.ts --me https://giacomodebidda.com/
 ```

@@ -29,6 +29,7 @@ assets/schemas-docs/
 assets/access-tokens.json
 assets/authorization-codes.json
 assets/clients.json
+assets/profiles.json
 assets/refresh-tokens.json
 
 secrets/*

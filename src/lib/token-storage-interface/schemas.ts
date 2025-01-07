@@ -2,7 +2,6 @@ import { Static, Type } from '@sinclair/typebox'
 import { client_id, me_after_url_canonicalization } from '../indieauth/index.js'
 import { exp, iss, jti } from '../jwt/index.js'
 import { redirect_uri, refresh_token, scope } from '../oauth2/index.js'
-// import { code_verifier } from '../pkce/index.js'
 
 /**
  * Record of an issued access token.

@@ -23,12 +23,15 @@ export {
   type ClientMetadata,
   client_name,
   client_uri,
+  email,
   grant_types_supported,
   issuer,
   jwks_uri,
   logo_uri,
   me_before_url_canonicalization,
   me_after_url_canonicalization,
+  name,
+  photo,
   profile,
   type Profile,
   redirect_uris,
@@ -36,6 +39,7 @@ export {
   scopes_supported,
   server_metadata,
   type ServerMetadata,
+  url,
   userinfo_endpoint
 } from './schemas.js'
 
