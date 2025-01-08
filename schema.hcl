@@ -1,6 +1,44 @@
 schema "main" {
 }
 
+table "access_tokens" {
+  schema = schema.main
+
+  column "jti" {
+    type = text
+  }
+
+  column "client_id" {
+    type = text
+  }
+
+  column "redirect_uri" {
+    type = text
+  }
+
+  column "revoked" {
+    type = boolean
+    default = false
+  }
+
+  column "revocation_reason" {
+    type = text
+    null = true
+  }
+
+  primary_key {
+    columns = [
+      column.jti
+    ]
+  }
+
+  index "access_tokens_client_id_idx" {
+    columns = [
+      column.client_id
+    ]
+  }
+}
+
 table "authorization_codes" {
   schema = schema.main
 
@@ -111,44 +149,6 @@ table "profiles" {
   }
 }
 
-table "access_tokens" {
-  schema = schema.main
-
-  column "jti" {
-    type = text
-  }
-
-  column "client_id" {
-    type = text
-  }
-
-  column "redirect_uri" {
-    type = text
-  }
-
-  column "revoked" {
-    type = boolean
-    default = false
-  }
-
-  column "revocation_reason" {
-    type = text
-    null = true
-  }
-
-  primary_key {
-    columns = [
-      column.jti
-    ]
-  }
-
-  index "access_tokens_client_id_idx" {
-    columns = [
-      column.client_id
-    ]
-  }
-}
-
 table "refresh_tokens" {
   schema = schema.main
 
@@ -158,6 +158,10 @@ table "refresh_tokens" {
 
   column "client_id" {
     type = text
+  }
+
+  column "exp" {
+    type = int
   }
 
   column "iss" {
@@ -176,10 +180,6 @@ table "refresh_tokens" {
     type = text
   }
 
-  column "scope" {
-    type = text
-  }
-
   column "revoked" {
     type = boolean
     default = false
@@ -188,6 +188,10 @@ table "refresh_tokens" {
   column "revocation_reason" {
     type = text
     null = true
+  }
+
+  column "scope" {
+    type = text
   }
 
   primary_key {

@@ -1,9 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import { failure } from '../schemas/failure.js'
+import { rowid, type StoreRecord } from '../crud.js'
+import { type Failure, message } from '../schemas/index.js'
 import { conformResult } from '../validators.js'
-import { code, code_record, type StoreRecord } from './schemas.js'
+import { code, code_record } from './schemas.js'
 
 export const store_authorization_code_param = Type.Object({
   ...code_record.properties,
@@ -14,48 +15,59 @@ export type StoreAuthorizationCodeParam = Static<
   typeof store_authorization_code_param
 >
 
-const DESCRIPTION =
+const description =
   'Persists an authorization code to some storage (e.g. a database).'
 
 const store_authorization_code_success = Type.Object({
   error: Type.Optional(Type.Undefined()),
-  value: Type.Object({ message: Type.Optional(Type.String({ minLength: 1 })) })
+  value: Type.Object({
+    code,
+    message: Type.Optional(message),
+    rowid: Type.Optional(rowid)
+  })
 })
 
-const store_authorization_code_result_promise = Type.Promise(
-  Type.Union([failure, store_authorization_code_success])
-)
+export type StoreAuthorizationCodeSuccess = Static<
+  typeof store_authorization_code_success
+>
 
-const storeAuthorizationCode_ = Type.Function(
-  [store_authorization_code_param],
-  store_authorization_code_result_promise,
-  {
-    $id: 'store-authorization-code',
-    description: DESCRIPTION
-  }
-)
+// const store_authorization_code_result_promise = Type.Promise(
+//   Type.Union([failure, store_authorization_code_success])
+// )
+
+// const storeAuthorizationCode_ = Type.Function(
+//   [store_authorization_code_param],
+//   store_authorization_code_result_promise,
+//   {
+//     $id: 'store-authorization-code',
+//     description
+//   }
+// )
 
 /**
  * Persists an authorization code to some storage (e.g. a database).
  */
-export type StoreAuthorizationCode = Static<typeof storeAuthorizationCode_>
+// export type StoreAuthorizationCode = Static<typeof storeAuthorizationCode_>
 
-export const storeAuthorizationCode = Type.Any({
-  description: DESCRIPTION
-})
+export type StoreAuthorizationCode = (
+  datum: StoreAuthorizationCodeParam
+) => Promise<Failure | StoreAuthorizationCodeSuccess>
+
+export const storeAuthorizationCode = Type.Any({ description })
+
+export type StoreAuthorizationCodeRecord =
+  StoreRecord<StoreAuthorizationCodeParam>
 
 export interface Config {
   ajv?: Ajv
-  log?: (message: string, payload?: any) => void
-  prefix?: string
-  report_all_ajv_errors: boolean
-  storeRecord: StoreRecord
+  report_all_ajv_errors?: boolean
+  storeRecord: StoreAuthorizationCodeRecord
 }
 
 export const defStoreAuthorizationCode = (config: Config) => {
   const { report_all_ajv_errors, storeRecord } = config
-  const log = config.log || (() => {})
-  const prefix = config.prefix ?? 'store-authorization-code '
+
+  const prefix = 'store-authorization-code'
 
   let ajv: Ajv
   if (config.ajv) {
@@ -76,16 +88,15 @@ export const defStoreAuthorizationCode = (config: Config) => {
       return { error }
     }
 
-    const { code, ...record } = param
-
-    log(`${prefix}store record about authorization code ${code}`, record)
-    const { error: write_error } = await storeRecord(code, record)
+    const { error: write_error, value } = await storeRecord(param)
 
     if (write_error) {
       return { error: write_error }
     }
 
-    return { value: { message: `stored authorization code ${code}` } }
+    const { message, rowid } = value
+
+    return { value: { code: param.code, rowid, message } }
   }
 
   return storeAuthorizationCode

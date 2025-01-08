@@ -1,8 +1,8 @@
 import type { Atom } from '@thi.ng/atom'
-import {
-  type CodeTable,
-  type RetrieveRecord,
-  type StoreRecord
+import type {
+  CodeTable,
+  RetrieveAuthorizationCodeRecord,
+  StoreAuthorizationCodeRecord
 } from '../authorization-code-storage-interface/index.js'
 
 interface Config {
@@ -12,16 +12,18 @@ interface Config {
 export const defStorage = (config: Config) => {
   const { atom } = config
 
-  const retrieveRecord: RetrieveRecord = async (code) => {
+  const retrieveRecord: RetrieveAuthorizationCodeRecord = async (code) => {
     const record = atom.deref()[code]
     return { error: undefined, value: record }
   }
 
-  const storeRecord: StoreRecord = async (code, record) => {
+  const storeRecord: StoreAuthorizationCodeRecord = async (datum) => {
+    const { code, ...rest } = datum
+
     atom.swap((state) => {
-      return { ...state, [code]: record }
+      return { ...state, [code]: rest }
     })
-    return { error: undefined }
+    return { value: { message: `atom swapped` } }
   }
 
   return { retrieveRecord, storeRecord }

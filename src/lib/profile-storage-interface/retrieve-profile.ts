@@ -1,13 +1,44 @@
+import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { RetrieveRecord } from '../crud.js'
 import {
   me_after_url_canonicalization,
+  profile,
   type Profile
 } from '../indieauth/index.js'
+import { type Failure } from '../schemas/failure.js'
 import { canonicalUrl } from '../url-canonicalization.js'
 import { conformResult } from '../validators.js'
-import type { RetrieveProfile, ProfileURL } from './schemas.js'
+import type { ProfileURL } from './schemas.js'
+
+const description = `Retrieves a user's profile from storage.`
+
+const retrieve_profile_success = Type.Object({
+  error: Type.Optional(Type.Undefined()),
+  value: profile
+})
+
+export type RetrieveProfileSuccess = Static<typeof retrieve_profile_success>
+
+// const retrieve_profile_result_promise = Type.Promise(
+//   Type.Union([failure, retrieve_profile_success])
+// )
+
+// const retrieveProfile_ = Type.Function(
+//   [me_before_url_canonicalization],
+//   retrieve_profile_result_promise,
+//   {
+//     $id: 'retrieve-profile',
+//     description
+//   }
+// )
+
+export type RetrieveProfile = (
+  me_before_url_canonicalization: string
+) => Promise<Failure | RetrieveProfileSuccess>
+
+export const retrieveProfile = Type.Any({ description })
 
 export interface Config {
   ajv?: Ajv

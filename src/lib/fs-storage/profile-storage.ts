@@ -1,9 +1,9 @@
 import type { RetrieveRecord, StoreRecord } from '../crud.js'
 import type { Profile } from '../indieauth/schemas.js'
 import type {
-  Datum,
   ProfileTable,
-  ProfileURL
+  ProfileURL,
+  StoreProfileParam
 } from '../profile-storage-interface/index.js'
 import { readJSON, writeJSON } from './json.js'
 
@@ -24,7 +24,7 @@ export const defStorage = (config: Config) => {
     return { value: table[me] }
   }
 
-  const storeRecord: StoreRecord<Datum> = async (datum) => {
+  const storeRecord: StoreRecord<StoreProfileParam> = async (param) => {
     const { error: read_error, value: table } = await readJSON<ProfileTable>(
       filepath
     )
@@ -33,7 +33,7 @@ export const defStorage = (config: Config) => {
       return { error: read_error }
     }
 
-    const { me, ...rest } = datum
+    const { me, ...rest } = param
 
     table[me] = rest
 

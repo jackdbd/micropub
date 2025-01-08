@@ -1,13 +1,22 @@
-export { defRetrieveProfile } from './retrieve-profile.js'
+import type { RetrieveProfile } from './retrieve-profile.js'
+import type { StoreProfile } from './store-profile.js'
 
 export {
-  type Datum,
-  type ProfileTable,
-  type ProfileURL,
+  defRetrieveProfile,
   retrieveProfile,
-  type RetrieveProfile,
-  storeProfile,
-  type StoreProfile
-} from './schemas.js'
+  type RetrieveProfile
+} from './retrieve-profile.js'
 
-export { defStoreProfile } from './store-profile.js'
+export type { ProfileTable, ProfileURL } from './schemas.js'
+
+export {
+  defStoreProfile,
+  storeProfile,
+  type StoreProfile,
+  type StoreProfileParam
+} from './store-profile.js'
+
+export interface ProfileStorage {
+  retrieveProfile: RetrieveProfile
+  storeProfile: StoreProfile
+}

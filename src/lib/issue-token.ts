@@ -92,7 +92,8 @@ export const issueToken = async (config: Config) => {
   })
 
   if (store_access_token_error) {
-    const error_description = `Cannot store access token: ${store_access_token_error.message}`
+    const error_description = store_access_token_error.message
+    // const error_description = `Cannot store access token: ${store_access_token_error.message}`
     const error_uri = undefined
     return { error: new ServerError({ error_description, error_uri }) }
   }

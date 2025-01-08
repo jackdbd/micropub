@@ -30,8 +30,9 @@ atlas schema inspect --env dev --format '{{ sql . }}' > schema-dev.sql
 Retrieve some records.
 
 ```sh
-sqlite3 -header -column micropub-dev.db "SELECT * FROM clients;"
-sqlite3 -header -column micropub-dev.db "SELECT * FROM profiles;"
+sqlite3 -header -column micropub-dev.db "SELECT rowid, * FROM authorization_codes";
+sqlite3 -header -column micropub-dev.db "SELECT * FROM clients"
+sqlite3 -header -column micropub-dev.db "SELECT * FROM profiles"
 ```
 
 Check whether the tables includes a [`rowid` column](https://www.sqlite.org/rowidtable.html).
@@ -67,6 +68,7 @@ turso db shell micropub "SELECT * FROM profiles;"
 Check whether the tables includes a [`rowid` column](https://www.sqlite.org/rowidtable.html).
 
 ```sh
+turso db shell micropub "SELECT rowid, * FROM authorization_codes";
 turso db shell micropub "SELECT rowid, * FROM clients";
 turso db shell micropub "SELECT rowid, * FROM profiles";
 ```

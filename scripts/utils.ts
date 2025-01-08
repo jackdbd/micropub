@@ -10,6 +10,16 @@ const __filename = fileURLToPath(import.meta.url)
 export const DEFAULT_ISSUER = __filename
 export const DEFAULT_EXPIRATION = '5 minutes'
 
+// 🚧❌🚨⛔❗
+// https://emojis.wiki/
+export const EMOJI = {
+  AUTHORIZATION_CODE_ISSUED: '🔐',
+  ERROR: '🚨',
+  TOKEN_ISSUED: '🔑',
+  TOKEN_REVOKED: '🚫',
+  ALL_TOKENS_REVOKED: '🚧'
+}
+
 const jwks_private = DEFAULT.JWKS
 if (!jwks_private) {
   throw new Error('JWKS not set')
@@ -53,4 +63,22 @@ export const describe = (schema: TSchema) => {
     table(entries, { header: { alignment: 'center', content: header_content } })
   )
   console.log('\n')
+}
+
+type Result<V> =
+  | { error: Error; value?: undefined }
+  | { error?: undefined; value: V }
+
+export const unwrap = <V>(result: Result<V>) => {
+  const { error, value } = result
+  if (error) {
+    console.error(`${EMOJI.ERROR} ${error.message}`)
+    process.exit(1)
+  }
+  return value
+}
+
+export const unwrapPromise = async <V>(promise: Promise<Result<V>>) => {
+  const result = await promise
+  return unwrap(result)
 }

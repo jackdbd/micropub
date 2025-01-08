@@ -94,14 +94,6 @@ export type StoreAccessTokenRecord = (
   record: AccessTokenRecord
 ) => Promise<{ error: Error } | { error: undefined }>
 
-export type RetrieveRefreshTokenRecord = (
-  refresh_token: string
-) => Promise<
-  | { error: Error; value: undefined }
-  | { error: undefined; value: RefreshTokenRecord | undefined }
->
+export type JTI = string
 
-export type StoreRefreshTokenRecord = (
-  refresh_token: string,
-  record: RefreshTokenRecord
-) => Promise<{ error: Error } | { error: undefined }>
+export type RefreshToken = string

@@ -1,7 +1,9 @@
-import {
-  type RefreshTokenTable,
-  type RetrieveRefreshTokenRecord,
-  type StoreRefreshTokenRecord
+import type { RetrieveRecord, StoreRecord } from '../crud.js'
+import type {
+  RefreshToken,
+  RefreshTokenRecord,
+  RefreshTokenTable,
+  StoreRefreshTokenParam
 } from '../token-storage-interface/index.js'
 import { readJSON, writeJSON } from './json.js'
 
@@ -12,35 +14,37 @@ interface Config {
 export const defStorage = (config: Config) => {
   const { filepath } = config
 
-  const retrieveRecord: RetrieveRefreshTokenRecord = async (jti) => {
+  const retrieveRecord: RetrieveRecord<
+    RefreshTokenRecord,
+    RefreshToken
+  > = async (refresh_token) => {
     const { error, value: table } = await readJSON<RefreshTokenTable>(filepath)
 
     if (error) {
       return { error }
     }
 
-    return { value: table[jti] }
+    return { value: table[refresh_token] }
   }
 
-  const storeRecord: StoreRefreshTokenRecord = async (
-    refresh_token,
-    record
-  ) => {
+  const storeRecord: StoreRecord<StoreRefreshTokenParam> = async (datum) => {
     const { error, value: table } = await readJSON<RefreshTokenTable>(filepath)
 
     if (error) {
       return { error }
     }
 
-    table[refresh_token] = record
+    const { refresh_token, ...rest } = datum
 
-    const { error: write_error } = await writeJSON(filepath, table)
+    table[refresh_token] = rest
+
+    const { error: write_error, value } = await writeJSON(filepath, table)
 
     if (write_error) {
       return { error: write_error }
     }
 
-    return { error: undefined }
+    return { value }
   }
 
   return { retrieveRecord, storeRecord }

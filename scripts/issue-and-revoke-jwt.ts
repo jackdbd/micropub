@@ -9,17 +9,17 @@ import type {
   IsAccessTokenBlacklisted,
   RevokeAllTokens
 } from '../src/lib/schemas/index.js'
-import {
+import type {
+  AccessTokenTable,
   RefreshTokenTable,
-  StoreRefreshToken,
-  type AccessTokenTable,
-  type RetrieveAccessToken,
-  type StoreAccessToken
+  RetrieveAccessToken,
+  StoreAccessToken,
+  StoreRefreshToken
 } from '../src/lib/token-storage-interface/index.js'
 import * as DEFAULT from '../src/defaults.js'
 import { issueToken } from '../src/lib/issue-token.js'
 import { defRevokeAccessToken } from '../src/lib/revoke-access-token.js'
-import { privateJWKS } from './utils.js'
+import { privateJWKS, EMOJI } from './utils.js'
 
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'
@@ -49,13 +49,6 @@ const access_token_expiration = '5 minutes'
 const refresh_token_expiration = '24 hours'
 const issuer = __filename
 const client_id = 'http://localhost:3001/id'
-
-// 🚧❌🚨⛔❗
-const EMOJI = {
-  TOKEN_ISSUED: '🔑',
-  TOKEN_REVOKED: '🚫',
-  ALL_TOKENS_REVOKED: '🚧'
-}
 
 interface StatusConfig {
   implementation: string

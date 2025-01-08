@@ -20,28 +20,28 @@ export {
   type AccessTokenRecord,
   access_token_table,
   type AccessTokenTable,
+  type JTI,
+  type RefreshToken,
   refresh_token_record,
   type RefreshTokenRecord,
   refresh_token_table,
-  type RefreshTokenTable,
-  type RetrieveAccessTokenRecord,
-  type RetrieveRefreshTokenRecord,
-  type StoreAccessTokenRecord,
-  type StoreRefreshTokenRecord
+  type RefreshTokenTable
 } from './schemas.js'
 
 export {
   defStoreAccessToken,
   store_access_token_param,
   storeAccessToken,
-  type StoreAccessToken
+  type StoreAccessToken,
+  type StoreAccessTokenParam
 } from './store-access-token.js'
 
 export {
   defStoreRefreshToken,
   store_refresh_token_param,
   storeRefreshToken,
-  type StoreRefreshToken
+  type StoreRefreshToken,
+  type StoreRefreshTokenParam
 } from './store-refresh-token.js'
 
 export interface TokenStorage {

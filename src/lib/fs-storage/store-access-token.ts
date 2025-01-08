@@ -10,15 +10,9 @@ interface Config {
 }
 
 export const defStoreAccessToken = (config: Config) => {
-  const { ajv, filepath, prefix, report_all_ajv_errors } = config
+  const { ajv, filepath, report_all_ajv_errors } = config
 
-  const { retrieveRecord, storeRecord } = defStorage({ filepath })
+  const { storeRecord } = defStorage({ filepath })
 
-  return defImplementation({
-    ajv,
-    prefix,
-    report_all_ajv_errors,
-    retrieveRecord,
-    storeRecord
-  })
+  return defImplementation({ ajv, report_all_ajv_errors, storeRecord })
 }

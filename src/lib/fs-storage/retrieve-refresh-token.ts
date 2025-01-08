@@ -5,19 +5,13 @@ import { defStorage } from './refresh-token-storage.js'
 interface Config {
   ajv?: Ajv
   filepath: string
-  prefix?: string
   report_all_ajv_errors: boolean
 }
 
 export const defRetrieveRefreshToken = (config: Config) => {
-  const { ajv, filepath, prefix, report_all_ajv_errors } = config
+  const { ajv, filepath, report_all_ajv_errors } = config
 
   const { retrieveRecord } = defStorage({ filepath })
 
-  return defImplementation({
-    ajv,
-    prefix,
-    report_all_ajv_errors,
-    retrieveRecord
-  })
+  return defImplementation({ ajv, report_all_ajv_errors, retrieveRecord })
 }

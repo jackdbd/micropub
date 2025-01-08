@@ -1,7 +1,10 @@
 import type { Atom } from '@thi.ng/atom'
 import type { RetrieveRecord, StoreRecord } from '../crud.js'
 import type { Profile } from '../indieauth/index.js'
-import type { Datum, ProfileURL } from '../profile-storage-interface/index.js'
+import type {
+  ProfileURL,
+  StoreProfileParam
+} from '../profile-storage-interface/index.js'
 
 interface Config {
   atom: Atom<Record<ProfileURL, Profile>>
@@ -15,8 +18,8 @@ export const defStorage = (config: Config) => {
     return { value: record }
   }
 
-  const storeRecord: StoreRecord<Datum> = async (datum) => {
-    const { me, ...rest } = datum
+  const storeRecord: StoreRecord<StoreProfileParam> = async (param) => {
+    const { me, ...rest } = param
 
     atom.swap((state) => {
       return { ...state, [me]: rest }

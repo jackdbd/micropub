@@ -9,19 +9,13 @@ import { defStorage } from './code-storage.js'
 interface Config {
   ajv?: Ajv
   atom: Atom<CodeTable>
-  prefix?: string
   report_all_ajv_errors: boolean
 }
 
 export const defRetrieveAuthorizationCode = (config: Config) => {
-  const { ajv, atom, prefix, report_all_ajv_errors } = config
+  const { ajv, atom, report_all_ajv_errors } = config
 
   const { retrieveRecord } = defStorage({ atom })
 
-  return defImplementation({
-    ajv,
-    prefix,
-    report_all_ajv_errors,
-    retrieveRecord
-  })
+  return defImplementation({ ajv, report_all_ajv_errors, retrieveRecord })
 }

@@ -1,13 +1,11 @@
 import { Static, Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
+import type { RetrieveRecord } from '../crud.js'
 import { jti as jti_schema } from '../jwt/index.js'
-import { failure } from '../schemas/failure.js'
+import { failure } from '../schemas/index.js'
 import { conformResult } from '../validators.js'
-import {
-  access_token_record,
-  type RetrieveAccessTokenRecord
-} from './schemas.js'
+import { access_token_record, type AccessTokenRecord } from './schemas.js'
 
 const retrieve_access_token_success = Type.Object({
   error: Type.Optional(Type.Undefined()),
@@ -18,14 +16,14 @@ const retrieve_access_token_result_promise = Type.Promise(
   Type.Union([failure, retrieve_access_token_success])
 )
 
-const DESCRIPTION = 'Retrieves an access token from storage.'
+const description = 'Retrieves an access token from storage.'
 
 export const retrieveAccessToken_ = Type.Function(
   [jti_schema],
   retrieve_access_token_result_promise,
   {
     $id: 'retrieve-access-token',
-    description: DESCRIPTION
+    description
   }
 )
 
@@ -34,21 +32,16 @@ export const retrieveAccessToken_ = Type.Function(
  */
 export type RetrieveAccessToken = Static<typeof retrieveAccessToken_>
 
-export const retrieveAccessToken = Type.Any({ description: DESCRIPTION })
+export const retrieveAccessToken = Type.Any({ description })
 
 export interface Config {
   ajv?: Ajv
-  log?: (payload: any, message: string) => void
-  prefix?: string
-  report_all_ajv_errors: boolean
-  retrieveRecord: RetrieveAccessTokenRecord
+  report_all_ajv_errors?: boolean
+  retrieveRecord: RetrieveRecord<AccessTokenRecord, string>
 }
 
 export const defRetrieveAccessToken = (config: Config) => {
   const { report_all_ajv_errors, retrieveRecord } = config
-  //   const log = config.log || console.log
-  const log = config.log || (() => {})
-  const prefix = config.prefix ?? 'retrieve-access-token '
 
   let ajv: Ajv
   if (config.ajv) {
@@ -58,24 +51,27 @@ export const defRetrieveAccessToken = (config: Config) => {
   }
 
   const retrieveAccessToken: RetrieveAccessToken = async (jti) => {
-    log(jti, `${prefix}jti`)
-
-    const { error } = conformResult({ prefix }, ajv, jti_schema, jti)
+    const { error } = conformResult(
+      { prefix: 'retrieve-access-token' },
+      ajv,
+      jti_schema,
+      jti
+    )
 
     if (error) {
       return { error }
     }
 
-    const { error: read_error, value: record } = await retrieveRecord(jti)
+    const { error: retrieve_error, value: record } = await retrieveRecord(jti)
 
-    if (read_error) {
-      return { error: read_error }
+    if (retrieve_error) {
+      return { error: retrieve_error }
     }
 
     if (!record) {
       return {
         error: new Error(
-          `token ${jti} not found among the stored access tokens`
+          `token ${jti} not found among the access tokens currently in storage`
         )
       }
     }

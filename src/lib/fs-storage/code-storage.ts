@@ -1,8 +1,10 @@
-import {
-  type CodeTable,
-  type RetrieveRecord,
-  type StoreRecord
+import type {
+  Code,
+  CodeRecord,
+  CodeTable,
+  StoreAuthorizationCodeParam
 } from '../authorization-code-storage-interface/index.js'
+import type { RetrieveRecord, StoreRecord } from '../crud.js'
 import { readJSON, writeJSON } from './json.js'
 
 interface Config {
@@ -12,7 +14,7 @@ interface Config {
 export const defStorage = (config: Config) => {
   const { filepath } = config
 
-  const retrieveRecord: RetrieveRecord = async (code) => {
+  const retrieveRecord: RetrieveRecord<CodeRecord, Code> = async (code) => {
     const { error, value: table } = await readJSON<CodeTable>(filepath)
 
     if (error) {
@@ -22,22 +24,26 @@ export const defStorage = (config: Config) => {
     return { value: table[code] }
   }
 
-  const storeRecord: StoreRecord = async (code, record) => {
+  const storeRecord: StoreRecord<StoreAuthorizationCodeParam> = async (
+    datum
+  ) => {
     const { error, value: table } = await readJSON<CodeTable>(filepath)
 
     if (error) {
       return { error }
     }
 
-    table[code] = record
+    const { code, ...rest } = datum
 
-    const { error: write_error } = await writeJSON(filepath, table)
+    table[code] = rest
+
+    const { error: write_error, value } = await writeJSON(filepath, table)
 
     if (write_error) {
       return { error: write_error }
     }
 
-    return { error: undefined }
+    return { value }
   }
 
   return { retrieveRecord, storeRecord }

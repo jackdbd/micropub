@@ -37,6 +37,13 @@ npx tsm ./scripts/issue-and-revoke-jwt.ts --impl fs
 npx tsm ./scripts/issue-and-revoke-jwt.ts --impl mem
 ```
 
+Seed the database with some tokens.
+
+```sh
+npx tsm ./scripts/seed-tokens.ts --db dev
+npx tsm ./scripts/seed-tokens.ts --db prod
+```
+
 ## JSON Web Key Set (JWKS)
 
 Generate a public [JWKS](https://datatracker.ietf.org/doc/html/rfc7517#section-5) and a private JWKS and store them on the filesystem. The public JWKS will be stored in [assets](../assets/README.md). The private JWKS will be stored in [secrets](../secrets/README.md).

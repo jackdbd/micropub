@@ -1,7 +1,9 @@
-import {
-  type AccessTokenTable,
-  type RetrieveAccessTokenRecord,
-  type StoreAccessTokenRecord
+import type { RetrieveRecord, StoreRecord } from '../crud.js'
+import type {
+  AccessTokenTable,
+  AccessTokenRecord,
+  JTI,
+  StoreAccessTokenParam
 } from '../token-storage-interface/index.js'
 import { readJSON, writeJSON } from './json.js'
 
@@ -12,7 +14,9 @@ interface Config {
 export const defStorage = (config: Config) => {
   const { filepath } = config
 
-  const retrieveRecord: RetrieveAccessTokenRecord = async (jti) => {
+  const retrieveRecord: RetrieveRecord<AccessTokenRecord, JTI> = async (
+    jti
+  ) => {
     const { error, value: table } = await readJSON<AccessTokenTable>(filepath)
 
     if (error) {
@@ -22,22 +26,23 @@ export const defStorage = (config: Config) => {
     return { value: table[jti] }
   }
 
-  const storeRecord: StoreAccessTokenRecord = async (jti, record) => {
+  const storeRecord: StoreRecord<StoreAccessTokenParam> = async (datum) => {
     const { error, value: table } = await readJSON<AccessTokenTable>(filepath)
 
     if (error) {
       return { error }
     }
+    const { jti, ...rest } = datum
 
-    table[jti] = record
+    table[jti] = rest
 
-    const { error: write_error } = await writeJSON(filepath, table)
+    const { error: write_error, value } = await writeJSON(filepath, table)
 
     if (write_error) {
       return { error: write_error }
     }
 
-    return { error: undefined }
+    return { value }
   }
 
   return { retrieveRecord, storeRecord }

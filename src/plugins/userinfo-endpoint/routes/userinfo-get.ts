@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import type { RetrieveRecord } from '../../../lib/crud.js'
 import {
   InsufficientScopeError,
   InvalidRequestError,
@@ -8,7 +9,6 @@ import {
 } from '../../../lib/fastify-errors/index.js'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
 import type { Profile } from '../../../lib/indieauth/index.js'
-import type { RetrieveRecord } from '../../../lib/profile-storage-interface/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../../lib/token/index.js'
 // import { githubUser } from './github.js'
 

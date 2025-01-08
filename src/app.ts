@@ -313,22 +313,12 @@ export async function defFastify(config: Config) {
   const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
     ajv,
     filepath: filepath_codes,
-    // I don't know why, but I need to close over the fastify instance.
-    // This means that this does not work:
-    // log: fastify.log.debug,
-    // While this works:
-    log: (message: string, payload: any) => {
-      fastify.log.debug(payload, message)
-    },
     report_all_ajv_errors: reportAllAjvErrors
   })
 
   const storeAuthorizationCode = defStoreAuthorizationCode({
     ajv,
     filepath: filepath_codes,
-    log: (message: string, payload: any) => {
-      fastify.log.debug(payload, message)
-    },
     report_all_ajv_errors: reportAllAjvErrors
   })
   //////////////////////////////////////////////////////////////////////////////

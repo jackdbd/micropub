@@ -1,44 +1,49 @@
-import { createClient } from '@libsql/client'
+import type { Client } from '@libsql/client'
 import type Ajv from 'ajv'
 import type { StoreRecord } from '../crud.js'
 import {
   defStoreProfile as defImplementation,
-  type Datum,
-  type StoreProfile
+  type ProfileURL,
+  type StoreProfileParam
 } from '../profile-storage-interface/index.js'
+
+const DEFAULT = { email: null }
 
 export interface Config {
   ajv?: Ajv
-  database_token: string
-  database_url: string
+  client: Client
   report_all_ajv_errors: boolean
 }
 
-export const defStoreProfile = (config: Config): StoreProfile => {
-  const { ajv, database_token, database_url, report_all_ajv_errors } = config
+export const defStoreProfile = (config: Config) => {
+  const { ajv, client, report_all_ajv_errors } = config
 
-  const turso = createClient({ url: database_url, authToken: database_token })
+  const storeRecord: StoreRecord<StoreProfileParam> = async (param) => {
+    const { email } = param
 
-  const storeRecord: StoreRecord<Datum> = async (datum) => {
-    const { me, name, photo, url, email } = datum
+    const sql = `
+    INSERT INTO profiles VALUES 
+      (:me, :name, :photo, :url, :email) 
+    RETURNING me`
+
     try {
-      const rs = await turso.execute({
-        sql: 'INSERT INTO profiles VALUES (:me, :name, :photo, :url, :email) RETURNING me',
-        args: { me, name, photo, url, email: email || null }
+      const rs = await client.execute({
+        sql,
+        args: { ...param, email: email || DEFAULT.email }
       })
 
       const rowid = rs.lastInsertRowid
 
       if (rs.rows.length === 1) {
-        const row = rs.rows[0] as unknown as { me: string }
-        const message = `stored info about profile URL ${me} in ${database_url}`
+        const row = rs.rows[0] as unknown as { me: ProfileURL }
+        const message = `stored info about profile URL ${row.me} in DB`
         return { value: { me: row.me, message, rowid } }
       }
 
-      const message = `Inserted ${rs.rows.length} records in ${database_url}`
+      const message = `Inserted ${rs.rows.length} records in DB`
       return { error: new Error(message) }
     } catch (ex: any) {
-      const message = `Cannot store info about profile URL ${me} in ${database_url}: ${ex.message}`
+      const message = `Cannot store record about profile URL ${param.me} in DB: ${ex.message}`
       return { error: new Error(message) }
     }
   }

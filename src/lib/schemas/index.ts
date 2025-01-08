@@ -1,3 +1,5 @@
+import { Type } from '@sinclair/typebox'
+
 export { create, type Create } from './create-content.js'
 
 export { deleteContent, type Delete } from './delete-content.js'
@@ -6,6 +8,8 @@ export {
   deleteContentOrMedia,
   type DeleteContentOrMedia
 } from './delete-content-or-media.js'
+
+export { failure, type Failure } from './failure.js'
 
 export {
   include_error_description,
@@ -44,6 +48,8 @@ export {
 } from './jwks.js'
 
 export { location, type Location } from './location.js'
+
+export const message = Type.String({ minLength: 1 })
 
 export {
   publishedUrlToStorageLocation,

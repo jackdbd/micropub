@@ -47,6 +47,10 @@ export const code_record = Type.Object(
 
 export type CodeRecord = Static<typeof code_record>
 
+// export interface Datum extends CodeRecord {
+//   code: string
+// }
+
 export const code_table = Type.Record(code, code_record, {
   description:
     'Data structure that contains all authorization codes that are not yet expired.'
@@ -57,15 +61,3 @@ export const code_table = Type.Record(code, code_record, {
  * Expired authorization codes should be removed from this table periodically.
  */
 export type CodeTable = Static<typeof code_table>
-
-export type RetrieveRecord = (
-  code: Code
-) => Promise<
-  | { error: Error; value: undefined }
-  | { error: undefined; value: CodeRecord | undefined }
->
-
-export type StoreRecord = (
-  code: Code,
-  record: CodeRecord
-) => Promise<{ error: Error } | { error: undefined }>
