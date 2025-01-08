@@ -9,6 +9,7 @@
   micropub = builtins.fromJSON (builtins.readFile /run/secrets/micropub);
   fly_micropub = builtins.fromJSON (builtins.readFile /run/secrets/fly/micropub);
   telegram = builtins.fromJSON (builtins.readFile /run/secrets/telegram/jackdbd_github_bot);
+  turso = builtins.fromJSON (builtins.readFile /run/secrets/turso/micropub);
 in {
   enterShell = ''
     versions
@@ -45,6 +46,8 @@ in {
     SECURE_SESSION_KEY_TWO = micropub.session_key_two;
     TELEGRAM_CHAT_ID = telegram.chat_id;
     TELEGRAM_TOKEN = telegram.token;
+    TURSO_DB_TOKEN = turso.database_token;
+    TURSO_DB_URL = "libsql://micropub-jackdbd.turso.io";
   };
 
   languages = {
@@ -57,6 +60,7 @@ in {
     git
     json-schema-for-humans # generate HTML documentation from a JSON schema
     nodejs
+    turso-cli # CLI for Turso DB
   ];
 
   pre-commit.hooks = {
@@ -102,6 +106,8 @@ in {
         --env SECURE_SESSION_KEY_TWO=${micropub.session_key_two} \
         --env TELEGRAM_CHAT_ID=${telegram.chat_id} \
         --env TELEGRAM_TOKEN=${telegram.token} \
+        --env TURSO_DB_TOKEN=${turso.database_token} \
+        --env TURSO_DB_URL=${config.env.TURSO_DB_URL} \
         --network host \
         --rm -i -t \
         micropub:latest
@@ -139,6 +145,9 @@ in {
       fly secrets set TELEGRAM_CHAT_ID="${telegram.chat_id}"
       fly secrets set TELEGRAM_TOKEN="${telegram.token}"
     '';
+    fly-secrets-set-turso.exec = ''
+      fly secrets set TURSO_DB_TOKEN="${turso.database_token}"
+    '';
     prod.exec = ''
       npm run build && npm run start
     '';
@@ -153,6 +162,7 @@ in {
       fly version
       git --version
       echo "Node.js $(node --version)"
+      turso --version
       echo "=== === ==="
     '';
   };

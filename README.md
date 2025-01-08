@@ -143,6 +143,7 @@ fly-secrets-set-github
 fly-secrets-set-cloudflare
 fly-secrets-set-secure-session-keys
 fly-secrets-set-telegram
+fly-secrets-set-turso
 ```
 
 ## TODO

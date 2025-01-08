@@ -21,6 +21,7 @@ kill_timeout = 180
   GITHUB_REPO = "giacomodebidda-content"
   NODE_ENV = "production"
   PINO_LOG_LEVEL = "debug"
+  TURSO_DB_URL = "libsql://micropub-jackdbd.turso.io"
 
 [http_service]
   internal_port = 3000
