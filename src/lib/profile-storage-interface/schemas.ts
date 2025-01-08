@@ -1,10 +1,12 @@
 import { Static, Type } from '@sinclair/typebox'
 import {
+  me_after_url_canonicalization,
   me_before_url_canonicalization,
   profile,
   type Profile
 } from '../indieauth/index.js'
-import { failure } from '../schemas/failure.js'
+import { failure, type Failure } from '../schemas/failure.js'
+import { rowid } from '../crud.js'
 
 const RETRIEVE_PROFILE_DESCRIPTION = `Retrieves a user's profile from storage.`
 
@@ -12,6 +14,8 @@ const retrieve_profile_success = Type.Object({
   error: Type.Optional(Type.Undefined()),
   value: profile
 })
+
+export type RetrieveProfileSuccess = Static<typeof retrieve_profile_success>
 
 const retrieve_profile_result_promise = Type.Promise(
   Type.Union([failure, retrieve_profile_success])
@@ -26,21 +30,16 @@ export const retrieveProfile_ = Type.Function(
   }
 )
 
-export type RetrieveProfile = Static<typeof retrieveProfile_>
+export type RetrieveProfile = (
+  me_before_url_canonicalization: string
+) => Promise<Failure | RetrieveProfileSuccess>
 
 export const retrieveProfile = Type.Any({
   description: RETRIEVE_PROFILE_DESCRIPTION
 })
 
-export type RetrieveRecord<Data extends {}, Id = string> = (
-  id: Id
-) => Promise<
-  | { error: Error; value?: undefined }
-  | { error?: undefined; value: Data | undefined }
->
-
 export const store_profile_param = Type.Object({
-  profile_url: me_before_url_canonicalization,
+  me: me_before_url_canonicalization,
   ...profile.properties
 })
 
@@ -49,10 +48,13 @@ const message = Type.String({ minLength: 1 })
 const store_profile_success = Type.Object({
   error: Type.Optional(Type.Undefined()),
   value: Type.Object({
-    id: Type.String({ minLength: 1 }),
-    message: Type.Optional(message)
+    me: me_after_url_canonicalization,
+    message: Type.Optional(message),
+    rowid: Type.Optional(rowid)
   })
 })
+
+export type StoreProfileSuccess = Static<typeof store_profile_success>
 
 const store_profile_result_promise = Type.Promise(
   Type.Union([failure, store_profile_success])
@@ -69,23 +71,18 @@ export const storeProfile_ = Type.Function(
   }
 )
 
-export type StoreProfile = Static<typeof storeProfile_>
-
 export const storeProfile = Type.Any({
   description: STORE_PROFILE_DESCRIPTION
 })
 
-export type StoreRecord<Data extends {}> = (
-  data: Data
-) => Promise<
-  | { error: Error; value: undefined }
-  | { error?: undefined; value: { id: string; message?: string } }
->
+export interface Datum extends Profile {
+  me: string
+}
+
+export type StoreProfile = (
+  datum: Datum
+) => Promise<Failure | StoreProfileSuccess>
 
 export type ProfileURL = string
-
-export interface Data extends Profile {
-  profile_url: string
-}
 
 export type ProfileTable = Record<ProfileURL, Profile>

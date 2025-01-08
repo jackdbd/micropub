@@ -1,3 +1,9 @@
 {
-  "recommendations": ["esbenp.prettier-vscode", "pflannery.vscode-versionlens"]
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "hashicorp.hcl",
+    "mtxr.sqltools",
+    "pflannery.vscode-versionlens",
+    "yoavbls.pretty-ts-errors"
+  ]
 }

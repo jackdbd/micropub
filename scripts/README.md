@@ -100,10 +100,19 @@ npx tsm ./scripts/store-profile.ts --impl fs \
   --email "giacomo@giacomodebidda.com"
 ```
 
+```sh
+npx tsm ./scripts/store-profile.ts --impl turso \
+  --me https://giacomodebidda.com/ \
+  --name "Giacomo Debidda" \
+  --photo "https://avatars.githubusercontent.com/u/5048090" \
+  --url "https://www.giacomodebidda.com/" \
+  --email "giacomo@giacomodebidda.com"
+```
+
 Should my profile URL be something like `https://giacomodebidda.com/me`?
 
 Retrieve information about a profile URL.
 
 ```sh
-npx tsm ./scripts/retrieve-profile.ts --me https://giacomodebidda.com/
+npx tsm ./scripts/retrieve-profile.ts --impl turso --me https://giacomodebidda.com/
 ```

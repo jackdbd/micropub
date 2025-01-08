@@ -61,6 +61,7 @@
     "@hapi/hoek": "^11.0.4",
     "@jackdbd/notifications": "^1.0.3",
     "@jackdbd/telegram-text-messages": "^1.2.0",
+    "@libsql/client": "^0.14.0",
     "@paulrobertlloyd/mf2tojf2": "^2.3.0",
     "@sinclair/typebox": "^0.33.17",
     "@thi.ng/atom": "^5.3.13",

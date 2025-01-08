@@ -46,8 +46,8 @@ in {
     SECURE_SESSION_KEY_TWO = micropub.session_key_two;
     TELEGRAM_CHAT_ID = telegram.chat_id;
     TELEGRAM_TOKEN = telegram.token;
-    TURSO_DB_TOKEN = turso.database_token;
-    TURSO_DB_URL = "libsql://micropub-jackdbd.turso.io";
+    TURSO_DATABASE_TOKEN = turso.database_token;
+    TURSO_DATABASE_URL = "libsql://micropub-jackdbd.turso.io";
   };
 
   languages = {
@@ -55,6 +55,7 @@ in {
   };
 
   packages = with pkgs; [
+    atlas # tool for managing database schemas
     dive # tool for exploring each layer in a docker image
     entr # run arbitrary commands when files change
     git
@@ -106,8 +107,8 @@ in {
         --env SECURE_SESSION_KEY_TWO=${micropub.session_key_two} \
         --env TELEGRAM_CHAT_ID=${telegram.chat_id} \
         --env TELEGRAM_TOKEN=${telegram.token} \
-        --env TURSO_DB_TOKEN=${turso.database_token} \
-        --env TURSO_DB_URL=${config.env.TURSO_DB_URL} \
+        --env TURSO_DATABASE_TOKEN=${turso.database_token} \
+        --env TURSO_DATABASE_URL=${config.env.TURSO_DATABASE_URL} \
         --network host \
         --rm -i -t \
         micropub:latest
@@ -146,7 +147,7 @@ in {
       fly secrets set TELEGRAM_TOKEN="${telegram.token}"
     '';
     fly-secrets-set-turso.exec = ''
-      fly secrets set TURSO_DB_TOKEN="${turso.database_token}"
+      fly secrets set TURSO_DATABASE_TOKEN="${turso.database_token}"
     '';
     prod.exec = ''
       npm run build && npm run start
@@ -157,6 +158,7 @@ in {
     '';
     versions.exec = ''
       echo "=== Versions ==="
+      atlas version
       dive --version
       docker --version
       fly version

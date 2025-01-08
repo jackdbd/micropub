@@ -7,7 +7,8 @@ dist/
 # dependencies
 node_modules/
 
-# database
+# SQLite databases
+*.db
 *.sqlite
 
 .devenv*

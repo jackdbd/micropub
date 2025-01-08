@@ -13,16 +13,19 @@ import type {
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'
 import * as mem_impl from '../src/lib/in-memory-storage/index.js'
+import * as turso_impl from '../src/lib/turso-storage/index.js'
 
 // Run this script with --impl <impl> to test an implementation ////////////////
 // const IMPLEMENTATION = 'fs'
 // const IMPLEMENTATION = 'mem'
-const IMPLEMENTATIONS = ['fs', 'mem']
+const IMPLEMENTATIONS = ['fs', 'mem', 'turso']
 const args = process.argv.slice(2)
 assert.ok(args && args[0] === '--impl', `the first CLI arg must be --impl`)
 const IMPLEMENTATION = args[1]
 assert.ok(
-  IMPLEMENTATION === 'fs' || IMPLEMENTATION === 'mem',
+  IMPLEMENTATION === 'fs' ||
+    IMPLEMENTATION === 'mem' ||
+    IMPLEMENTATION === 'turso',
   `the second CLI arg must be one of: ${IMPLEMENTATIONS.join(', ')}`
 )
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +33,7 @@ assert.ok(
 const atom = defAtom<ProfileTable>({})
 
 interface Config {
-  implementation: 'fs' | 'mem'
+  implementation: 'fs' | 'mem' | 'turso'
 }
 
 const run = async (config: Config) => {
@@ -94,13 +97,23 @@ const run = async (config: Config) => {
 
       break
     }
+    case 'turso': {
+      storeProfile = turso_impl.defStoreProfile({
+        ajv,
+        database_token: process.env.TURSO_DATABASE_TOKEN!,
+        database_url: process.env.TURSO_DATABASE_URL!,
+        report_all_ajv_errors
+      })
+
+      break
+    }
     default: {
       throw new Error(`${implementation} not implemented`)
     }
   }
 
   const { error, value } = await storeProfile({
-    profile_url: me,
+    me,
     name,
     email,
     photo,
@@ -112,7 +125,17 @@ const run = async (config: Config) => {
     process.exit(1)
   }
 
-  console.log(`stored info about profile URL ${me} in record ID ${value.id}`)
+  if (value.message) {
+    console.log(value.message)
+  }
+
+  const message = `stored info about profile URL ${value.me}`
+  if (value.rowid) {
+    console.log(`${message} in row ID ${value.rowid}`)
+  } else {
+    console.log(message)
+  }
+
   // Since we cannot inspect the state of the in-memory after this script
   // exits, we print it here.
   if (IMPLEMENTATION === 'mem') {

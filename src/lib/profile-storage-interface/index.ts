@@ -1,14 +1,12 @@
 export { defRetrieveProfile } from './retrieve-profile.js'
 
 export {
-  type Data,
-  type ProfileURL,
+  type Datum,
   type ProfileTable,
+  type ProfileURL,
   retrieveProfile,
   type RetrieveProfile,
-  type RetrieveRecord,
   storeProfile,
-  type StoreRecord,
   type StoreProfile
 } from './schemas.js'
 

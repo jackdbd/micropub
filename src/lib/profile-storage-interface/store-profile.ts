@@ -1,28 +1,25 @@
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
+import type { StoreRecord } from '../crud.js'
 import { me_after_url_canonicalization } from '../indieauth/index.js'
 import { canonicalUrl } from '../url-canonicalization.js'
 import { conformResult } from '../validators.js'
 import {
-  type Data,
   store_profile_param,
-  type StoreProfile,
-  type StoreRecord
+  type Datum,
+  type StoreProfile
 } from './schemas.js'
 
 export interface Config {
   ajv?: Ajv
-  log?: (payload: any, message: string) => void
-  prefix?: string
   report_all_ajv_errors: boolean
-  storeRecord: StoreRecord<Data>
+  storeRecord: StoreRecord<Datum>
 }
 
 export const defStoreProfile = (config: Config) => {
   const { report_all_ajv_errors, storeRecord } = config
 
-  const log = config.log || (() => {})
-  const prefix = config.prefix ?? 'store-profile '
+  const prefix = 'store-profile '
 
   let ajv: Ajv
   if (config.ajv) {
@@ -34,22 +31,21 @@ export const defStoreProfile = (config: Config) => {
     ])
   }
 
-  const storeProfile: StoreProfile = async (data) => {
+  const storeProfile: StoreProfile = async (datum) => {
     const { error: param_error } = conformResult(
       { prefix },
       ajv,
       store_profile_param,
-      data
+      datum
     )
 
     if (param_error) {
       return { error: param_error }
     }
 
-    const { profile_url, ...profile } = data
+    const { me: me_before, ...profile } = datum
 
-    log(profile_url, `${prefix}canonicalize URL`)
-    const me = canonicalUrl(profile_url)
+    const me = canonicalUrl(me_before)
 
     const { error: me_error } = conformResult(
       { prefix },
@@ -64,15 +60,17 @@ export const defStoreProfile = (config: Config) => {
 
     const { error: write_error, value } = await storeRecord({
       ...profile,
-      profile_url: me
+      me
     })
 
     if (write_error) {
       return { error: write_error }
     }
 
+    const { message, rowid } = value
+
     return {
-      value: { id: value.id, message: `stored info about profile URL ${me}` }
+      value: { me, message, rowid }
     }
   }
 
