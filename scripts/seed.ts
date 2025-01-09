@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createClient, type Client } from '@libsql/client'
+import { defAtom } from '@thi.ng/atom'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import ms, { StringValue } from 'ms'
@@ -9,15 +10,22 @@ import yargs from 'yargs/yargs'
 import { unixTimestampInMs } from '../src/lib/date.js'
 import { issueToken } from '../src/lib/issue-token.js'
 import type {
+  CodeTable,
   RetrieveAuthorizationCode,
   StoreAuthorizationCode
 } from '../src/lib/authorization-code-storage-interface/index.js'
-import type { RegisterClient } from '../src/lib/clients-storage-interface/index.js'
 import type {
+  ClientTable,
+  RegisterClient
+} from '../src/lib/clients-storage-interface/index.js'
+import type {
+  ProfileTable,
   RetrieveProfile,
   StoreProfile
 } from '../src/lib/profile-storage-interface/index.js'
 import type {
+  AccessTokenTable,
+  RefreshTokenTable,
   RetrieveAccessToken,
   RetrieveRefreshToken,
   StoreAccessToken,
@@ -25,6 +33,7 @@ import type {
 } from '../src/lib/token-storage-interface/index.js'
 import { type AccessTokenClaims, safeDecode } from '../src/lib/token/index.js'
 import * as fs_impl from '../src/lib/fs-storage/index.js'
+import * as mem_impl from '../src/lib/in-memory-storage/index.js'
 import * as sqlite_impl from '../src/lib/sqlite-storage/index.js'
 import { canonicalUrl } from '../src/lib/url-canonicalization.js'
 import { DATABASES, DEFAULT, EMOJI, LINK_BUGS } from './constants.js'
@@ -40,6 +49,12 @@ import {
 
 const USAGE = `
 Seed the storage layer with some authorization codes, access/refresh tokens, client applications, user profiles.`
+
+const atom_access_tokens = defAtom<AccessTokenTable>({})
+const atom_authorization_codes = defAtom<CodeTable>({})
+const atom_clients = defAtom<ClientTable>({})
+const atom_profiles = defAtom<ProfileTable>({})
+const atom_refresh_tokens = defAtom<RefreshTokenTable>({})
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -203,6 +218,54 @@ const run = async () => {
       })
       break
     }
+
+    case 'mem': {
+      const {
+        defRegisterClient,
+        defRetrieveAccessToken,
+        defRetrieveAuthorizationCode,
+        defRetrieveProfile,
+        defRetrieveRefreshToken,
+        defStoreAccessToken,
+        defStoreAuthorizationCode,
+        defStoreProfile,
+        defStoreRefreshToken
+      } = mem_impl
+
+      retrieveAccessToken = defRetrieveAccessToken({
+        atom: atom_access_tokens
+      })
+      retrieveAuthorizationCode = defRetrieveAuthorizationCode({
+        atom: atom_authorization_codes
+      })
+      // retrieveClient = defRetrieveClient({
+      //   atom: atom_clients
+      // })
+      retrieveProfile = defRetrieveProfile({
+        atom: atom_profiles
+      })
+      retrieveRefreshToken = defRetrieveRefreshToken({
+        atom: atom_refresh_tokens
+      })
+      storeAccessToken = defStoreAccessToken({
+        atom: atom_access_tokens
+      })
+      storeAuthorizationCode = defStoreAuthorizationCode({
+        atom: atom_authorization_codes
+      })
+      storeClient = defRegisterClient({
+        atom: atom_clients
+      })
+      storeProfile = defStoreProfile({
+        atom: atom_profiles
+      })
+      storeRefreshToken = defStoreRefreshToken({
+        atom: atom_refresh_tokens
+      })
+
+      break
+    }
+
     case 'sqlite-dev': {
       client = createClient(DATABASES.DEV)
 
@@ -253,7 +316,7 @@ const run = async () => {
       break
     }
     default: {
-      exitOne(`seeding storage '${storage}' not implemented`)
+      exitOne(`seeding storage '${storage}' is not implemented`)
       return
     }
   }
@@ -261,6 +324,11 @@ const run = async () => {
   console.log(`=== storage before seeding ===`)
   await logStorageState({
     client,
+    atom_access_tokens,
+    atom_authorization_codes,
+    atom_clients,
+    atom_profiles,
+    atom_refresh_tokens,
     filepath_access_tokens,
     filepath_authorization_codes,
     filepath_clients,
@@ -404,6 +472,11 @@ const run = async () => {
   console.log(`=== storage after seeding ===`)
   await logStorageState({
     client,
+    atom_access_tokens,
+    atom_authorization_codes,
+    atom_clients,
+    atom_profiles,
+    atom_refresh_tokens,
     filepath_access_tokens,
     filepath_authorization_codes,
     filepath_clients,

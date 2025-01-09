@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { type Client as LibSqlClient } from '@libsql/client'
 import type { TSchema } from '@sinclair/typebox'
+import type { Atom } from '@thi.ng/atom'
 import type { ValidateFunction } from 'ajv'
 import c from 'ansi-colors'
 import * as jose from 'jose'
@@ -15,6 +16,13 @@ import type {
   RefreshTokenTable
 } from '../src/lib/token-storage-interface/index.js'
 import { EMOJI } from './constants.js'
+import {
+  ACCESS_TOKEN_RECORD_KEYS,
+  AUTHORIZATION_CODE_RECORD_KEYS,
+  CLIENT_APPLICATION_RECORD_KEYS,
+  REFRESH_TOKEN_RECORD_KEYS,
+  USER_PROFILE_RECORD_KEYS
+} from '../src/constants.js'
 
 const __filename = fileURLToPath(import.meta.url)
 
@@ -117,6 +125,11 @@ export const exitZero = (message: string) => {
 
 interface LogStorageStateConfig {
   client?: LibSqlClient
+  atom_access_tokens?: Atom<AccessTokenTable>
+  atom_authorization_codes?: Atom<CodeTable>
+  atom_clients?: Atom<ClientTable>
+  atom_profiles?: Atom<ProfileTable>
+  atom_refresh_tokens?: Atom<RefreshTokenTable>
   filepath_access_tokens?: string
   filepath_authorization_codes?: string
   filepath_clients?: string
@@ -178,17 +191,9 @@ const logTable = (config: LogTableConfig) => {
     width: 15
   }
 
-  // const columns = [
-  //   {
-  //     width: 20,
-  //     truncate: 100
-  //   }
-  // ]
-
   console.log(
     table(entries, {
       columnDefault,
-      // columns,
       header: { alignment, content }
     })
   )
@@ -200,6 +205,11 @@ const logTable = (config: LogTableConfig) => {
 export const logStorageState = async (config: LogStorageStateConfig) => {
   const {
     client,
+    atom_access_tokens,
+    atom_authorization_codes,
+    atom_clients,
+    atom_profiles,
+    atom_refresh_tokens,
     filepath_access_tokens,
     filepath_authorization_codes,
     filepath_clients,
@@ -212,122 +222,136 @@ export const logStorageState = async (config: LogStorageStateConfig) => {
 
   switch (storage) {
     case 'fs': {
-      if (!filepath_access_tokens) {
-        exitOne(`${prefix}filepath_access_tokens is undefined`)
-        return
+      if (filepath_access_tokens) {
+        const data = await unwrapP<AccessTokenTable>(
+          readJSON(filepath_access_tokens)
+        )
+
+        logTable({
+          data,
+          header: {
+            content: 'Access Tokens',
+            keys: ACCESS_TOKEN_RECORD_KEYS
+          }
+        })
       }
 
-      const m_at = await unwrapP<AccessTokenTable>(
-        readJSON(filepath_access_tokens)
-      )
+      if (filepath_authorization_codes) {
+        const data = await unwrapP<CodeTable>(
+          readJSON(filepath_authorization_codes)
+        )
 
-      logTable({
-        data: m_at,
-        header: {
-          content: 'Access Tokens',
-          keys: [
-            'jti',
-            'client_id',
-            'redirect_uri',
-            'revoked',
-            'revocation_reason'
-          ]
-        }
-      })
-
-      if (!filepath_authorization_codes) {
-        exitOne(`${prefix}filepath_authorization_codes is undefined`)
-        return
+        logTable({
+          data,
+          header: {
+            content: 'Authorization Codes',
+            keys: AUTHORIZATION_CODE_RECORD_KEYS
+          }
+        })
       }
 
-      const m_ac = await unwrapP<CodeTable>(
-        readJSON(filepath_authorization_codes)
-      )
-
-      logTable({
-        data: m_ac,
-        header: {
-          content: 'Authorization Codes',
-          keys: [
-            'code',
-            'client_id',
-            'code_challenge',
-            'code_challenge_method',
-            'exp',
-            'iss',
-            'me',
-            'redirect_uri',
-            'scope',
-            'used'
-          ]
-        }
-      })
-
-      if (!filepath_clients) {
-        exitOne(`${prefix}filepath_clients is undefined`)
-        return
+      if (filepath_clients) {
+        const data = await unwrapP<ClientTable>(readJSON(filepath_clients))
+        logTable({
+          data,
+          header: {
+            content: 'Client Applications',
+            keys: CLIENT_APPLICATION_RECORD_KEYS
+          }
+        })
       }
 
-      const m_c = await unwrapP<ClientTable>(readJSON(filepath_clients))
+      if (filepath_profiles) {
+        const data = await unwrapP<ProfileTable>(readJSON(filepath_profiles))
 
-      logTable({
-        data: m_c,
-        header: {
-          content: 'Client Applications',
-          keys: ['client_id', 'me', 'redirect_uri']
-        }
-      })
-
-      if (!filepath_profiles) {
-        exitOne(`${prefix}filepath_profiles is undefined`)
-        return
+        logTable({
+          data,
+          header: {
+            content: 'User Profiles',
+            keys: USER_PROFILE_RECORD_KEYS
+          }
+        })
       }
 
-      const m_p = await unwrapP<ProfileTable>(readJSON(filepath_profiles))
+      if (filepath_refresh_tokens) {
+        const data = await unwrapP<RefreshTokenTable>(
+          readJSON(filepath_refresh_tokens)
+        )
 
-      logTable({
-        data: m_p,
-        header: {
-          content: 'User Profiles',
-          keys: ['me', 'email', 'name', 'photo', 'url']
-        }
-      })
-
-      if (!filepath_refresh_tokens) {
-        exitOne(`${prefix}filepath_refresh_tokens is undefined`)
-        return
+        logTable({
+          data,
+          header: {
+            content: 'Refresh Tokens',
+            keys: REFRESH_TOKEN_RECORD_KEYS
+          }
+        })
       }
 
-      const m_rt = await unwrapP<RefreshTokenTable>(
-        readJSON(filepath_refresh_tokens)
-      )
+      break
+    }
 
-      logTable({
-        data: m_rt,
-        header: {
-          content: 'Refresh Tokens',
-          keys: [
-            'refresh_token',
-            'client_id',
-            'exp',
-            'iss',
-            'jti',
-            'me',
-            'redirect_uri',
-            'scope',
-            'revoked',
-            'revocation_reason'
-          ]
-        }
-      })
+    case 'mem': {
+      if (atom_access_tokens) {
+        const data = atom_access_tokens.deref()
+        logTable({
+          data,
+          header: {
+            content: 'Access Tokens',
+            keys: ACCESS_TOKEN_RECORD_KEYS
+          }
+        })
+      }
 
+      if (atom_authorization_codes) {
+        const data = atom_authorization_codes.deref()
+        logTable({
+          data,
+          header: {
+            content: 'Authorization Codes',
+            keys: AUTHORIZATION_CODE_RECORD_KEYS
+          }
+        })
+      }
+
+      if (atom_clients) {
+        const data = atom_clients.deref()
+        logTable({
+          data,
+          header: {
+            content: 'Client Applications',
+            keys: CLIENT_APPLICATION_RECORD_KEYS
+          }
+        })
+      }
+
+      if (atom_profiles) {
+        const data = atom_profiles.deref()
+        logTable({
+          data,
+          header: {
+            content: 'User Profiles',
+            keys: USER_PROFILE_RECORD_KEYS
+          }
+        })
+      }
+
+      if (atom_refresh_tokens) {
+        const data = atom_refresh_tokens.deref()
+        logTable({
+          data,
+          header: {
+            content: 'Refresh Tokens',
+            keys: REFRESH_TOKEN_RECORD_KEYS
+          }
+        })
+      }
       break
     }
 
     case 'sqlite-dev':
     case 'sqlite-prod': {
       if (!client) {
-        exitOne(`${prefix}client is undefined`)
+        exitOne(`${prefix}LibSQL client is undefined`)
         return
       }
 
@@ -335,10 +359,19 @@ export const logStorageState = async (config: LogStorageStateConfig) => {
         'SELECT COUNT(*) as total FROM access_tokens'
       )
       console.log(`${rs_at.rows[0]['total']} access tokens in DB`)
-      // const rs_access = await client.execute('SELECT * FROM access_tokens')
+      const rs_access = await client.execute(
+        'SELECT rowid,* FROM access_tokens'
+      )
       // for (const row of rs_access.rows) {
       //   console.log(row)
       // }
+      logTable({
+        data: rs_access.rows,
+        header: {
+          content: 'Access Tokens',
+          keys: ['rowid', ...ACCESS_TOKEN_RECORD_KEYS]
+        }
+      })
 
       const rs_ac = await client.execute(
         'SELECT COUNT(*) as total FROM authorization_codes'
@@ -352,19 +385,28 @@ export const logStorageState = async (config: LogStorageStateConfig) => {
         'SELECT COUNT(*) as total FROM profiles'
       )
       console.log(`${rs_p.rows[0]['total']} user profiles in DB`)
-      const rs_profiles = await client.execute('SELECT * FROM profiles')
-      for (const row of rs_profiles.rows) {
-        console.log(row)
-      }
+      // const rs_profiles = await client.execute('SELECT * FROM profiles')
+      // for (const row of rs_profiles.rows) {
+      //   console.log(row)
+      // }
 
       const rs_rt = await client.execute(
         'SELECT COUNT(*) as total FROM refresh_tokens'
       )
       console.log(`${rs_rt.rows[0]['total']} refresh tokens in DB`)
-      // const rs_refresh = await client.execute('SELECT * FROM refresh_tokens')
+      const rs_refresh = await client.execute(
+        'SELECT rowid,* FROM refresh_tokens'
+      )
       // for (const row of rs_refresh.rows) {
       //   console.log(row)
       // }
+      logTable({
+        data: rs_refresh.rows,
+        header: {
+          content: 'Refresh Tokens',
+          keys: ['rowid', ...REFRESH_TOKEN_RECORD_KEYS]
+        }
+      })
 
       break
     }

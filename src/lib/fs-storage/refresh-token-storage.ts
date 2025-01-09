@@ -1,11 +1,12 @@
-import type { RetrieveRecord, StoreRecord } from '../crud.js'
+import type { RetrieveRecord, RetrieveRecords, StoreRecord } from '../crud.js'
 import type {
   RefreshToken,
   RefreshTokenRecord,
   RefreshTokenTable,
   StoreRefreshTokenParam
 } from '../token-storage-interface/index.js'
-import { readJSON, writeJSON } from './json.js'
+import { filterJSON, readJSON, writeJSON } from './json.js'
+import { REFRESH_TOKEN_RECORD_KEYS } from '../../constants.js'
 
 interface Config {
   filepath: string
@@ -25,6 +26,22 @@ export const defStorage = (config: Config) => {
     }
 
     return { value: table[refresh_token] }
+  }
+
+  const retrieveRecords: RetrieveRecords<RefreshTokenRecord> = async (
+    criteria
+  ) => {
+    const { error, value: records } = await filterJSON<RefreshTokenRecord>(
+      filepath,
+      REFRESH_TOKEN_RECORD_KEYS,
+      criteria
+    )
+
+    if (error) {
+      return { error }
+    }
+
+    return { value: records }
   }
 
   const storeRecord: StoreRecord<StoreRefreshTokenParam> = async (datum) => {
@@ -47,5 +64,9 @@ export const defStorage = (config: Config) => {
     return { value }
   }
 
-  return { retrieveRecord, storeRecord }
+  return {
+    retrieveRecord,
+    retrieveRecords,
+    storeRecord
+  }
 }

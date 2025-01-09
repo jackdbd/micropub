@@ -68,7 +68,6 @@ const init = async (impl) => {
         issueAccessToken,
         retrieveAccessToken,
         revokeAccessToken,
-        revokeAllTokens: fs_impl.defRevokeAllTokens({ filepath }),
         storeAccessToken,
         totalBlacklisted
       }
@@ -112,7 +111,6 @@ const init = async (impl) => {
         issueAccessToken,
         retrieveAccessToken,
         revokeAccessToken,
-        revokeAllTokens: mem_impl.defRevokeAllTokens({ atom }),
         storeAccessToken,
         totalBlacklisted
       }
@@ -140,10 +138,6 @@ IMPLEMENTATIONS.forEach((label) => {
 
       it('has a isBlacklisted method', () => {
         assert.ok(impl.isBlacklisted)
-      })
-
-      it('has a revokeAllTokens method', () => {
-        assert.ok(impl.revokeAllTokens)
       })
 
       it('has a storeAccessToken method', () => {
@@ -298,14 +292,14 @@ IMPLEMENTATIONS.forEach((label) => {
         const b1 = await impl.totalBlacklisted(state_after_revoke_one.jtis)
         assert.strictEqual(b1, 1)
 
-        const { error: revoke_all_error } = await impl.revokeAllTokens()
-        assert.ok(!revoke_all_error)
+        // const { error: revoke_all_error } = await impl.revokeAllTokens()
+        // assert.ok(!revoke_all_error)
 
-        const { value: state_after_revoke_all } = await impl.getIssuedTokens()
-        assert.strictEqual(state_after_revoke_all.jtis.length, 3)
+        // const { value: state_after_revoke_all } = await impl.getIssuedTokens()
+        // assert.strictEqual(state_after_revoke_all.jtis.length, 3)
 
-        const b_end = await impl.totalBlacklisted(state_after_revoke_all.jtis)
-        assert.strictEqual(b_end, 3)
+        // const b_end = await impl.totalBlacklisted(state_after_revoke_all.jtis)
+        // assert.strictEqual(b_end, 3)
       })
     })
   })

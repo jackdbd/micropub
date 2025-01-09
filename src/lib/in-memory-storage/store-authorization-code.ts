@@ -10,7 +10,7 @@ import { defStorage } from './code-storage.js'
 interface Config {
   ajv?: Ajv
   atom: Atom<Record<Code, CodeRecord>>
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defStoreAuthorizationCode = (config: Config) => {

@@ -18,8 +18,6 @@ export { defRetrieveProfile } from './retrieve-profile.js'
 
 export { defRetrieveRefreshToken } from './retrieve-refresh-token.js'
 
-export { defRevokeAllTokens } from './revoke-all-tokens.js'
-
 export { defStoreAccessToken } from './store-access-token.js'
 
 export { defStoreAuthorizationCode } from './store-authorization-code.js'

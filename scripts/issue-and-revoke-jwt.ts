@@ -18,13 +18,15 @@ import type {
 } from '../src/lib/token-storage-interface/index.js'
 import * as DEFAULT from '../src/defaults.js'
 import { issueToken } from '../src/lib/issue-token.js'
+import { updateRecords } from '../src/lib/fs-storage/update-records.js'
 import { defRevokeAccessToken } from '../src/lib/revoke-access-token.js'
-import { privateJWKS } from './utils.js'
+import { exitOne, privateJWKS, unwrapP } from './utils.js'
 import { EMOJI } from './constants.js'
 
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'
 import * as mem_impl from '../src/lib/in-memory-storage/index.js'
+import { UpdateRecords } from '../src/lib/crud.js'
 
 // Run this script with --impl <impl> to test an implementation ////////////////
 // const IMPLEMENTATION = 'fs'
@@ -105,14 +107,22 @@ const run = async (config: Config) => {
 
   const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
+  // exitOne('this script is a work in progress')
+
   let getIssuedTokens: GetIssuedTokens // TODO: implement retrieveAccessTokens
   let isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   let retrieveAccessToken: RetrieveAccessToken
-  let revokeAllTokens: RevokeAllTokens
   let storeAccessToken: StoreAccessToken
   let storeRefreshToken: StoreRefreshToken
+  let updateRecords: any // UpdateRecords
   switch (implementation) {
     case 'fs': {
+      // const fs_storage = fs_impl.defStorage({
+      //   filepath: filepath_access_tokens
+      // })
+
+      updateRecords = fs_impl.updateRecords
+
       getIssuedTokens = fs_impl.defGetIssuedTokens({
         filepath: filepath_access_tokens
       })
@@ -122,9 +132,6 @@ const run = async (config: Config) => {
       retrieveAccessToken = fs_impl.defRetrieveAccessToken({
         filepath: filepath_access_tokens,
         report_all_ajv_errors
-      })
-      revokeAllTokens = fs_impl.defRevokeAllTokens({
-        filepath: filepath_access_tokens
       })
       storeAccessToken = fs_impl.defStoreAccessToken({
         filepath: filepath_access_tokens,
@@ -140,16 +147,23 @@ const run = async (config: Config) => {
       getIssuedTokens = mem_impl.defGetIssuedTokens({
         atom: atom_access_tokens
       })
+
       isAccessTokenBlacklisted = mem_impl.defIsAccessTokenBlacklisted({
         atom: atom_access_tokens
       })
+
       retrieveAccessToken = mem_impl.defRetrieveAccessToken({
         atom: atom_access_tokens,
         report_all_ajv_errors
       })
-      revokeAllTokens = mem_impl.defRevokeAllTokens({
-        atom: atom_access_tokens
-      })
+
+      throw exitOne(
+        `storage '${implementation}' does not implement updateRecords or another method for revoking tokens`
+      )
+
+      // revokeAllTokens = mem_impl.defRevokeAllTokens({
+      //   atom: atom_access_tokens
+      // })
       storeAccessToken = mem_impl.defStoreAccessToken({
         atom: atom_access_tokens,
         report_all_ajv_errors
@@ -161,17 +175,18 @@ const run = async (config: Config) => {
       break
     }
     default: {
-      throw new Error(`${implementation} not implemented`)
+      exitOne(`storage '${implementation}' is not implemented`)
+      return
     }
   }
 
-  const revokeAccessToken = defRevokeAccessToken({
-    issuer,
-    jwks_url,
-    max_token_age: access_token_expiration,
-    retrieveAccessToken,
-    storeAccessToken
-  })
+  // const revokeAccessToken = defRevokeAccessToken({
+  //   issuer,
+  //   jwks_url,
+  //   max_token_age: access_token_expiration,
+  //   retrieveAccessToken,
+  //   storeAccessToken
+  // })
 
   const me = 'https://giacomodebidda.com/'
   const redirect_uri = 'https://example.com/'
@@ -209,15 +224,38 @@ const run = async (config: Config) => {
 
   const jwt0 = issue_val0.access_token
 
-  // revoke only the first JWT
-  const { error: revoke_err0, value: revoke_val0 } = await revokeAccessToken(
-    jwt0,
-    {
-      revocation_reason: `revoke_one (script ${__filename})`
-    }
+  const revocation_reason = `revoke_one (script ${__filename})`
+
+  const updated = await unwrapP(
+    updateRecords({
+      id: 'jti',
+      filepath: filepath_access_tokens,
+      set: {
+        revoked: true,
+        revocation_reason
+      }
+      // where: { jti: 'def' }
+      // condition: 'AND' // OR, NOT
+    })
   )
-  assert.ok(!revoke_err0)
-  console.log(`${EMOJI.TOKEN_REVOKED} revoked token ${revoke_val0.jti}`)
+  console.log('🚀 ~ run ~ updated:', updated)
+
+  // const updated = await unwrapP(
+  //   updateRecords({
+  //     revoked: true,
+  //     revocation_reason
+  //   })
+  // )
+
+  // revoke only the first JWT
+  // const { error: revoke_err0, value: revoke_val0 } = await revokeAccessToken(
+  //   jwt0,
+  //   {
+  //     revocation_reason: `revoke_one (script ${__filename})`
+  //   }
+  // )
+  // assert.ok(!revoke_err0)
+  // console.log(`${EMOJI.TOKEN_REVOKED} revoked token ${revoke_val0.jti}`)
 
   const { error, value } = await getIssuedTokens()
   assert.ok(!error)
@@ -227,23 +265,23 @@ const run = async (config: Config) => {
 
   await status({ implementation, jtis, isAccessTokenBlacklisted })
 
-  if (revoke_all) {
-    const { error, value } = await revokeAllTokens({
-      revocation_reason: `revoke_all (script ${__filename})`
-    })
-    assert.ok(!error)
-    assert.ok(value)
-    console.log(`${EMOJI.ALL_TOKENS_REVOKED} Revoked ALL access tokens`)
+  // if (revoke_all) {
+  //   const { error, value } = await revokeAllTokens({
+  //     revocation_reason: `revoke_all (script ${__filename})`
+  //   })
+  //   assert.ok(!error)
+  //   assert.ok(value)
+  //   console.log(`${EMOJI.ALL_TOKENS_REVOKED} Revoked ALL access tokens`)
 
-    await status({ implementation, jtis, isAccessTokenBlacklisted })
+  //   await status({ implementation, jtis, isAccessTokenBlacklisted })
 
-    // Since we cannot inspect the state of the in-memory after this script
-    // exits, we print it here.
-    if (revoke_all && IMPLEMENTATION === 'mem') {
-      console.log(`=== in-memory implementation state ===`)
-      console.log(atom_access_tokens.deref())
-    }
-  }
+  //   // Since we cannot inspect the state of the in-memory after this script
+  //   // exits, we print it here.
+  //   if (revoke_all && IMPLEMENTATION === 'mem') {
+  //     console.log(`=== in-memory implementation state ===`)
+  //     console.log(atom_access_tokens.deref())
+  //   }
+  // }
 }
 
 run({ implementation: IMPLEMENTATION })

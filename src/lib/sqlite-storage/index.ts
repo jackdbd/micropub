@@ -13,3 +13,5 @@ export { defStoreProfile } from './store-profile.js'
 export { defStoreAccessToken } from './store-access-token.js'
 
 export { defStoreRefreshToken } from './store-refresh-token.js'
+
+export { defUpdateRecords } from './update-records.js'

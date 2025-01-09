@@ -9,7 +9,7 @@ import { defStorage } from './refresh-token-storage.js'
 interface Config {
   ajv?: Ajv
   atom: Atom<RefreshTokenTable>
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defRetrieveRefreshToken = (config: Config) => {

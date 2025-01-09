@@ -9,7 +9,7 @@ import { defStorage } from './access-token-storage.js'
 interface Config {
   ajv?: Ajv
   atom: Atom<AccessTokenTable>
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defStoreAccessToken = (config: Config) => {

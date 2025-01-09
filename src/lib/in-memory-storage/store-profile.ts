@@ -11,7 +11,7 @@ import { defStorage } from './profile-storage.js'
 interface Config {
   ajv?: Ajv
   atom: Atom<Record<ProfileURL, Profile>>
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defStoreProfile = (config: Config): StoreProfile => {

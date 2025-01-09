@@ -5,6 +5,50 @@ Various scripts for development and testing.
 > [!TIP]
 > If a script is written in TypeScript, you can use [tsm](https://github.com/lukeed/tsm) to launch it without having to compile it first.
 
+## Seeding data
+
+Seed the storage layer with some authorization codes, access tokens, refresh refresh, client applications, user profiles.
+
+Seed the filesystem storage.
+
+```sh
+npx tsm ./scripts/seed.ts --storage fs
+```
+
+Seed the in-memory storage, produce verbose output.
+
+```sh
+npx tsm ./scripts/seed.ts --storage mem --verbose
+```
+
+Seed the development database.
+
+```sh
+npx tsm ./scripts/seed.ts --storage sqlite-dev
+```
+
+Seed the production database.
+
+```sh
+npx tsm ./scripts/seed.ts --storage sqlite-prod
+```
+
+Revoke all access tokens that are currently stored in the filesystem.
+
+```sh
+npx tsm ./scripts/revoke-tokens.ts --storage fs --access-tokens
+```
+
+Revoke all access tokens and all refresh tokens that are currently stored in the development database; give a reason for their revocation; produce verbose output.
+
+```sh
+npx tsm ./scripts/revoke-tokens.ts --storage sqlite-dev \
+  --access-tokens \
+  --refresh-tokens \
+  --revocation-reason testing-revoke-all \
+  --verbose
+```
+
 ## JSON Schemas
 
 Generate JSON schemas from TypeBox schemas, then generate HTML pages from those JSON schemas using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans).
@@ -35,14 +79,6 @@ Issue a JWT and immediately revoke it.
 ```sh
 npx tsm ./scripts/issue-and-revoke-jwt.ts --impl fs
 npx tsm ./scripts/issue-and-revoke-jwt.ts --impl mem
-```
-
-Seed the storage layer with some authorization codes, access tokens, refresh refresh, client applications, user profiles.
-
-```sh
-npx tsm ./scripts/seed.ts --storage fs
-npx tsm ./scripts/seed.ts --storage sqlite-dev --verbose
-npx tsm ./scripts/seed.ts --storage sqlite-prod --verbose
 ```
 
 ## JSON Web Key Set (JWKS)
