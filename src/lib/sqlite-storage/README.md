@@ -1,4 +1,4 @@
-# Turso storage
+# SQLite storage
 
 This project uses [Atlas](https://github.com/ariga/atlas) for automatic migration planning. See the [Atlas configuration file](https://atlasgo.io/atlas-schema/projects) `atlas.hcl`.
 

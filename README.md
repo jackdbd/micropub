@@ -26,6 +26,7 @@ Packages for implementing an authorization server that supports the [IndieAuth p
 | [r2-storage](./src/lib/r2-storage/README.md) | Storage implementation (Cloudflare R2) |
 | [relmeauth](./src/lib/relmeauth/README.md) | Schemas and functions for working with RelMeAuth |
 | [schemas](./src/lib/schemas/README.md) | Miscellaneous schemas |
+| [sqlite-storage](./src/lib/sqlite-storage/README.md) | Storage implementation (SQlite/LibSQL/Turso) |
 | [token](./src/lib/token/README.md) | Helper functions for working with JWT tokens |
 | [token-storage-interface](./src/lib/token-storage-interface/README.md) | Storage interface for token |
 
@@ -68,6 +69,8 @@ curl "${BASE_URL}/micropub" \
 If you don't want to copy and paste curl commands in the terminal, you can make requests using API clients like [Postman](https://www.postman.com/) or [Bruno](https://docs.usebruno.com/introduction/what-is-bruno) (see the Bruno collection in [assets](./assets/README.md)).
 
 You can obtain a valid access token using any micropub client, for example [the one in this repository](./src/plugins/micropub-client/README.md), [Quill](https://quill.p3k.io/), [Micropublish](https://micropublish.net/) or [Indiekit](https://getindiekit.com/).
+
+See also [scripts](./scripts/README.md).
 
 ## Test
 

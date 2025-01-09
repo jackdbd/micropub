@@ -13,7 +13,8 @@ import {
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'
 import * as mem_impl from '../src/lib/in-memory-storage/index.js'
-import * as turso_impl from '../src/lib/turso-storage/index.js'
+import * as sqlite_impl from '../src/lib/sqlite-storage/index.js'
+import { createClient } from '@libsql/client'
 
 // Run this script with --impl <impl> to test an implementation ////////////////
 // const IMPLEMENTATION = 'fs'
@@ -80,10 +81,13 @@ const run = async (config: Config) => {
       break
     }
     case 'turso': {
-      retrieveProfile = turso_impl.defRetrieveProfile({
+      const client = createClient({
+        url: process.env.TURSO_DATABASE_URL!,
+        authToken: process.env.TURSO_DATABASE_TOKEN!
+      })
+      retrieveProfile = sqlite_impl.defRetrieveProfile({
         ajv,
-        database_token: process.env.TURSO_DATABASE_TOKEN!,
-        database_url: process.env.TURSO_DATABASE_URL!,
+        client,
         report_all_ajv_errors
       })
 

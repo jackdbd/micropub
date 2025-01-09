@@ -25,7 +25,7 @@ import type {
 } from '../src/lib/token-storage-interface/index.js'
 import { type AccessTokenClaims, safeDecode } from '../src/lib/token/index.js'
 import * as fs_impl from '../src/lib/fs-storage/index.js'
-import * as sqlite_impl from '../src/lib/turso-storage/index.js'
+import * as sqlite_impl from '../src/lib/sqlite-storage/index.js'
 import { canonicalUrl } from '../src/lib/url-canonicalization.js'
 import { DATABASES, DEFAULT, EMOJI, LINK_BUGS } from './constants.js'
 import {
