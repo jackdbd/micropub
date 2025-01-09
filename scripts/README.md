@@ -37,11 +37,12 @@ npx tsm ./scripts/issue-and-revoke-jwt.ts --impl fs
 npx tsm ./scripts/issue-and-revoke-jwt.ts --impl mem
 ```
 
-Seed the database with some tokens.
+Seed the storage layer with some authorization codes, access tokens, refresh refresh, client applications, user profiles.
 
 ```sh
-npx tsm ./scripts/seed-tokens.ts --db dev
-npx tsm ./scripts/seed-tokens.ts --db prod
+npx tsm ./scripts/seed.ts --storage fs
+npx tsm ./scripts/seed.ts --storage sqlite-dev --verbose
+npx tsm ./scripts/seed.ts --storage sqlite-prod --verbose
 ```
 
 ## JSON Web Key Set (JWKS)

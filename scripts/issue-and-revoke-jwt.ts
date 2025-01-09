@@ -19,7 +19,8 @@ import type {
 import * as DEFAULT from '../src/defaults.js'
 import { issueToken } from '../src/lib/issue-token.js'
 import { defRevokeAccessToken } from '../src/lib/revoke-access-token.js'
-import { privateJWKS, EMOJI } from './utils.js'
+import { privateJWKS } from './utils.js'
+import { EMOJI } from './constants.js'
 
 // implementations
 import * as fs_impl from '../src/lib/fs-storage/index.js'

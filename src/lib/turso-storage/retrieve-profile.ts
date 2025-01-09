@@ -10,7 +10,7 @@ import {
 export interface Config {
   ajv?: Ajv
   client: Client
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defRetrieveProfile = (config: Config) => {

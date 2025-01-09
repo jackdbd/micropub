@@ -42,7 +42,7 @@ export const retrieveProfile = Type.Any({ description })
 
 export interface Config {
   ajv?: Ajv
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
   retrieveRecord: RetrieveRecord<Profile, ProfileURL>
 }
 

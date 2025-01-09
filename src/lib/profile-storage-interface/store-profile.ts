@@ -52,7 +52,7 @@ export type StoreProfile = (
 
 export interface Config {
   ajv?: Ajv
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
   storeRecord: StoreRecord<StoreProfileParam>
 }
 

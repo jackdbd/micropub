@@ -5,7 +5,7 @@ import { defStorage } from './access-token-storage.js'
 interface Config {
   ajv?: Ajv
   filepath: string
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defRetrieveAccessToken = (config: Config) => {

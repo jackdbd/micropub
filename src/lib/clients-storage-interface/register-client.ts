@@ -59,7 +59,7 @@ export interface Config {
   getRecord: GetRecord
   log?: (payload: any, message: string) => void
   prefix?: string
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
   setRecord: SetRecord
 }
 

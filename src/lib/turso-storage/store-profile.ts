@@ -12,7 +12,7 @@ const DEFAULT = { email: null }
 export interface Config {
   ajv?: Ajv
   client: Client
-  report_all_ajv_errors: boolean
+  report_all_ajv_errors?: boolean
 }
 
 export const defStoreProfile = (config: Config) => {
