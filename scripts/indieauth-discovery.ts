@@ -1,11 +1,33 @@
+import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 import { metadataEndpoint, serverMetadata } from '../src/lib/indieauth/index.js'
+import { canonicalUrl } from '../src/lib/url-canonicalization.js'
+import { DEFAULT } from './constants.js'
+import { exitOne } from './utils.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const prefix = `[${__filename}] `
 
 const run = async () => {
-  const args = process.argv.slice(2)
-  let [_me_flag, me, ...rest] = args
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: {
+      // me: { type: 'string',short: 'm' },
+      verbose: { type: 'boolean' }
+    }
+  })
 
-  if (!me) {
-    me = 'https://giacomodebidda.com/'
+  const [me_given, ...rest] = positionals
+
+  if (rest.length > 0) {
+    exitOne(
+      `${prefix}accepts exactly one positional argument (e.g. ${DEFAULT.ME_BEFORE_CANONICALIZATION})`
+    )
+    return
+  }
+
+  if (values.verbose) {
+    console.log(`${prefix}ensuring given profile URL is a canonical URL`)
   }
 
   // const me = 'https://aaronparecki.com/'
@@ -17,6 +39,10 @@ const run = async () => {
   // const me = 'https://grant.codes/' // no indieauth metadata endpoint
   // const me = 'https://keithjgrant.com/' // no indieauth metadata endpoint
   // const me = 'https://waterpigs.co.uk/' // no indieauth metadata endpoint
+
+  const me = me_given
+    ? canonicalUrl(me_given)
+    : DEFAULT.ME_AFTER_CANONICALIZATION
 
   const { error, value: metadata_endpoint } = await metadataEndpoint(me)
 

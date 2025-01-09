@@ -11,6 +11,8 @@ export const DEFAULT = {
   ACCESS_TOKEN_EXPIRATION,
   AUTHORIZATION_CODE_EXPIRATION,
   CLIENT_ID: 'http://localhost:3001/id',
+  CODE_CHALLENGE_METHOD: 'S256',
+  CODE_VERIFIER_LENGTH: 128,
   ME_BEFORE_CANONICALIZATION: 'giacomodebidda.com',
   ME_AFTER_CANONICALIZATION: 'https://giacomodebidda.com/',
   PROFILE_EMAIL: 'giacomo@giacomodebidda.com',

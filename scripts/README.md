@@ -64,7 +64,7 @@ npx tsm ./scripts/deploy-jwks.ts
 Perform RelMeAuth discovery on a given profile URL.
 
 ```sh
-npx tsm ./scripts/relmeauth-discovery.ts --me https://giacomodebidda.com/
+npx tsm ./scripts/relmeauth-discovery.ts https://giacomodebidda.com/
 ```
 
 Try also with these `me` URLs:
@@ -79,7 +79,7 @@ Try also with these `me` URLs:
 Perform IndieAuth discovery on a given profile URL.
 
 ```sh
-npx tsm ./scripts/indieauth-discovery.ts --me https://giacomodebidda.com/
+npx tsm ./scripts/indieauth-discovery.ts https://giacomodebidda.com/
 ```
 
 Try also with these `me` URLs:
@@ -95,6 +95,14 @@ npx tsm ./scripts/register-client.ts \
   --me https://giacomodebidda.com/ \
   --client-id http://localhost:3001/id \
   --redirect-id http://localhost:3001/auth/callback
+```
+
+Build the IndieAuth [authorization request URL](https://indieauth.spec.indieweb.org/#authorization-request).
+
+```sh
+npx tsm ./scripts/indieauth-authorization-request.ts
+
+npx tsm ./scripts/indieauth-authorization-request.ts --me https://aaronparecki.com/
 ```
 
 Store information about a profile URL.
@@ -118,9 +126,3 @@ npx tsm ./scripts/store-profile.ts --impl turso \
 ```
 
 Should my profile URL be something like `https://giacomodebidda.com/me`?
-
-Retrieve information about a profile URL.
-
-```sh
-npx tsm ./scripts/retrieve-profile.ts --impl turso --me https://giacomodebidda.com/
-```
