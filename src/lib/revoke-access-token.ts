@@ -1,17 +1,18 @@
+import type {
+  RetrieveRecord,
+  SelectQuery,
+  StoreRecord
+} from '../lib/storage-api/index.js'
 import { secondsToUTCString, unixTimestampInSeconds } from './date.js'
 import type { JWKSPublicURL } from './schemas/index.js'
 import { type AccessTokenClaims, verify } from './token/index.js'
-import type {
-  RetrieveAccessToken,
-  StoreAccessToken
-} from './token-storage-interface/index.js'
 
 export interface Config {
   issuer: string
   jwks_url: JWKSPublicURL
   max_token_age: string
-  retrieveAccessToken: RetrieveAccessToken
-  storeAccessToken: StoreAccessToken
+  retrieveAccessToken: RetrieveRecord
+  storeAccessToken: StoreRecord
 }
 
 export interface Options {
@@ -41,8 +42,13 @@ export const defRevokeAccessToken = (config: Config) => {
       return { error: verify_error }
     }
 
+    const query: SelectQuery = {
+      select: ['*'],
+      where: [{ key: 'jti', op: '==', value: claims.jti }]
+    }
+
     const { error: retrieve_error, value: record } = await retrieveAccessToken(
-      claims.jti
+      query
     )
 
     if (retrieve_error) {

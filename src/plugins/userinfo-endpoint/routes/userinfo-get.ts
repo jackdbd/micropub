@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
-import type { RetrieveRecord } from '../../../lib/crud.js'
+import type { RetrieveRecord } from '../../../lib/storage-api/index.js'
 import {
   InsufficientScopeError,
   InvalidRequestError,
@@ -8,7 +8,6 @@ import {
   UnauthorizedError
 } from '../../../lib/fastify-errors/index.js'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
-import type { Profile } from '../../../lib/indieauth/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../../lib/token/index.js'
 // import { githubUser } from './github.js'
 
@@ -27,7 +26,7 @@ interface Querystring {
 export interface Config {
   include_error_description: boolean
   log_prefix: string
-  retrieveProfile: RetrieveRecord<Profile>
+  retrieveProfile: RetrieveRecord // RetrieveRecord<Profile>
 }
 
 export const defUserinfoGet = (config: Config) => {
@@ -83,9 +82,9 @@ export const defUserinfoGet = (config: Config) => {
 
     // TODO: use the 'me' claim of the access token (the claim in the JWT or the
     // access token record) to fetch the user's profile from storage
-    const { error: retrieve_error, value: profile } = await retrieveProfile(
-      claims.me
-    )
+    const { error: retrieve_error, value: profile } = await retrieveProfile({
+      where: [{ key: 'me', op: '==', value: claims.me }]
+    })
 
     if (retrieve_error) {
       const error_description = `Failed to retrieve ${claims.me} from storage: ${retrieve_error.message}`

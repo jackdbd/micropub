@@ -1,10 +1,13 @@
-import type { Config as LibSqlClientConfig } from '@libsql/client'
+import { fileURLToPath } from 'node:url'
+import type { Environment } from '../src/constants.js'
 import {
   ACCESS_TOKEN_EXPIRATION,
   AUTHORIZATION_CODE_EXPIRATION,
   REFRESH_TOKEN_EXPIRATION,
   REPORT_ALL_AJV_ERRORS
 } from '../src/defaults.js'
+
+const __filename = fileURLToPath(import.meta.url)
 
 export const DEFAULT = {
   // ACCESS_TOKEN_EXPIRATION: '10 minutes',
@@ -13,6 +16,8 @@ export const DEFAULT = {
   CLIENT_ID: 'http://localhost:3001/id',
   CODE_CHALLENGE_METHOD: 'S256',
   CODE_VERIFIER_LENGTH: 128,
+  ENVIRONMENT: 'dev' as Environment,
+  ISSUER: __filename,
   ME_BEFORE_CANONICALIZATION: 'giacomodebidda.com',
   ME_AFTER_CANONICALIZATION: 'https://giacomodebidda.com/',
   PROFILE_EMAIL: 'giacomo@giacomodebidda.com',
@@ -22,35 +27,10 @@ export const DEFAULT = {
   REDIRECT_URI: 'http://localhost:3001/auth/callback',
   REFRESH_TOKEN_EXPIRATION,
   REPORT_ALL_AJV_ERRORS,
+  RESET: false,
   SCOPE: 'create update profile email',
+  SHOW_SCHEMA: false,
   VERBOSE: false
-}
-
-export const DATABASES = {
-  DEV: { url: 'file:micropub-dev.db' } as LibSqlClientConfig,
-  PROD: {
-    url: process.env.TURSO_DATABASE_URL!,
-    authToken: process.env.TURSO_DATABASE_TOKEN!
-  } as LibSqlClientConfig
-}
-
-// 🚧❌🚨⛔❗🔐🧑🧑‍💻👤🗣️🆘🚩✅🔎
-// https://emojis.wiki/
-export const EMOJI = {
-  ACCESS_TOKEN: '🔑',
-  AUTHORIZATION_CODE: '🔢',
-  DEBUG: '🔎',
-  ERROR: '🚨',
-  EXIT_ONE: '🚩',
-  EXIT_ZERO: '🏁',
-  PROFILE: '👤',
-  REFRESH_TOKEN: '🌱',
-  RETRIEVED: '📤',
-  STORED: '📥',
-  TEST: '🧪',
-  TOKEN_ISSUED: '🔑',
-  TOKEN_REVOKED: '🚫',
-  ALL_TOKENS_REVOKED: '🚧'
 }
 
 export const LINK_BUGS = 'https://github.com/jackdbd/micropub/labels/bug'

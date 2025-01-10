@@ -15,7 +15,8 @@ Packages for implementing an authorization server that supports the [IndieAuth p
 | [fastify-errors](./src/lib/fastify-errors/README.md) | Consistent errors for OAuth 2.0 / IndieAuth / Micropub servers |
 | [fastify-hooks](./src/lib/fastify-hooks/README.md) | Hooks shared by several Fastify plugins |
 | [fastify-utils](./src/lib/fastify-utils/README.md) | Miscellaneous utilities for Fastify servers |
-| [fs-storage](./src/lib/fs-storage/README.md) | Storage implementation (filesystem) |
+| [fs-jsonl-storage](./src/lib/fs-jsonl-storage/README.md) | Storage implementation (filesystem, JSON Lines) |
+| [fs-json-storage](./src/lib/fs-json-storage/README.md) | Storage implementation (filesystem, JSON) |
 | [github-storage](./src/lib/github-storage/README.md) | Storage implementation (GitHub repository) |
 | [in-memory-storage](./src/lib/in-memory-storage/README.md) | Storage implementation (in-memory) |
 | [indieauth](./src/lib/indieauth/README.md) | Schemas and functions for working with IndieAuth |

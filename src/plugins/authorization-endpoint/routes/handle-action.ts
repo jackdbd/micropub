@@ -1,11 +1,13 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import ms, { StringValue } from 'ms'
-import type { StoreAuthorizationCode } from '../../../lib/authorization-code-storage-interface/index.js'
 import { unixTimestampInMs } from '../../../lib/date.js'
 import { ServerError } from '../../../lib/fastify-errors/index.js'
 import { authorizationResponseUrl } from '../../../lib/indieauth/index.js'
 import { canonicalUrl } from '../../../lib/url-canonicalization.js'
-import type { HandleActionQuerystring } from '../schemas.js'
+import type {
+  HandleActionQuerystring,
+  OnUserApprovedRequest
+} from '../schemas.js'
 
 export interface Config {
   authorization_code_expiration: string
@@ -24,7 +26,7 @@ export interface Config {
 
   log_prefix: string
 
-  storeAuthorizationCode: StoreAuthorizationCode
+  onUserApprovedRequest: OnUserApprovedRequest
 }
 
 interface RouteGeneric extends RouteGenericInterface {
@@ -55,7 +57,7 @@ export const defHandleAction = (config: Config) => {
     include_error_description,
     issuer,
     log_prefix,
-    storeAuthorizationCode
+    onUserApprovedRequest
   } = config
 
   const handleAction: RouteHandler<RouteGeneric> = async (request, reply) => {
@@ -113,7 +115,7 @@ export const defHandleAction = (config: Config) => {
 
     const me = canonicalUrl(request.query.me)
 
-    const record = {
+    const props = {
       client_id,
       code_challenge,
       code_challenge_method,
@@ -123,16 +125,23 @@ export const defHandleAction = (config: Config) => {
       redirect_uri,
       scope
     }
-    const { error } = await storeAuthorizationCode({ ...record, code })
 
-    if (error) {
-      const error_description = error.message
-      // TODO: create HTML page for error_uri
+    try {
+      await onUserApprovedRequest({ ...props, code })
+    } catch (ex: any) {
+      let error_description = `The user-provided onUserApprovedRequest handler threw an exception.`
+      if (ex && ex.message) {
+        error_description = `${error_description} Here is the original error message: ${ex.message}`
+      }
+      request.log.error(`${log_prefix}${error_description}`)
       const error_uri = undefined
-      const err = new ServerError({ error_description, error_uri, state })
+      const err = new ServerError({ error_description, error_uri })
       return reply
         .code(err.statusCode)
         .send(err.payload({ include_error_description }))
+      // TODO: redirect to an error page when the user-provided handler throws
+      // an exception. Do not return a JSON response.
+      // reply.redirect(redirect_url)
     }
 
     request.log.debug(

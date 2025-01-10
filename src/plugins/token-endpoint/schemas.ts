@@ -25,14 +25,10 @@ import {
   jwks_private,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
-import {
-  retrieveRefreshToken,
-  type RetrieveRefreshToken,
-  storeAccessToken,
-  type StoreAccessToken,
-  storeRefreshToken,
-  type StoreRefreshToken
-} from '../../lib/token-storage-interface/index.js'
+import type {
+  RetrieveRecord,
+  StoreRecord
+} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
 
 export const access_token_expiration = Type.String({
@@ -78,22 +74,22 @@ export const token_post_options = Type.Object({
     default: DEFAULT.REPORT_ALL_AJV_ERRORS
   }),
 
-  retrieveRefreshToken,
+  retrieveRefreshToken: Type.Any(),
 
   revocationEndpoint: revocation_endpoint,
 
-  storeAccessToken,
+  storeAccessToken: Type.Any(),
 
-  storeRefreshToken,
+  storeRefreshToken: Type.Any(),
 
   userinfoEndpoint: userinfo_endpoint
 })
 
 export interface TokenPostOptions extends Static<typeof token_post_options> {
   ajv?: Ajv
-  retrieveRefreshToken: RetrieveRefreshToken
-  storeAccessToken: StoreAccessToken
-  storeRefreshToken: StoreRefreshToken
+  retrieveRefreshToken: RetrieveRecord
+  storeAccessToken: StoreRecord
+  storeRefreshToken: StoreRecord
 }
 
 export const access_token_request_body = Type.Object({
@@ -216,19 +212,19 @@ export const options = Type.Object(
       default: DEFAULT.REPORT_ALL_AJV_ERRORS
     }),
 
-    retrieveRefreshToken,
+    retrieveRefreshToken: Type.Any(),
 
     revocationEndpoint: revocation_endpoint,
 
     /**
      * Persists an access token to some storage (e.g. a database).
      */
-    storeAccessToken,
+    storeAccessToken: Type.Any(),
 
     /**
      * Persists a refresh token to some storage (e.g. a database).
      */
-    storeRefreshToken,
+    storeRefreshToken: Type.Any(),
 
     userinfoEndpoint: userinfo_endpoint
   },
@@ -245,7 +241,7 @@ export const options = Type.Object(
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
   isAccessTokenBlacklisted: IsAccessTokenBlacklisted
-  retrieveRefreshToken: RetrieveRefreshToken
-  storeAccessToken: StoreAccessToken
-  storeRefreshToken: StoreRefreshToken
+  retrieveRefreshToken: RetrieveRecord
+  storeAccessToken: StoreRecord
+  storeRefreshToken: StoreRecord
 }

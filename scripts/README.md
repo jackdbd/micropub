@@ -49,6 +49,26 @@ npx tsm ./scripts/revoke-tokens.ts --storage sqlite-dev \
   --verbose
 ```
 
+## CRUD
+
+Small CRUD demos to test various storage implementations.
+
+```sh
+npx tsm ./scripts/crud-access-token.ts --backend fs-jsonl --reset
+
+npx tsm ./scripts/crud-authorization-code.ts --backend fs-jsonl --reset
+
+npx tsm ./scripts/crud-client.ts --backend fs-jsonl --reset
+
+npx tsm ./scripts/crud-user-profile.ts --backend fs-jsonl --reset
+
+npx tsm ./scripts/crud-user-profile.ts --backend sqlite --env dev
+
+npx tsm ./scripts/crud-refresh-token.ts --backend fs-jsonl --reset
+
+npx tsm ./scripts/crud-access-token.ts --backend mem
+```
+
 ## JSON Schemas
 
 Generate JSON schemas from TypeBox schemas, then generate HTML pages from those JSON schemas using [json-schema-for-humans](https://github.com/coveooss/json-schema-for-humans).

@@ -1,5 +1,7 @@
 # SQLite storage
 
+This library implements the [storage API](../storage-api/README.md) using a SQLite database.
+
 This project uses [Atlas](https://github.com/ariga/atlas) for automatic migration planning. See the [Atlas configuration file](https://atlasgo.io/atlas-schema/projects) `atlas.hcl`.
 
 The command `atlas schema apply` generates the migrations required to bring the database to the state described in the provided Atlas schema.

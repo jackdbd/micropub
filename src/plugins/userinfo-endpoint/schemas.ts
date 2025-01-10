@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-// import { me_after_url_canonicalization } from '../../lib/indieauth/index.js'
-import { retrieveProfile } from '../../lib/profile-storage-interface/index.js'
+// import type { Profile } from '../../lib/indieauth/schemas.js'
+import type { RetrieveRecord } from '../../lib/storage-api/index.js'
 import {
   isAccessTokenBlacklisted,
   type IsAccessTokenBlacklisted,
@@ -30,10 +30,11 @@ export const options = Type.Object({
   /**
    * Function that retrieves a user's profile from some storage.
    */
-  retrieveProfile
+  retrieveProfile: Type.Any()
 })
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
   isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  retrieveProfile: RetrieveRecord // RetrieveRecord<Profile>
 }

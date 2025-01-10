@@ -1,7 +1,5 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
 import Fastify from 'fastify'
 import type { OAuth2Namespace } from '@fastify/oauth2'
 import { fastifyRequestContext } from '@fastify/request-context'
@@ -13,10 +11,18 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
+import type { AuthorizationCodeProps } from './lib/authorization-code-storage-interface/authorization-code.js'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
 import { defR2 } from './lib/r2-storage/client.js'
+import type {
+  AuthorizationCodeImmutableRecord,
+  AuthorizationCodeMutableRecord,
+  BaseProps,
+  SelectQuery
+} from './lib/storage-api/index.js'
+import { defStorage } from './lib/storage-implementations/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/index.js'
 
@@ -35,6 +41,7 @@ import userinfo from './plugins/userinfo-endpoint/index.js'
 import token from './plugins/token-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
+import { defAjv } from './ajv.js'
 import {
   entriesSafeToRender,
   DO_NOT_RENDER,
@@ -47,29 +54,6 @@ import {
 } from './error-handlers/index.js'
 import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
-
-// Filesystem storage backend //////////////////////////////////////////////////
-import {
-  defRetrieveAccessToken,
-  defRetrieveAuthorizationCode,
-  defRetrieveProfile,
-  defRetrieveRefreshToken,
-  defStoreAccessToken,
-  defStoreAuthorizationCode,
-  defStoreRefreshToken,
-  init
-} from './lib/fs-storage/index.js'
-////////////////////////////////////////////////////////////////////////////////
-
-// In-memory storage backend ///////////////////////////////////////////////////
-// import {
-//   defRetrieveAuthorizationCode,
-//   defStoreAccessToken,
-//   defStoreAuthorizationCode,
-//   initAccessTokensStorage,
-//   initAuthorizationCodesStorage
-// } from './lib/in-memory-storage/index.js'
-////////////////////////////////////////////////////////////////////////////////
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -175,109 +159,88 @@ export async function defFastify(config: Config) {
     token_endpoint: tokenEndpoint,
     use_development_error_handler,
     use_secure_flag_for_session_cookie,
-    userinfo_endpoint: userinfoEndpoint
+    userinfo_endpoint: userinfoEndpoint,
+    NODE_ENV
   } = config
-
-  // We would need all these extra formats to fully support fluent-json-schema.
-  // https://github.com/ajv-validator/ajv-formats#formats
-  // However, it seems that for this app we only need these formats.
-  const ajv = addFormats(new Ajv({ allErrors: reportAllAjvErrors }), [
-    'date',
-    'date-time',
-    'duration',
-    'email',
-    // 'hostname',
-    // 'ipv4',
-    // 'ipv6',
-    // 'json-pointer',
-    // 'regex',
-    // 'relative-json-pointer',
-    // 'time',
-    'uri'
-    // 'uri-reference',
-    // 'uri-template',
-    // 'uuid'
-  ])
 
   // console.log(`=== app config ===`)
   // console.log(config)
 
-  // Authorization code storage - In-memory backend ////////////////////////////
-  // const atom_codes = await initAuthorizationCodesStorage()
+  const ajv = defAjv({ allErrors: reportAllAjvErrors })
 
-  // const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
-  //   ajv,
-  //   atom: atom_codes,
-  //   report_all_ajv_errors: reportAllAjvErrors
-  // })
+  const environment = NODE_ENV === 'production' ? 'prod' : 'dev'
 
-  // const storeAuthorizationCode = defStoreAuthorizationCode({
-  //   ajv,
-  //   atom: atom_codes,
-  //   report_all_ajv_errors: reportAllAjvErrors
-  // })
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Token storage - Filesystem backend ////////////////////////////////////////
-  const filepath_access_tokens = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'access-tokens.json'
-  })
-
-  const filepath_profiles = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'profiles.json'
-  })
-
-  const filepath_refresh_tokens = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'refresh-tokens.json'
-  })
-
-  const retrieveAccessToken = defRetrieveAccessToken({
+  const { error: storage_error, value: storage } = defStorage({
     ajv,
-    filepath: filepath_access_tokens,
-    report_all_ajv_errors: reportAllAjvErrors
+    backend: 'sqlite',
+    env: environment
   })
 
-  const retrieveProfile = defRetrieveProfile({
-    ajv,
-    filepath: filepath_profiles,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
+  if (storage_error) {
+    throw storage_error
+  }
 
-  const retrieveRefreshToken = defRetrieveRefreshToken({
-    ajv,
-    filepath: filepath_refresh_tokens,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
+  const retrieveAccessToken = async (query: SelectQuery) => {
+    return storage.access_token.retrieveOne(query)
+  }
 
-  const storeAccessToken = defStoreAccessToken({
-    ajv,
-    filepath: filepath_access_tokens,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
+  const retrieveRefreshToken = async (query: SelectQuery) => {
+    return storage.refresh_token.retrieveOne(query)
+  }
 
-  const storeRefreshToken = defStoreRefreshToken({
-    ajv,
-    filepath: filepath_refresh_tokens,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
+  const retrieveAuthorizationCode = async (code: string) => {
+    const { error, value } = await storage.authorization_code.retrieveOne({
+      where: [{ key: 'code', op: '==', value: code }]
+    })
 
-  //////////////////////////////////////////////////////////////////////////////
+    if (error) {
+      throw error
+    }
 
-  // Token storage - In-memory backend /////////////////////////////////////////
-  // const atom_tokens = await initAccessTokensStorage()
+    return value as
+      | AuthorizationCodeImmutableRecord
+      | AuthorizationCodeMutableRecord
+  }
 
-  // const storeAccessToken = defStoreAccessToken({
-  //   ajv,
-  //   atom: atom_tokens,
-  //   report_all_ajv_errors: reportAllAjvErrors
-  // })
-  //////////////////////////////////////////////////////////////////////////////
+  const retrieveProfile = async (query: SelectQuery) => {
+    return storage.user_profile.retrieveOne(query)
+  }
+
+  const storeAccessToken = async (props: BaseProps) => {
+    return storage.access_token.storeOne(props)
+  }
+
+  const storeRefreshToken = async (props: BaseProps) => {
+    return storage.refresh_token.storeOne(props)
+  }
+
+  const onAuthorizationCodeVerified = async (code: string) => {
+    // throw new Error('testing an exception in a user-provided handler')
+    const { error } = await storage.authorization_code.updateMany({
+      where: [{ key: 'code', op: '==', value: code }],
+      set: { used: true }
+    })
+
+    if (error) {
+      throw error
+    }
+  }
+
+  const onUserApprovedRequest = async (props: AuthorizationCodeProps) => {
+    // throw new Error('testing an exception in a user-provided handler')
+    // console.log('=== storeAuthorizationCode ~ props ===', props)
+    const { error } = await storage.authorization_code.storeOne(props)
+
+    if (error) {
+      throw error
+    }
+    // console.log('=== storeAuthorizationCode ~ value ===', value)
+  }
 
   const isAccessTokenBlacklisted = async (jti: string) => {
-    const { error, value: record } = await retrieveAccessToken(jti)
+    const { error, value: record } = await storage.access_token.retrieveOne({
+      where: [{ key: 'jti', op: '==', value: jti }]
+    })
 
     if (error) {
       return { error }
@@ -303,25 +266,6 @@ export async function defFastify(config: Config) {
       level: log_level
     }
   })
-
-  // Authorization code storage - Filesystem backend ///////////////////////////
-  const filepath_codes = await init({
-    dirpath: path.join(__dirname, '..', 'assets'),
-    filename: 'authorization-codes.json'
-  })
-
-  const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
-    ajv,
-    filepath: filepath_codes,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
-
-  const storeAuthorizationCode = defStoreAuthorizationCode({
-    ajv,
-    filepath: filepath_codes,
-    report_all_ajv_errors: reportAllAjvErrors
-  })
-  //////////////////////////////////////////////////////////////////////////////
 
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
@@ -370,13 +314,6 @@ export async function defFastify(config: Config) {
   fastify.setNotFoundHandler(defNotFoundHandler({ ajv, reportAllAjvErrors }))
 
   if (use_development_error_handler) {
-    // fastify.setErrorHandler(
-    //   defErrorHandlerProd({
-    //     includeErrorDescription,
-    //     includeErrorDetails: true,
-    //     telegram: { chat_id: telegram_chat_id, token: telegram_token }
-    //   })
-    // )
     fastify.setErrorHandler(defErrorHandlerDev({ preLines: 5 }))
   } else {
     fastify.setErrorHandler(
@@ -393,8 +330,9 @@ export async function defFastify(config: Config) {
     includeErrorDescription,
     issuer,
     reportAllAjvErrors,
-    retrieveAuthorizationCode,
-    storeAuthorizationCode
+    onAuthorizationCodeVerified,
+    onUserApprovedRequest,
+    retrieveAuthorizationCode
   })
 
   fastify.register(micropubClient, {

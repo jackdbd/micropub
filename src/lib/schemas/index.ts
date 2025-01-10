@@ -19,8 +19,6 @@ export {
 
 export { get, type Get } from './get-content.js'
 
-export { getIssuedTokens, type GetIssuedTokens } from './get-issued-tokens.js'
-
 export { info, type Info } from './info.js'
 
 export { storage, type Introspection } from './introspection.js'

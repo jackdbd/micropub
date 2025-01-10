@@ -121,7 +121,9 @@ export const defTokenPost = (options: TokenPostOptions) => {
     if (grant_type === 'refresh_token') {
       const { refresh_token, scope } = request.body
 
-      const { error, value: record } = await retrieveRefreshToken(refresh_token)
+      const { error, value: record } = await retrieveRefreshToken({
+        where: [{ key: 'refresh_token', op: '==', value: refresh_token }]
+      })
 
       if (error) {
         const original = error.message
@@ -138,7 +140,7 @@ export const defTokenPost = (options: TokenPostOptions) => {
 
       if (record.revoked) {
         const details = record.revocation_reason
-          ? ` (revocation_reason: ${record.revocation_reason})`
+          ? ` (revocation_reason: ${record.revocation_reason as string})`
           : ''
         const error_description = `Refresh token ${refresh_token} is revoked${details}.`
         // TODO: create an HTML page for error_uri
@@ -151,8 +153,8 @@ export const defTokenPost = (options: TokenPostOptions) => {
 
       const now = unixTimestampInSeconds()
 
-      if (record.exp < now) {
-        const details = ` (expired_at: ${record.exp}, now: ${now})`
+      if ((record.exp as number) < now) {
+        const details = ` (expired_at: ${record.exp as number}, now: ${now})`
         const error_description = `Refresh token found in storage is expired${details}.`
         // TODO: create an HTML page for error_uri
         const error_uri = undefined
@@ -182,7 +184,9 @@ export const defTokenPost = (options: TokenPostOptions) => {
       }
 
       if (scope !== record.scope) {
-        const error_description = `Mismatch of parameter 'scope'. Request asks for these scopes: ${scope}. Refresh token found in storage has these scopes: ${record.scope}.`
+        const error_description = `Mismatch of parameter 'scope'. Request asks for these scopes: ${scope}. Refresh token found in storage has these scopes: ${
+          record.scope as string
+        }.`
         request.log.warn(`${prefix}${error_description}`)
         const error_uri = undefined
         const err = new InvalidRequestError({ error_description, error_uri })
@@ -263,12 +267,12 @@ export const defTokenPost = (options: TokenPostOptions) => {
 
       const { error: issue_error, value } = await issueToken({
         access_token_expiration,
-        client_id: record.client_id,
+        client_id: record.client_id as string,
         issuer,
         jwks,
         // jti: record.jti,
-        me: record.me,
-        redirect_uri: record.redirect_uri,
+        me: record.me as string,
+        redirect_uri: record.redirect_uri as string,
         refresh_token_expiration,
         scope,
         storeAccessToken,

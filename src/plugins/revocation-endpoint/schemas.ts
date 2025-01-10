@@ -11,16 +11,10 @@ import {
   jwks_url,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
-import {
-  retrieveAccessToken,
-  retrieveRefreshToken,
-  type RetrieveAccessToken,
-  type RetrieveRefreshToken,
-  storeAccessToken,
-  storeRefreshToken,
-  type StoreAccessToken,
-  type StoreRefreshToken
-} from '../../lib/token-storage-interface/index.js'
+import type {
+  RetrieveRecord,
+  StoreRecord
+} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object({
@@ -50,22 +44,22 @@ export const options = Type.Object({
     default: DEFAULT.REPORT_ALL_AJV_ERRORS
   }),
 
-  retrieveAccessToken,
+  retrieveAccessToken: Type.Any(),
 
-  retrieveRefreshToken,
+  retrieveRefreshToken: Type.Any(),
 
-  storeAccessToken,
+  storeAccessToken: Type.Any(),
 
-  storeRefreshToken
+  storeRefreshToken: Type.Any()
 })
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
   isAccessTokenBlacklisted: IsAccessTokenBlacklisted
-  retrieveAccessToken: RetrieveAccessToken
-  retrieveRefreshToken: RetrieveRefreshToken
-  storeAccessToken: StoreAccessToken
-  storeRefreshToken: StoreRefreshToken
+  retrieveAccessToken: RetrieveRecord
+  retrieveRefreshToken: RetrieveRecord
+  storeAccessToken: StoreRecord
+  storeRefreshToken: StoreRecord
 }
 
 export const token_type_hint = Type.Union([

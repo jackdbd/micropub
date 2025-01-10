@@ -56,9 +56,10 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     includeErrorDescription: include_error_description,
     issuer,
     logPrefix: log_prefix,
+    onAuthorizationCodeVerified,
+    onUserApprovedRequest,
     reportAllAjvErrors: report_all_ajv_errors,
-    retrieveAuthorizationCode,
-    storeAuthorizationCode
+    retrieveAuthorizationCode
   } = config
 
   let ajv: Ajv
@@ -116,6 +117,11 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
   fastify.post(
     '/auth',
     {
+      onError: (_request, _reply, error, done) => {
+        console.log('=== exception in /auth handler or hooks ===', error)
+        // process.exit(1)
+        done()
+      },
       schema: {
         body: Type.Union([access_token_request_body, profile_url_request_body]),
         response: {
@@ -131,8 +137,8 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     defAuthorizePost({
       include_error_description,
       log_prefix,
-      retrieveAuthorizationCode,
-      storeAuthorizationCode
+      onAuthorizationCodeVerified,
+      retrieveAuthorizationCode
     })
   )
 
@@ -159,7 +165,7 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
       include_error_description,
       issuer,
       log_prefix,
-      storeAuthorizationCode
+      onUserApprovedRequest
     })
   )
 

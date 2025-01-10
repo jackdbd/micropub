@@ -26,6 +26,16 @@ table "access_tokens" {
     null = true
   }
 
+  column "created_at" {
+    type = int
+    null = true
+  }
+
+  column "updated_at" {
+    type = int
+    null = true
+  }
+
   primary_key {
     columns = [
       column.jti
@@ -84,6 +94,16 @@ table "authorization_codes" {
     default = false
   }
 
+  column "created_at" {
+    type = int
+    null = true
+  }
+
+  column "updated_at" {
+    type = int
+    null = true
+  }
+
   primary_key {
     columns = [
       column.code
@@ -110,6 +130,16 @@ table "clients" {
 
   column "redirect_uri" {
     type = text
+  }
+
+  column "created_at" {
+    type = int
+    null = true
+  }
+
+  column "updated_at" {
+    type = int
+    null = true
   }
 
   primary_key {
@@ -140,6 +170,16 @@ table "profiles" {
 
   column "email" {
     type = text
+  }
+
+  column "created_at" {
+    type = int
+    null = true
+  }
+
+  column "updated_at" {
+    type = int
+    null = true
   }
 
   primary_key {
@@ -192,6 +232,16 @@ table "refresh_tokens" {
 
   column "scope" {
     type = text
+  }
+
+  column "created_at" {
+    type = int
+    null = true
+  }
+
+  column "updated_at" {
+    type = int
+    null = true
   }
 
   primary_key {

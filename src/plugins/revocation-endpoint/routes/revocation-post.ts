@@ -9,13 +9,9 @@ import {
 } from '../../../lib/fastify-errors/index.js'
 import type { JWKSPublicURL } from '../../../lib/schemas/index.js'
 import type {
-  AccessTokenRecord,
-  RefreshTokenRecord,
-  RetrieveAccessToken,
-  RetrieveRefreshToken,
-  StoreAccessToken,
-  StoreRefreshToken
-} from '../../../lib/token-storage-interface/index.js'
+  RetrieveRecord,
+  StoreRecord
+} from '../../../lib/storage-api/index.js'
 import { type AccessTokenClaims, verify } from '../../../lib/token/index.js'
 
 interface RequestBody {
@@ -35,17 +31,17 @@ interface Config {
   log_prefix: string
   max_access_token_age: string
   me: string
-  retrieveAccessToken: RetrieveAccessToken
-  retrieveRefreshToken: RetrieveRefreshToken
-  storeAccessToken: StoreAccessToken
-  storeRefreshToken: StoreRefreshToken
+  retrieveAccessToken: RetrieveRecord
+  retrieveRefreshToken: RetrieveRecord
+  storeAccessToken: StoreRecord
+  storeRefreshToken: StoreRecord
 }
 
 interface AccessTokenConfig {
   issuer: string
   jwks_url: JWKSPublicURL
   max_token_age: string
-  retrieveAccessToken: RetrieveAccessToken
+  retrieveAccessToken: RetrieveRecord
   token: string
 }
 
@@ -75,7 +71,9 @@ const accessTokenResult = async (config: AccessTokenConfig) => {
   // }
 
   const { error: retrieve_error, value: access_token_record } =
-    await retrieveAccessToken(claims.jti)
+    await retrieveAccessToken({
+      where: [{ key: 'jti', op: '==', value: claims.jti }]
+    })
 
   if (retrieve_error) {
     return { error: retrieve_error }
@@ -134,9 +132,9 @@ export const defRevocationPost = (config: Config) => {
 
     const found: {
       access_token_value:
-        | { record: AccessTokenRecord; claims: AccessTokenClaims }
+        | { record: Record<string, any>; claims: AccessTokenClaims }
         | undefined
-      refresh_token_record: RefreshTokenRecord | undefined
+      refresh_token_record: Record<string, any> | undefined
     } = {
       access_token_value: undefined,
       refresh_token_record: undefined
@@ -144,7 +142,9 @@ export const defRevocationPost = (config: Config) => {
 
     if (token_type_hint === 'refresh_token') {
       request.log.debug(`${log_prefix}search among refresh tokens`)
-      const { value: record } = await retrieveRefreshToken(token)
+      const { value: record } = await retrieveRefreshToken({
+        where: [{ key: 'refresh_token', op: '==', value: token }]
+      })
 
       if (record) {
         found.refresh_token_record = record
@@ -178,7 +178,9 @@ export const defRevocationPost = (config: Config) => {
         found.access_token_value = value
       } else {
         request.log.debug(`${log_prefix}search among refresh tokens`)
-        const { value: record } = await retrieveRefreshToken(token)
+        const { value: record } = await retrieveRefreshToken({
+          where: [{ key: 'refresh_token', op: '==', value: token }]
+        })
         if (record) {
           found.refresh_token_record = record
         }
@@ -255,7 +257,7 @@ export const defRevocationPost = (config: Config) => {
       }
 
       if (value && value.message) {
-        request.log.debug(`${log_prefix}${value.message}`)
+        request.log.debug(`${log_prefix}${value.message as string}`)
       }
 
       return reply
@@ -304,7 +306,7 @@ export const defRevocationPost = (config: Config) => {
       }
 
       if (value && value.message) {
-        request.log.debug(`${log_prefix}${value.message}`)
+        request.log.debug(`${log_prefix}${value.message as string}`)
       }
 
       return reply.code(200).send({ message: `Refresh token ${token} revoked` })

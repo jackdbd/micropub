@@ -28,10 +28,15 @@ assets/json-schemas/
 assets/schemas-docs/
 
 assets/access-tokens.json
+assets/access-tokens.jsonl
 assets/authorization-codes.json
+assets/authorization-codes.jsonl
 assets/clients.json
+assets/clients.jsonl
 assets/profiles.json
+assets/profiles.jsonl
 assets/refresh-tokens.json
+assets/refresh-tokens.jsonl
 
 secrets/*
 !secrets/README.md

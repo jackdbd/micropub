@@ -3,16 +3,13 @@ import { nanoid } from 'nanoid'
 import { unixTimestampInMs, unixTimestampInSeconds } from '../lib/date.js'
 import { ServerError } from '../lib/fastify-errors/index.js'
 import type { JWKSPrivate } from '../lib/schemas/index.js'
+import type { StoreRecord } from '../lib/storage-api/index.js'
 import {
   AccessTokenClaims,
   randomKid,
   safeDecode,
   sign
 } from '../lib/token/index.js'
-import type {
-  StoreAccessToken,
-  StoreRefreshToken
-} from '../lib/token-storage-interface/index.js'
 
 export interface Config {
   access_token_expiration: string
@@ -22,9 +19,9 @@ export interface Config {
   me: string
   redirect_uri: string
   refresh_token_expiration: string
-  scope: string
-  storeAccessToken: StoreAccessToken
-  storeRefreshToken: StoreRefreshToken
+  scope: any // TODO: tsc complains if I say this is a string
+  storeAccessToken: StoreRecord
+  storeRefreshToken: StoreRecord
 }
 
 export interface IssueTokenValue {

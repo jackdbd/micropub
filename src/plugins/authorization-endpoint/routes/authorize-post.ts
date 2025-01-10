@@ -1,8 +1,8 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import type {
-  RetrieveAuthorizationCode,
-  StoreAuthorizationCode
-} from '../../../lib/authorization-code-storage-interface/index.js'
+  AuthorizationCodeImmutableRecord,
+  AuthorizationCodeMutableRecord
+} from '../../../lib/storage-api/index.js'
 import {
   InvalidGrantError,
   ServerError
@@ -11,7 +11,9 @@ import { codeChallenge } from '../../../lib/pkce/index.js'
 import { isExpired } from '../../../lib/predicates.js'
 import type {
   AccessTokenRequestBody,
-  ProfileUrlRequestBody
+  OnAuthorizationCodeVerified,
+  ProfileUrlRequestBody,
+  RetrieveAuthorizationCode
 } from '../schemas.js'
 
 interface RouteGeneric extends RouteGenericInterface {
@@ -21,8 +23,8 @@ interface RouteGeneric extends RouteGenericInterface {
 export interface Config {
   include_error_description: boolean
   log_prefix: string
+  onAuthorizationCodeVerified: OnAuthorizationCodeVerified
   retrieveAuthorizationCode: RetrieveAuthorizationCode
-  storeAuthorizationCode: StoreAuthorizationCode
 }
 
 /**
@@ -54,8 +56,8 @@ export const defAuthorizePost = (config: Config) => {
   const {
     include_error_description,
     log_prefix: prefix,
-    retrieveAuthorizationCode,
-    storeAuthorizationCode
+    onAuthorizationCodeVerified,
+    retrieveAuthorizationCode
   } = config
 
   const authorize: RouteHandler<RouteGeneric> = async (request, reply) => {
@@ -65,14 +67,22 @@ export const defAuthorizePost = (config: Config) => {
     request.log.debug(
       `${prefix}verifying that ${code} is among stored authorization codes`
     )
-    const { error: retrieve_error, value: record } =
-      await retrieveAuthorizationCode(code)
 
-    if (retrieve_error) {
-      const error_description = `Cannot find ${code} among the authorization codes issued by this server.`
-      request.log.warn(`${prefix}${error_description}`)
+    let record:
+      | AuthorizationCodeImmutableRecord
+      | AuthorizationCodeMutableRecord
+
+    try {
+      record = await retrieveAuthorizationCode(code)
+    } catch (ex: any) {
+      let error_description = `The user-provided retrieveAuthorizationCode function threw an exception.`
+      if (ex && ex.message) {
+        error_description = `${error_description} Here is the original error message: ${ex.message}`
+      }
+      request.log.error(`${prefix}${error_description}`)
       const error_uri = undefined
-      const err = new InvalidGrantError({ error_description, error_uri })
+      const err = new ServerError({ error_description, error_uri })
+      // const err = new InvalidGrantError({ error_description, error_uri })
       return reply
         .code(err.statusCode)
         .send(err.payload({ include_error_description }))
@@ -92,7 +102,7 @@ export const defAuthorizePost = (config: Config) => {
     }
 
     request.log.debug(`${prefix}verifying that code ${code} is not expired`)
-    if (isExpired(exp)) {
+    if (isExpired(exp as number)) {
       const error_description = `Authorization code ${code} is expired.`
       request.log.warn(`${prefix}${error_description}`)
       const error_uri = undefined
@@ -106,7 +116,9 @@ export const defAuthorizePost = (config: Config) => {
       `${prefix}verifying that code ${code} was issued for client_id ${client_id}`
     )
     if (client_id !== record.client_id) {
-      const error_description = `Authorization code ${code} was issued for client_id ${record.client_id}, not ${client_id}.`
+      const error_description = `Authorization code ${code} was issued for client_id ${
+        record.client_id as string
+      }, not ${client_id}.`
       request.log.warn(`${prefix}${error_description}`)
       const error_uri = undefined
       const err = new InvalidGrantError({ error_description, error_uri })
@@ -119,7 +131,9 @@ export const defAuthorizePost = (config: Config) => {
       `${prefix}verifying that code ${code} was issued for redirect_uri ${redirect_uri}`
     )
     if (redirect_uri !== record.redirect_uri) {
-      const error_description = `Authorization code ${code} was issued for redirect_uri ${record.redirect_uri}, not ${redirect_uri}.`
+      const error_description = `Authorization code ${code} was issued for redirect_uri ${
+        record.redirect_uri as string
+      }, not ${redirect_uri}.`
       const error_uri = undefined
       const err = new InvalidGrantError({ error_description, error_uri })
       return reply
@@ -130,12 +144,16 @@ export const defAuthorizePost = (config: Config) => {
     request.log.debug(
       `${prefix}verifying that code_verifier from request body hashes to the same value as given in the code_challenge in the stored record about the original authorization request.`
     )
+
     const code_challenge = codeChallenge({
-      method: record.code_challenge_method,
+      method: record.code_challenge_method as string,
       code_verifier
     })
+
     if (code_challenge !== record.code_challenge) {
-      const error_description = `The code_verifier provided in the request, hashed with ${record.code_challenge_method}, does not match to the code_challenge of the original authorization request.`
+      const error_description = `The code_verifier provided in the request, hashed with ${
+        record.code_challenge_method as string
+      }, does not match to the code_challenge of the original authorization request.`
       const error_uri = undefined
       const err = new InvalidGrantError({ error_description, error_uri })
       return reply
@@ -143,25 +161,21 @@ export const defAuthorizePost = (config: Config) => {
         .send(err.payload({ include_error_description }))
     }
 
-    const { error } = await storeAuthorizationCode({
-      ...record,
-      code,
-      used: true
-    })
-
-    if (error) {
-      const original = error.message
-      const error_description = `Error while marking the authorization code as used. ${original}`
+    request.log.debug(`${prefix}verified authorization code ${code}`)
+    try {
+      await onAuthorizationCodeVerified(code)
+    } catch (ex: any) {
+      let error_description = `The user-provided onAuthorizationCodeVerified handler threw an exception.`
+      if (ex && ex.message) {
+        error_description = `${error_description} Here is the original error message: ${ex.message}`
+      }
+      request.log.error(`${prefix}${error_description}`)
       const error_uri = undefined
       const err = new ServerError({ error_description, error_uri })
       return reply
         .code(err.statusCode)
         .send(err.payload({ include_error_description }))
     }
-
-    request.log.debug(
-      `${prefix}verified authorization code ${code} and marked as used by client_id ${client_id}`
-    )
 
     if (grant_type === 'authorization_code') {
       return reply.code(200).send({ me, scope })
