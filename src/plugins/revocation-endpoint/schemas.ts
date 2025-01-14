@@ -5,10 +5,10 @@ import {
   me_before_url_canonicalization,
   me_after_url_canonicalization
 } from '../../lib/indieauth/index.js'
+import { jwks_url } from '../../lib/jwks/index.js'
 import {
   isAccessTokenBlacklisted,
   type IsAccessTokenBlacklisted,
-  jwks_url,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
 import type {
@@ -46,11 +46,11 @@ export const options = Type.Object({
 
   retrieveAccessToken: Type.Any(),
 
-  retrieveRefreshToken: Type.Any(),
+  retrieveRefreshToken: Type.Any()
 
-  storeAccessToken: Type.Any(),
+  // storeAccessToken: Type.Any(),
 
-  storeRefreshToken: Type.Any()
+  // storeRefreshToken: Type.Any()
 })
 
 export interface Options extends Static<typeof options> {
@@ -58,8 +58,8 @@ export interface Options extends Static<typeof options> {
   isAccessTokenBlacklisted: IsAccessTokenBlacklisted
   retrieveAccessToken: RetrieveRecord
   retrieveRefreshToken: RetrieveRecord
-  storeAccessToken: StoreRecord
-  storeRefreshToken: StoreRecord
+  // storeAccessToken: StoreRecord
+  // storeRefreshToken: StoreRecord
 }
 
 export const token_type_hint = Type.Union([

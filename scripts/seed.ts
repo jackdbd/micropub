@@ -16,29 +16,21 @@ import type {
 } from '../src/lib/token-storage-interface/index.js'
 import { unwrapP } from '../src/lib/unwrap/index.js'
 import { canonicalUrl } from '../src/lib/url-canonicalization.js'
-import { DEFAULT, LINK_BUGS } from './constants.js'
+import {
+  DEFAULT,
+  INDIEAUTH_SCOPES,
+  LINK_BUGS,
+  MICROPUB_SCOPES
+} from './constants.js'
 import { exitOne, exitZero, exp } from './utils.js'
+
+const SCOPES = [...INDIEAUTH_SCOPES, ...MICROPUB_SCOPES]
 
 const USAGE = `
 Seed the storage backend with some authorization codes, access tokens, refresh tokens, client applications, user profiles.`
 
-const SCOPES = [
-  'create',
-  'delete',
-  'draft',
-  'email',
-  'profile',
-  'undelete',
-  'update'
-]
-
 const argv = await yargs(process.argv.slice(2))
   .usage(`./$0 - ${USAGE}`)
-  // .option('access-token-expiration', {
-  //   describe: 'Access token expiration (human readable)',
-  //   default: DEFAULT.ACCESS_TOKEN_EXPIRATION,
-  //   type: 'string'
-  // })
   .option('authorization-code-expiration', {
     describe: 'Authorization code expiration (human readable)',
     default: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
@@ -176,7 +168,6 @@ const refreshToken = (props: Props): RefreshTokenProps => {
 
 const userProfile = (props: Props): UserProfileProps => {
   const { me } = props
-  // const avatar = faker.image.avatar()
 
   return {
     email: faker.internet.email(),

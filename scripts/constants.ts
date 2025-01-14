@@ -34,3 +34,14 @@ export const DEFAULT = {
 }
 
 export const LINK_BUGS = 'https://github.com/jackdbd/micropub/labels/bug'
+
+export const INDIEAUTH_SCOPES = ['email', 'profile']
+
+export const MICROPUB_SCOPES = [
+  'create',
+  'delete',
+  'draft',
+  'media',
+  'undelete',
+  'update'
+]

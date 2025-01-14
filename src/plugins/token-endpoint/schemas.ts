@@ -7,6 +7,8 @@ import {
   profile,
   userinfo_endpoint
 } from '../../lib/indieauth/index.js'
+import { jwks_private } from '../../lib/jwks/index.js'
+// import { iss, jti } from '../../lib/jwt/index.js'
 import {
   access_token,
   authorization_code,
@@ -22,13 +24,12 @@ import {
   include_error_description,
   isAccessTokenBlacklisted,
   type IsAccessTokenBlacklisted,
-  jwks_private,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
-import type {
-  RetrieveRecord,
-  StoreRecord
-} from '../../lib/storage-api/index.js'
+import {
+  refresh_token_immutable_record,
+  refresh_token_mutable_record
+} from '../../lib/storage-api/refresh-token.js'
 import { DEFAULT } from './constants.js'
 
 export const access_token_expiration = Type.String({
@@ -41,6 +42,69 @@ export const refresh_token_expiration = Type.String({
   description: `Human-readable expiration time for the access token issued by the token endpoint.`,
   minLength: 1,
   title: 'Access token expiration'
+})
+
+// const ISSUE_TOKENS_DESCRIPTION = `Handler invoked when all preconditions to
+// issue an access token are met. Use it to persist the access token, and
+// optionally a refresh token, to your storage backend.`
+
+// export const issue_tokens_return_value = Type.Object({
+//   access_token,
+//   expires_in,
+//   me: me_after_url_canonicalization,
+//   refresh_token,
+//   scope
+// })
+
+// export type IssueTokensReturnValue = Static<typeof issue_tokens_return_value>
+
+// export const issueTokens_ = Type.Function(
+//   [
+//     Type.Object({
+//       access_token_expiration,
+//       client_id,
+//       issuer: iss,
+//       jwks: jwks_private,
+//       jti,
+//       me: me_after_url_canonicalization,
+//       redirect_uri,
+//       refresh_token_expiration,
+//       scope
+//     })
+//   ],
+//   Type.Promise(issue_tokens_return_value),
+//   { title: 'issueTokens', description: ISSUE_TOKENS_DESCRIPTION }
+// )
+
+// export type IssueTokens = Static<typeof issueTokens_>
+
+export const issueTokens = Type.Any({
+  title: 'issueTokens'
+  // description: ISSUE_TOKENS_DESCRIPTION
+})
+
+const RETRIEVE_REFRESH_TOKEN_DESCRIPTION = `Function that retrieves a refresh 
+token from a storage backend.`
+
+const retrieveRefreshToken_ = Type.Function(
+  [refresh_token],
+  Type.Promise(
+    Type.Union([refresh_token_immutable_record, refresh_token_mutable_record])
+  ),
+  {
+    title: 'retrieveRefreshToken',
+    description: RETRIEVE_REFRESH_TOKEN_DESCRIPTION
+  }
+)
+
+/**
+ * Function that retrieves a refresh token from a storage backend.
+ */
+export type RetrieveRefreshToken = Static<typeof retrieveRefreshToken_>
+
+export const retrieveRefreshToken = Type.Any({
+  title: 'retrieveRefreshToken',
+  description: RETRIEVE_REFRESH_TOKEN_DESCRIPTION
 })
 
 export const token_post_options = Type.Object({
@@ -60,6 +124,8 @@ export const token_post_options = Type.Object({
 
   issuer,
 
+  issueTokens,
+
   jwks: jwks_private,
 
   logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
@@ -74,22 +140,17 @@ export const token_post_options = Type.Object({
     default: DEFAULT.REPORT_ALL_AJV_ERRORS
   }),
 
-  retrieveRefreshToken: Type.Any(),
+  retrieveRefreshToken,
 
   revocationEndpoint: revocation_endpoint,
-
-  storeAccessToken: Type.Any(),
-
-  storeRefreshToken: Type.Any(),
 
   userinfoEndpoint: userinfo_endpoint
 })
 
 export interface TokenPostOptions extends Static<typeof token_post_options> {
   ajv?: Ajv
-  retrieveRefreshToken: RetrieveRecord
-  storeAccessToken: StoreRecord
-  storeRefreshToken: StoreRecord
+  issueTokens: any //IssueTokens
+  retrieveRefreshToken: RetrieveRefreshToken
 }
 
 export const access_token_request_body = Type.Object({
@@ -192,6 +253,8 @@ export const options = Type.Object(
 
     issuer,
 
+    issueTokens,
+
     jwks: jwks_private,
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
@@ -212,19 +275,9 @@ export const options = Type.Object(
       default: DEFAULT.REPORT_ALL_AJV_ERRORS
     }),
 
-    retrieveRefreshToken: Type.Any(),
+    retrieveRefreshToken,
 
     revocationEndpoint: revocation_endpoint,
-
-    /**
-     * Persists an access token to some storage (e.g. a database).
-     */
-    storeAccessToken: Type.Any(),
-
-    /**
-     * Persists a refresh token to some storage (e.g. a database).
-     */
-    storeRefreshToken: Type.Any(),
 
     userinfoEndpoint: userinfo_endpoint
   },
@@ -241,7 +294,6 @@ export const options = Type.Object(
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
   isAccessTokenBlacklisted: IsAccessTokenBlacklisted
-  retrieveRefreshToken: RetrieveRecord
-  storeAccessToken: StoreRecord
-  storeRefreshToken: StoreRecord
+  issueTokens: any // IssueTokens
+  retrieveRefreshToken: RetrieveRefreshToken
 }

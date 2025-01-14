@@ -7,11 +7,7 @@ import {
   InvalidRequestError,
   ServerError
 } from '../../../lib/fastify-errors/index.js'
-import type { JWKSPublicURL } from '../../../lib/schemas/index.js'
-import type {
-  RetrieveRecord,
-  StoreRecord
-} from '../../../lib/storage-api/index.js'
+import type { JWKSPublicURL } from '../../../lib/jwks/index.js'
 import { type AccessTokenClaims, verify } from '../../../lib/token/index.js'
 
 interface RequestBody {
@@ -31,17 +27,17 @@ interface Config {
   log_prefix: string
   max_access_token_age: string
   me: string
-  retrieveAccessToken: RetrieveRecord
-  retrieveRefreshToken: RetrieveRecord
-  storeAccessToken: StoreRecord
-  storeRefreshToken: StoreRecord
+  retrieveAccessToken: (jti: string) => Promise<any>
+  retrieveRefreshToken: (refresh_token: string) => Promise<any>
+  storeAccessToken: (foo: any) => Promise<any>
+  storeRefreshToken: (foo: any) => Promise<any>
 }
 
 interface AccessTokenConfig {
   issuer: string
   jwks_url: JWKSPublicURL
   max_token_age: string
-  retrieveAccessToken: RetrieveRecord
+  retrieveAccessToken: (jti: string) => Promise<any>
   token: string
 }
 
@@ -71,9 +67,7 @@ const accessTokenResult = async (config: AccessTokenConfig) => {
   // }
 
   const { error: retrieve_error, value: access_token_record } =
-    await retrieveAccessToken({
-      where: [{ key: 'jti', op: '==', value: claims.jti }]
-    })
+    await retrieveAccessToken(claims.jti)
 
   if (retrieve_error) {
     return { error: retrieve_error }
@@ -114,9 +108,9 @@ export const defRevocationPost = (config: Config) => {
     max_access_token_age: max_token_age,
     me,
     retrieveAccessToken,
-    retrieveRefreshToken,
-    storeAccessToken,
-    storeRefreshToken
+    retrieveRefreshToken
+    // storeAccessToken,
+    // storeRefreshToken
   } = config
 
   const revocationPost: RouteHandler<RouteGeneric> = async (request, reply) => {
@@ -142,9 +136,7 @@ export const defRevocationPost = (config: Config) => {
 
     if (token_type_hint === 'refresh_token') {
       request.log.debug(`${log_prefix}search among refresh tokens`)
-      const { value: record } = await retrieveRefreshToken({
-        where: [{ key: 'refresh_token', op: '==', value: token }]
-      })
+      const { value: record } = await retrieveRefreshToken(token)
 
       if (record) {
         found.refresh_token_record = record
@@ -178,9 +170,7 @@ export const defRevocationPost = (config: Config) => {
         found.access_token_value = value
       } else {
         request.log.debug(`${log_prefix}search among refresh tokens`)
-        const { value: record } = await retrieveRefreshToken({
-          where: [{ key: 'refresh_token', op: '==', value: token }]
-        })
+        const { value: record } = await retrieveRefreshToken(token)
         if (record) {
           found.refresh_token_record = record
         }
@@ -237,12 +227,14 @@ export const defRevocationPost = (config: Config) => {
         return reply.code(200).send({ message })
       }
 
-      const { error: revoke_error, value } = await storeAccessToken({
-        ...record,
-        jti: claims.jti,
-        revoked: true,
-        revocation_reason
-      })
+      const revoke_error: any = false
+      const value = { message: 'todo handle token revocation' }
+      // const { error: revoke_error, value } = await storeAccessToken({
+      //   ...record,
+      //   jti: claims.jti,
+      //   revoked: true,
+      //   revocation_reason
+      // })
 
       // The revocation itself can fail, and if it's not the client's fault, it
       // does not make sense to return a 4xx. A generic server error is more
@@ -286,12 +278,14 @@ export const defRevocationPost = (config: Config) => {
         return reply.code(200).send({ message })
       }
 
-      const { error: revoke_error, value } = await storeRefreshToken({
-        ...record,
-        refresh_token: token,
-        revoked: true,
-        revocation_reason
-      })
+      const revoke_error: any = false
+      const value = { message: 'todo handle token revocation' }
+      // const { error: revoke_error, value } = await storeRefreshToken({
+      //   ...record,
+      //   refresh_token: token,
+      //   revoked: true,
+      //   revocation_reason
+      // })
 
       // The revocation itself can fail, and if it's not the client's fault, it
       // does not make sense to return a 4xx. A generic server error is more

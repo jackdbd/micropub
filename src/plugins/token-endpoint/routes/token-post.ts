@@ -8,20 +8,25 @@ import {
   InvalidRequestError,
   InvalidGrantError,
   UnauthorizedError,
-  UnsupportedGrantTypeError
+  UnsupportedGrantTypeError,
+  ServerError
 } from '../../../lib/fastify-errors/index.js'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
-import { issueToken, type IssueTokenValue } from '../../../lib/issue-token.js'
 import { retrieveProfile } from '../../../lib/retrieve-profile.js'
 import { revokeToken } from '../../../lib/revoke-token.js'
+import type {
+  RefreshTokenImmutableRecord,
+  RefreshTokenMutableRecord
+} from '../../../lib/storage-api/index.js'
 import { throwIfDoesNotConform } from '../../../lib/validators.js'
 import { verifyAuthorizationCode } from '../../../lib/verify-authorization-code.js'
 import { DEFAULT } from '../constants.js'
-import {
-  type AccessTokenRequestBody,
-  type RefreshRequestBody,
-  token_post_options,
-  type TokenPostOptions
+import { token_post_options } from '../schemas.js'
+import type {
+  AccessTokenRequestBody,
+  IssueTokensReturnValue,
+  RefreshRequestBody,
+  TokenPostOptions
 } from '../schemas.js'
 
 interface RouteGeneric extends RouteGenericInterface {
@@ -91,14 +96,13 @@ export const defTokenPost = (options: TokenPostOptions) => {
     authorizationEndpoint: authorization_endpoint,
     includeErrorDescription: include_error_description,
     issuer,
+    issueTokens,
     jwks,
     logPrefix: prefix,
     refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors: report_all_ajv_errors,
     retrieveRefreshToken,
     revocationEndpoint: revocation_endpoint,
-    storeAccessToken,
-    storeRefreshToken,
     userinfoEndpoint: userinfo_endpoint
   } = config
 
@@ -117,22 +121,22 @@ export const defTokenPost = (options: TokenPostOptions) => {
   const tokenPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     const { grant_type } = request.body
 
-    let issue_token_value: IssueTokenValue
+    let issue_tokens_value: IssueTokensReturnValue
     if (grant_type === 'refresh_token') {
       const { refresh_token, scope } = request.body
 
-      const { error, value: record } = await retrieveRefreshToken({
-        where: [{ key: 'refresh_token', op: '==', value: refresh_token }]
-      })
-
-      if (error) {
-        const original = error.message
-        const error_description = `Cannot retrieve ${refresh_token} from storage: ${original}`
-        request.log.warn(`${prefix}${error_description}`)
-        // TODO: create an HTML page for "cannot retrieve refresh token from
-        // storage", host it somewhere and the URL as error_uri parameter.
+      let record: RefreshTokenImmutableRecord | RefreshTokenMutableRecord
+      try {
+        record = await retrieveRefreshToken(refresh_token)
+      } catch (ex: any) {
+        let error_description = `The user-provided retrieveRefreshToken function threw an exception.`
+        if (ex && ex.message) {
+          error_description = `${error_description} Here is the original error message: ${ex.message}`
+        }
+        request.log.error(`${prefix}${error_description}`)
         const error_uri = undefined
-        const err = new InvalidGrantError({ error_description, error_uri })
+        const err = new ServerError({ error_description, error_uri })
+        // const err = new InvalidGrantError({ error_description, error_uri })
         return reply
           .code(err.statusCode)
           .send(err.payload({ include_error_description }))
@@ -153,8 +157,8 @@ export const defTokenPost = (options: TokenPostOptions) => {
 
       const now = unixTimestampInSeconds()
 
-      if ((record.exp as number) < now) {
-        const details = ` (expired_at: ${record.exp as number}, now: ${now})`
+      if (record.exp < now) {
+        const details = ` (expired_at: ${record.exp}, now: ${now})`
         const error_description = `Refresh token found in storage is expired${details}.`
         // TODO: create an HTML page for error_uri
         const error_uri = undefined
@@ -265,30 +269,59 @@ export const defTokenPost = (options: TokenPostOptions) => {
         `${prefix}revoked access token with revocation_reason: ${revocation_reason}`
       )
 
-      const { error: issue_error, value } = await issueToken({
-        access_token_expiration,
-        client_id: record.client_id as string,
-        issuer,
-        jwks,
-        // jti: record.jti,
-        me: record.me as string,
-        redirect_uri: record.redirect_uri as string,
-        refresh_token_expiration,
-        scope,
-        storeAccessToken,
-        storeRefreshToken
-      })
-
-      if (issue_error) {
-        const payload = issue_error.payload({ include_error_description })
-        request.log.error(
-          `${prefix}cannot issue access token and refresh token: ${payload.error_description}`
+      try {
+        issue_tokens_value = await issueTokens({
+          access_token_expiration,
+          client_id: record.client_id,
+          issuer,
+          jwks,
+          jti: record.jti,
+          me: record.me,
+          redirect_uri: record.redirect_uri,
+          refresh_token_expiration,
+          scope
+        })
+        console.log(
+          `🚀 ~ after issueTokens (${grant_type}) ~ issue_tokens_value`,
+          issue_tokens_value
         )
-        return reply.code(issue_error.statusCode).send(payload)
+      } catch (ex: any) {
+        let error_description = `The user-provided issueTokens function threw an exception.`
+        if (ex && ex.message) {
+          error_description = `${error_description} Here is the original error message: ${ex.message}`
+        }
+        request.log.error(`${prefix}${error_description}`)
+        const error_uri = undefined
+        const err = new ServerError({ error_description, error_uri })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       }
 
-      issue_token_value = value
+      // const { error: issue_error, value } = await issueToken({
+      //   access_token_expiration,
+      //   client_id: record.client_id as string,
+      //   issuer,
+      //   jwks,
+      //   // jti: record.jti,
+      //   me: record.me as string,
+      //   redirect_uri: record.redirect_uri as string,
+      //   refresh_token_expiration,
+      //   scope,
+      //   storeAccessToken,
+      //   storeRefreshToken
+      // })
+
+      // if (issue_error) {
+      //   const payload = issue_error.payload({ include_error_description })
+      //   request.log.error(
+      //     `${prefix}cannot issue access token and refresh token: ${payload.error_description}`
+      //   )
+      //   return reply.code(issue_error.statusCode).send(payload)
+      // }
+
       request.log.debug(`${prefix}issued access token and refresh token`)
+      // END of grant_type === 'refresh_token' /////////////////////////////////
     } else if (grant_type === 'authorization_code') {
       const { client_id, code, code_verifier, redirect_uri } = request.body
 
@@ -312,8 +345,6 @@ export const defTokenPost = (options: TokenPostOptions) => {
         )
         return reply.code(verify_error.statusCode).send(payload)
       }
-
-      request.log.debug(`${prefix}verified authorization code ${code}`)
 
       const { me, scope } = verify_value
 
@@ -350,28 +381,60 @@ export const defTokenPost = (options: TokenPostOptions) => {
           .send(err.payload({ include_error_description }))
       }
 
-      const { error: issue_error, value } = await issueToken({
-        access_token_expiration,
-        client_id,
-        issuer,
-        jwks,
-        me,
-        redirect_uri,
-        refresh_token_expiration,
-        scope,
-        storeAccessToken,
-        storeRefreshToken
-      })
-
-      if (issue_error) {
-        const payload = issue_error.payload({ include_error_description })
-        request.log.error(
-          `${prefix}cannot issue access token and refresh token: ${payload.error_description}`
+      request.log.debug(
+        `${prefix}issuer ${issuer} will now try issuing an access token and a refresh token that can be used by client_id ${client_id} to access resources owned by ${me}`
+      )
+      try {
+        issue_tokens_value = await issueTokens({
+          access_token_expiration,
+          client_id,
+          issuer,
+          jti: 'fake jti',
+          jwks,
+          me,
+          redirect_uri,
+          refresh_token_expiration,
+          scope
+        })
+        console.log(
+          `🚀 ~ after issueTokens (${grant_type}) ~ issue_tokens_value`,
+          issue_tokens_value
         )
-        return reply.code(issue_error.statusCode).send(payload)
+      } catch (ex: any) {
+        let error_description = `The user-provided issueTokens function threw an exception.`
+        if (ex && ex.message) {
+          error_description = `${error_description} Here is the original error message: ${ex.message}`
+        }
+        request.log.error(`${prefix}${error_description}`)
+        const error_uri = undefined
+        const err = new ServerError({ error_description, error_uri })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
       }
 
-      issue_token_value = value
+      // const { error: issue_error, value } = await issueToken({
+      //   access_token_expiration,
+      //   client_id,
+      //   issuer,
+      //   jwks,
+      //   me,
+      //   redirect_uri,
+      //   refresh_token_expiration,
+      //   scope,
+      //   storeAccessToken,
+      //   storeRefreshToken
+      // })
+
+      // if (issue_error) {
+      //   console.log('🚀 ~ issue_error:', issue_error)
+      //   const payload = issue_error.payload({ include_error_description })
+      //   request.log.error(
+      //     `${prefix}cannot issue access token and refresh token: ${payload.error_description}`
+      //   )
+      //   return reply.code(issue_error.statusCode).send(payload)
+      // }
+
       request.log.debug(`${prefix}issued access token and refresh token`)
     } else {
       const error_description = `This endpoint does not support grant type ${grant_type}.`
@@ -386,7 +449,7 @@ export const defTokenPost = (options: TokenPostOptions) => {
     }
 
     const { access_token, expires_in, me, refresh_token, scope } =
-      issue_token_value
+      issue_tokens_value
 
     const scopes = scope.split(' ')
 

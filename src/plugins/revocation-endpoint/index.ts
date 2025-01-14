@@ -50,9 +50,9 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
     me,
     reportAllAjvErrors: report_all_ajv_errors,
     retrieveAccessToken,
-    retrieveRefreshToken,
-    storeAccessToken,
-    storeRefreshToken
+    retrieveRefreshToken
+    // storeAccessToken,
+    // storeRefreshToken
   } = config
 
   let ajv: Ajv
@@ -130,9 +130,9 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
       max_access_token_age,
       me,
       retrieveAccessToken,
-      retrieveRefreshToken,
-      storeAccessToken,
-      storeRefreshToken
+      retrieveRefreshToken
+      // storeAccessToken,
+      // storeRefreshToken
     })
   )
 

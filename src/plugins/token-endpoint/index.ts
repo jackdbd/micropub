@@ -48,13 +48,12 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
     includeErrorDescription,
     // isAccessTokenBlacklisted,
     issuer,
+    issueTokens,
     jwks,
     logPrefix: prefix,
     refreshTokenExpiration,
     reportAllAjvErrors,
     retrieveRefreshToken,
-    storeAccessToken,
-    storeRefreshToken,
     revocationEndpoint,
     userinfoEndpoint
   } = config
@@ -134,11 +133,10 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       authorizationEndpoint,
       includeErrorDescription,
       issuer,
+      issueTokens,
       jwks,
       logPrefix: prefix,
       retrieveRefreshToken,
-      storeAccessToken,
-      storeRefreshToken,
       revocationEndpoint,
       userinfoEndpoint
     })

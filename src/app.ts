@@ -11,17 +11,11 @@ import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
-import type { AuthorizationCodeProps } from './lib/authorization-code-storage-interface/authorization-code.js'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
 import { defR2 } from './lib/r2-storage/client.js'
-import type {
-  AuthorizationCodeImmutableRecord,
-  AuthorizationCodeMutableRecord,
-  BaseProps,
-  SelectQuery
-} from './lib/storage-api/index.js'
+import type { SelectQuery } from './lib/storage-api/index.js'
 import { defStorage } from './lib/storage-implementations/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/index.js'
@@ -54,6 +48,10 @@ import {
 } from './error-handlers/index.js'
 import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
+import {
+  defAuthorizationCodeHandlers,
+  defTokenHandlers
+} from './storage-handlers/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -180,78 +178,15 @@ export async function defFastify(config: Config) {
     throw storage_error
   }
 
-  const retrieveAccessToken = async (query: SelectQuery) => {
-    return storage.access_token.retrieveOne(query)
-  }
-
-  const retrieveRefreshToken = async (query: SelectQuery) => {
-    return storage.refresh_token.retrieveOne(query)
-  }
-
-  const retrieveAuthorizationCode = async (code: string) => {
-    const { error, value } = await storage.authorization_code.retrieveOne({
-      where: [{ key: 'code', op: '==', value: code }]
-    })
-
-    if (error) {
-      throw error
-    }
-
-    return value as
-      | AuthorizationCodeImmutableRecord
-      | AuthorizationCodeMutableRecord
-  }
-
   const retrieveProfile = async (query: SelectQuery) => {
     return storage.user_profile.retrieveOne(query)
   }
 
-  const storeAccessToken = async (props: BaseProps) => {
-    return storage.access_token.storeOne(props)
-  }
-
-  const storeRefreshToken = async (props: BaseProps) => {
-    return storage.refresh_token.storeOne(props)
-  }
-
-  const onAuthorizationCodeVerified = async (code: string) => {
-    // throw new Error('testing an exception in a user-provided handler')
-    const { error } = await storage.authorization_code.updateMany({
-      where: [{ key: 'code', op: '==', value: code }],
-      set: { used: true }
-    })
-
-    if (error) {
-      throw error
-    }
-  }
-
-  const onUserApprovedRequest = async (props: AuthorizationCodeProps) => {
-    // throw new Error('testing an exception in a user-provided handler')
-    // console.log('=== storeAuthorizationCode ~ props ===', props)
-    const { error } = await storage.authorization_code.storeOne(props)
-
-    if (error) {
-      throw error
-    }
-    // console.log('=== storeAuthorizationCode ~ value ===', value)
-  }
-
-  const isAccessTokenBlacklisted = async (jti: string) => {
-    const { error, value: record } = await storage.access_token.retrieveOne({
-      where: [{ key: 'jti', op: '==', value: jti }]
-    })
-
-    if (error) {
-      return { error }
-    }
-
-    if (!record) {
-      return { value: false }
-    }
-
-    return { value: record.revoked ? true : false }
-  }
+  const {
+    onAuthorizationCodeVerified,
+    onUserApprovedRequest,
+    retrieveAuthorizationCode
+  } = defAuthorizationCodeHandlers(storage.authorization_code)
 
   const fastify = Fastify({
     logger: {
@@ -264,6 +199,24 @@ export async function defFastify(config: Config) {
         }
       },
       level: log_level
+    }
+  })
+
+  const {
+    isAccessTokenRevoked: isAccessTokenBlacklisted,
+    issueTokens,
+    retrieveAccessToken,
+    retrieveRefreshToken
+  } = defTokenHandlers({
+    access_tokens_storage: storage.access_token,
+    refresh_tokens_storage: storage.refresh_token,
+    log: {
+      debug: (message: string) => {
+        fastify.log.debug(`token-handler ${message}`)
+      },
+      error: (message: string) => {
+        fastify.log.error(`token-handler ${message}`)
+      }
     }
   })
 
@@ -378,9 +331,9 @@ export async function defFastify(config: Config) {
     me,
     reportAllAjvErrors,
     retrieveAccessToken,
-    retrieveRefreshToken,
-    storeAccessToken,
-    storeRefreshToken
+    retrieveRefreshToken
+    // storeAccessToken,
+    // storeRefreshToken
   })
 
   fastify.register(token, {
@@ -390,13 +343,12 @@ export async function defFastify(config: Config) {
     includeErrorDescription,
     isAccessTokenBlacklisted,
     issuer,
+    issueTokens,
     jwks,
     refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors,
     retrieveRefreshToken,
     revocationEndpoint,
-    storeAccessToken,
-    storeRefreshToken,
     userinfoEndpoint
   })
 

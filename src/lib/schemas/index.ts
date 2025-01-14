@@ -32,19 +32,6 @@ export { jf2, type JF2 } from './jf2.js'
 
 export { jf2ToContent, type JF2ToContent } from './jf2-to-content.js'
 
-export {
-  jwk_private,
-  jwk_public,
-  jwks_private,
-  jwks_public,
-  jwks_url,
-  type JWKPrivate,
-  type JWKPublic,
-  type JWKSPrivate,
-  type JWKSPublic,
-  type JWKSPublicURL
-} from './jwks.js'
-
 export { location, type Location } from './location.js'
 
 export const message = Type.String({ minLength: 1 })
