@@ -1,4 +1,4 @@
-import { mintTokens } from '../lib/issue-tokens/index.js'
+import { accessToken, refreshToken } from '../lib/issue-tokens/index.js'
 import type {
   StorageApi,
   AccessTokenImmutableRecord,

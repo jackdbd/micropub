@@ -3,12 +3,12 @@ import type { Ajv, Schema } from 'ajv'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { StoreRecord } from '../storage-api/index.js'
 import { newConformResult } from '../validators.js'
+import { insertQuery } from './queries.js'
 import {
-  insertQuery,
   jsPropsToSQLite,
   sqliteRecordToJS,
   type SQLiteRecord
-} from './sqlite.js'
+} from './type-mapping.js'
 
 export interface Config {
   ajv: Ajv

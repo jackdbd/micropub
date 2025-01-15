@@ -1,7 +1,8 @@
 import type { Client } from '@libsql/client'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { RemoveRecords } from '../storage-api/index.js'
-import { deleteQuery, type SQLiteRecord } from './sqlite.js'
+import { deleteQuery } from './queries.js'
+import type { SQLiteRecord } from './type-mapping.js'
 
 export interface Config {
   client: Client

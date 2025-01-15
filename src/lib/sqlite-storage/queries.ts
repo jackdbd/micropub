@@ -1,30 +1,22 @@
-import type { Value } from '@libsql/client'
+import { unixTimestampInMs } from '../date.js'
 import type {
   BaseProps,
   DeleteQuery,
-  JSValue,
   Query,
   SelectQuery,
   UpdateQuery
 } from '../storage-api/index.js'
-import { unixTimestampInMs } from '../date.js'
-
-// https://www.sqlite.org/datatype3.html
-export type SQLiteValue = string | number | null | BinaryType
-// export type SQLiteValue = any
-
-export type SQLiteProps = Record<string, SQLiteValue>
-// export type SQLiteRecord = Record<string, SQLiteValue>
-export type SQLiteRecord = Record<string, Value>
+import { jsValueToSQlite } from './type-mapping.js'
 
 export interface Config {
   query: Query
   table: string
 }
 
-export const setClause = (query: UpdateQuery) => {
-  const expressions = Object.entries(query.set).map(([key, value]) => {
-    return `\`${key}\` = '${value}'`
+export const setClause = (set: { [key: string]: any }) => {
+  const expressions = Object.entries(set).map(([key, value]) => {
+    const val = jsValueToSQlite(value)
+    return `\`${key}\` = '${val}'`
   })
   return expressions.join(', ')
 }
@@ -39,12 +31,14 @@ export const whereClause = (query: SelectQuery | UpdateQuery | DeleteQuery) => {
   const condition = query.condition || 'AND'
 
   const expressions = query.where.map(({ key, op, value }) => {
+    const val = jsValueToSQlite(value)
+
     switch (op) {
       case '==': {
-        return `\`${key}\` = '${value}'`
+        return `\`${key}\` = '${val}'`
       }
       case '!=': {
-        return `\`${key}\` != '${value}'`
+        return `\`${key}\` != '${val}'`
       }
       default: {
         throw new Error(`unsupported operator: ${op}`)
@@ -76,21 +70,18 @@ export const selectQuery = (table: string, query?: SelectQuery) => {
 }
 
 export const updateQuery = (table: string, query: UpdateQuery) => {
-  const now = unixTimestampInMs()
-
-  const where = whereClause(query)
-  const returning = Object.keys(query.set).join(', ')
+  const returning = query.returning || Object.keys(query.set).join(', ')
 
   return `
   UPDATE \`${table}\` 
-    SET ${setClause({ ...query, set: { ...query.set, updated_at: now } })} 
+    SET ${setClause({ ...query.set, updated_at: unixTimestampInMs() })} 
   WHERE
-    ${where} 
+    ${whereClause(query)} 
   RETURNING
     ${returning};`
 }
 
-export const insertQuery = (table: string, props: SQLiteProps) => {
+export const insertQuery = (table: string, props: BaseProps) => {
   const now = unixTimestampInMs()
 
   const query = {
@@ -135,58 +126,4 @@ export const deleteQuery = (table: string, query?: DeleteQuery) => {
   } else {
     return `DELETE FROM \`${table}\` RETURNING *;`
   }
-}
-
-export const jsValueToSQlite = (x: JSValue) => {
-  if (x === undefined) {
-    return null
-  }
-
-  if (x === true) {
-    return 1
-  }
-
-  if (x === false) {
-    return 0
-  }
-
-  if (typeof x === 'symbol') {
-    // TODO: what to do here?
-    // const symbol_as_string = x.toString()
-    throw new Error(`I am not sure I can store a JS symbol in SQLite`)
-  }
-
-  return x
-}
-
-export const sqliteValueToJsValue = (x: SQLiteValue) => {
-  if (x === null) {
-    return undefined
-  }
-
-  if (x === 1) {
-    return true
-  }
-
-  if (x === 0) {
-    return false
-  }
-
-  return x
-}
-
-export const jsPropsToSQLite = (props: BaseProps) => {
-  const hash_map = Object.entries(props).reduce((acc, [key, value]: any) => {
-    return { ...acc, [key]: jsValueToSQlite(value) }
-  }, {} as SQLiteProps)
-
-  return hash_map
-}
-
-export const sqliteRecordToJS = (record: SQLiteRecord) => {
-  const hash_map = Object.entries(record).reduce((acc, [key, value]: any) => {
-    return { ...acc, [key]: sqliteValueToJsValue(value) }
-  }, {} as SQLiteRecord)
-
-  return hash_map
 }

@@ -24,7 +24,7 @@ export enum StorageBackend {
 
 export type Environment = 'dev' | 'prod'
 
-export type HashMapSchemas = {
+export interface HashMapSchemas {
   access_token: TObject
   authorization_code: TObject
   client_application: TObject

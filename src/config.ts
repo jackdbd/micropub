@@ -1,5 +1,5 @@
+import type { JWKSPrivate, JWKSPublicURL } from './lib/jwks/index.js'
 import type { SyndicateToItem } from './lib/micropub/index.js'
-import type { JWKSPrivate, JWKSPublicURL } from './lib/schemas/jwks.js'
 import * as DEFAULT from './defaults.js'
 
 const REQUIRED_ENV_VARS = [

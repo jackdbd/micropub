@@ -2,8 +2,8 @@ import type { Client } from '@libsql/client'
 import type { UpdateQuery } from '../storage-api/index.js'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { UpdateRecords } from '../storage-api/index.js'
-import { updateQuery } from './sqlite.js'
-import type { SQLiteRecord } from './sqlite.js'
+import { updateQuery } from './queries.js'
+import type { SQLiteRecord } from './type-mapping.js'
 
 export interface Config {
   client: Client

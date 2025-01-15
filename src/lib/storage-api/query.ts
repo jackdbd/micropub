@@ -14,7 +14,7 @@ export interface SelectQuery {
 }
 
 export interface UpdateQuery {
-  // returning: string[] // allow to define it? E.g. ['me', 'photo']
+  returning?: string[]
   set: { [key: string]: any }
   where: TestExpression[]
   condition?: Condition

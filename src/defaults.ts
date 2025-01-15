@@ -1,6 +1,6 @@
 // export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
-// export const ACCESS_TOKEN_EXPIRATION = '3600 seconds' // this is quite common
-export const ACCESS_TOKEN_EXPIRATION = '72 hours'
+export const ACCESS_TOKEN_EXPIRATION = '3600 seconds' // this is quite common
+// export const ACCESS_TOKEN_EXPIRATION = '72 hours'
 
 export const AUTHORIZATION_CODE_EXPIRATION = '60 seconds'
 
