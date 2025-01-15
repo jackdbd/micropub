@@ -7,21 +7,25 @@ import { applyToDefaults } from '@hapi/hoek'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
-  defValidateAccessTokenNotBlacklisted,
+  defValidateAccessTokenNotRevoked,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defConfigGet } from './routes/introspection-config-get.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
-import { options as options_schema, type Options } from './schemas.js'
+import { options as options_schema, type Options } from './schemas/index.js'
 
 export {
   introspection_request_body,
-  type IntrospectionRequestBody,
-  introspection_response_body_success,
-  type IntrospectionResponseBodySuccess
-} from './schemas.js'
+  introspection_response_body_success
+} from './schemas/index.js'
+export type {
+  IntrospectPostConfig,
+  IntrospectionRequestBody,
+  IntrospectionResponseBodySuccess,
+  Options
+} from './schemas/index.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
@@ -93,8 +97,10 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
   // TODO: re-read RFC7662 and decide which scope to check
   // const validateScopeMedia = defValidateScope({ scope: 'introspect' })
 
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
+  const validateAccessTokenNotBlacklisted = defValidateAccessTokenNotRevoked({
+    ajv,
+    isAccessTokenRevoked
+  })
 
   // === ROUTES ============================================================= //
   fastify.get('/introspect/config', defConfigGet(config))
@@ -117,7 +123,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
       issuer,
       jwks_url,
       log_prefix
-      // max_token_age
+      //  max_token_age
     })
   )
 

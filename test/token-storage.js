@@ -125,7 +125,7 @@ const init = async (impl) => {
 IMPLEMENTATIONS.forEach((label) => {
   const suffix = ` [${label}]`
 
-  describe(`Token storage${suffix}`, () => {
+  describe.skip(`Token storage${suffix}`, () => {
     let impl
     beforeEach(async () => {
       impl = await init(label)

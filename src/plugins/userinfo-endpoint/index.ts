@@ -69,7 +69,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   // const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   // const validateAccessTokenNotBlacklisted =
-  //   defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
+  //   defValidateAccessTokenNotRevoked({ ajv, isAccessTokenRevoked })
 
   // const validateScopeEmail = defValidateScope({ ajv, scope: 'email' })
 

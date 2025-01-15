@@ -1,19 +1,19 @@
+import type { OnIssuedTokens } from '../lib/issue-tokens/index.js'
 import type {
   StorageApi,
   AccessTokenImmutableRecord,
   AccessTokenMutableRecord,
+  IsAccessTokenRevoked,
+  RetrieveAccessToken,
+  RetrieveRefreshToken,
   RefreshTokenImmutableRecord,
-  RefreshTokenMutableRecord
+  RefreshTokenMutableRecord,
+  RevokeAccessToken,
+  RevokeRefreshToken
 } from '../lib/storage-api/index.js'
 import { AccessTokenProps } from '../lib/token-storage-interface/access-token.js'
 import { RefreshTokenProps } from '../lib/token-storage-interface/refresh-token.js'
 import { unwrapP } from '../lib/unwrap/index.js'
-import type {
-  IsAccessTokenRevoked,
-  OnIssuedTokens,
-  RetrieveAccessToken,
-  RetrieveRefreshToken
-} from '../plugins/token-endpoint/index.js'
 import { SQLITE_DATABASE_TABLE } from '../constants.js'
 import type { BatchTransaction } from '../sqlite-utils.js'
 import { default_log, type Log } from './logger.js'
@@ -100,6 +100,10 @@ export interface IssueTokensConfig {
 // https://github.com/GluuFederation/oxAuth/issues/1172
 // https://openid.net/specs/openid-connect-basic-1_0.html#OfflineAccessPrivacy
 
+/**
+ * Defines an effect handler that writes access tokens and refresh tokens to the
+ * specified storage backend.
+ */
 export const defOnIssuedTokens = (config: OnIssuedTokensConfig) => {
   const log = config.log ?? default_log
 
@@ -110,9 +114,6 @@ export const defOnIssuedTokens = (config: OnIssuedTokensConfig) => {
   }
 
   const onIssuedTokens: OnIssuedTokens = async (issued_info) => {
-    log.debug(`commit issued_info to storage`, issued_info)
-    // throw new Error(`test exception in onIssuedTokens`)
-
     const {
       client_id,
       issuer,
@@ -150,6 +151,9 @@ export const defOnIssuedTokens = (config: OnIssuedTokensConfig) => {
     }
 
     if (batchTransaction) {
+      log.debug(
+        `storing access token jti=${jti} and refresh token ${refresh_token} using a batch transaction`
+      )
       const value = await unwrapP(
         batchTransaction({
           inserts: [
@@ -169,12 +173,60 @@ export const defOnIssuedTokens = (config: OnIssuedTokensConfig) => {
       if (!storage) {
         throw new Error(`[token-storage] 'storage' not set`)
       }
+      log.debug(`storing access token jti=${jti}`)
       await unwrapP(storage.access_token.storeOne(access_token_props))
-      log.debug(`record about access token persisted to storage`)
+      log.debug(`stored access token jti=${jti} `)
+
+      log.debug(`storing refresh token ${refresh_token}`)
       await unwrapP(storage.refresh_token.storeOne(refresh_token_props))
-      log.debug(`record about refresh token persisted to storage`)
+      log.debug(`stored refresh token ${refresh_token} `)
     }
   }
 
   return onIssuedTokens
+}
+
+interface RevokeConfig {
+  log: Log
+  storage: StorageApi
+}
+
+export const defRevokeAccessToken = (config: RevokeConfig) => {
+  const { storage } = config
+  const log = config.log ?? default_log
+
+  const revokeAccessToken: RevokeAccessToken = async (props) => {
+    const { jti, revocation_reason } = props
+    log.debug(`revoking access token jti=${jti}`)
+    const records = await unwrapP(
+      storage.updateMany({
+        where: [{ key: 'jti', op: '==', value: jti }],
+        set: { revoked: true, revocation_reason },
+        returning: ['*']
+      })
+    )
+    log.debug(`revoked access token jti=${jti}`, records)
+  }
+
+  return revokeAccessToken
+}
+
+export const defRevokeRefreshToken = (config: RevokeConfig) => {
+  const { storage } = config
+  const log = config.log ?? default_log
+
+  const revokeRefreshToken: RevokeRefreshToken = async (props) => {
+    const { refresh_token, revocation_reason } = props
+    log.debug(`revoking refresh token ${refresh_token}`)
+    const records = await unwrapP(
+      storage.updateMany({
+        where: [{ key: 'refresh_token', op: '==', value: refresh_token }],
+        set: { revoked: true, revocation_reason },
+        returning: ['*']
+      })
+    )
+    log.debug(`revoked refresh tokens ${refresh_token}`, records)
+  }
+
+  return revokeRefreshToken
 }

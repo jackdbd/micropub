@@ -1,4 +1,3 @@
-import Ajv from 'ajv'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import type { JWTPayload } from 'jose'
 import {
@@ -7,20 +6,16 @@ import {
   ServerError
 } from '../../../lib/fastify-errors/index.js'
 import { isExpired } from '../../../lib/predicates.js'
-import type { IsAccessTokenRevoked } from '../../../lib/schemas/index.js'
 import { safeDecode, verify } from '../../../lib/token/index.js'
-import { conformResult } from '../../../lib/validators.js'
-import { introspection_response_body_success } from '../schemas.js'
-
-export interface Config {
-  ajv: Ajv
-  include_error_description: boolean
-  isAccessTokenRevoked: IsAccessTokenRevoked
-  issuer: string
-  jwks_url: any // URL
-  log_prefix: string
-  max_token_age?: string
-}
+import {
+  conformResult,
+  throwIfDoesNotConform
+} from '../../../lib/validators.js'
+import {
+  config as config_schema,
+  type Config,
+  introspection_response_body_success
+} from '../schemas/route-introspect-post.js'
 
 interface RequestBody {
   token: string
@@ -37,14 +32,22 @@ interface RouteGeneric extends RouteGenericInterface {
  * @see [OAuth 2.0 Token Introspection (RFC 7662)](https://www.rfc-editor.org/rfc/rfc7662)
  */
 export const defIntrospectPost = (config: Config) => {
-  const {
+  const ajv = config.ajv
+
+  throwIfDoesNotConform(
+    { prefix: 'revocation-endpoint post method config ' },
     ajv,
+    config_schema,
+    config
+  )
+
+  const {
     include_error_description,
     isAccessTokenRevoked,
     issuer,
     jwks_url,
-    log_prefix,
-    max_token_age
+    log_prefix
+    // max_access_token_age: max_token_age
   } = config
 
   const introspectPost: RouteHandler<RouteGeneric> = async (request, reply) => {
@@ -87,8 +90,8 @@ export const defIntrospectPost = (config: Config) => {
     const { value: verified_claims } = await verify({
       issuer,
       jwks_url,
-      jwt,
-      max_token_age
+      jwt
+      // max_token_age
     })
 
     const { error: decode_error, value: decoded_claims } = await safeDecode(jwt)
@@ -122,25 +125,23 @@ export const defIntrospectPost = (config: Config) => {
     // RFC 7662 says that if the token can be revoked after it was issued, the
     // authorization server MUST determine whether or not such a revocation has
     // taken place.
-    let blacklisted = false
+    let revoked = false
     if (jti) {
       request.log.debug(
-        `${log_prefix}check whether token ID ${jti} is blacklisted`
+        `${log_prefix}check whether access token jti=${jti} is revoked`
       )
-      const { error: black_err, value } = await isAccessTokenRevoked(jti)
-
-      if (black_err) {
-        const error_description = `Cannot determine whether token ID ${jti} is blacklisted or not: ${black_err.message}`
+      try {
+        revoked = await isAccessTokenRevoked(jti)
+      } catch (ex: any) {
+        const error_description = `Cannot determine whether access token jti=${jti} is revoked or not: ${ex.message}`
         const err = new ServerError({ error_description })
         return reply
           .code(err.statusCode)
           .send(err.payload({ include_error_description }))
       }
-
-      blacklisted = value
     }
 
-    const active = !expired && !blacklisted ? true : false
+    const active = !expired && !revoked ? true : false
 
     const response_body = { ...claims, active }
 

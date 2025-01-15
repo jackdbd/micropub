@@ -5,11 +5,15 @@ import type {
   AuthorizationCodeMutableRecord
 } from '../lib/storage-api/index.js'
 
-export const defHandlers = (storage: StorageApi) => {
-  const { storeOne, retrieveOne, updateMany } = storage
+export interface Config {
+  storage: StorageApi
+}
+
+export const defOnAuthorizationCodeVerified = (config: Config) => {
+  const { storage } = config
 
   const onAuthorizationCodeVerified = async (code: string) => {
-    const { error } = await updateMany({
+    const { error } = await storage.updateMany({
       where: [{ key: 'code', op: '==', value: code }],
       set: { used: true }
     })
@@ -19,16 +23,28 @@ export const defHandlers = (storage: StorageApi) => {
     }
   }
 
+  return onAuthorizationCodeVerified
+}
+
+export const defOnUserApprovedRequest = (config: Config) => {
+  const { storage } = config
+
   const onUserApprovedRequest = async (props: AuthorizationCodeProps) => {
-    const { error } = await storeOne(props)
+    const { error } = await storage.storeOne(props)
 
     if (error) {
       throw error
     }
   }
 
+  return onUserApprovedRequest
+}
+
+export const defRetrieveAuthorizationCode = (config: Config) => {
+  const { storage } = config
+
   const retrieveAuthorizationCode = async (code: string) => {
-    const { error, value } = await retrieveOne({
+    const { error, value } = await storage.retrieveOne({
       where: [{ key: 'code', op: '==', value: code }]
     })
 
@@ -41,9 +57,5 @@ export const defHandlers = (storage: StorageApi) => {
       | AuthorizationCodeMutableRecord
   }
 
-  return {
-    onAuthorizationCodeVerified,
-    onUserApprovedRequest,
-    retrieveAuthorizationCode
-  }
+  return retrieveAuthorizationCode
 }

@@ -21,7 +21,7 @@ const defaults: Partial<Options> = {
   sessionKey: DEFAULT.SESSION_KEY
 }
 
-export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
+export const defValidateAccessTokenNotRevoked = (options?: Options) => {
   const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
   const {
@@ -45,7 +45,7 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
 
   const hkey = header.toLowerCase()
 
-  const validateAccessTokenNotBlacklisted: onRequestAsyncHookHandler = async (
+  const validateAccessTokenNotRevoked: onRequestAsyncHookHandler = async (
     request,
     _reply
   ) => {
@@ -84,28 +84,23 @@ export const defValidateAccessTokenNotBlacklisted = (options?: Options) => {
     }
 
     const { jti } = claims
-    request.log.debug(
-      `${prefix}validating that token ID ${jti} is not blacklisted`
-    )
+    request.log.debug(`${prefix}validating that token ID ${jti} is not revoked`)
 
-    // TODO: replace with retrieveAccessToken?
-
-    const { error: black_err, value: blacklisted } = await isAccessTokenRevoked(
-      jti
-    )
-
-    if (black_err) {
-      const error_description = black_err.message
+    let revoked = false
+    try {
+      revoked = await isAccessTokenRevoked(jti)
+    } catch (ex: any) {
+      const error_description = ex.message
       const error_uri = undefined
       throw new InvalidTokenError({ error_description, error_uri })
     }
 
-    if (blacklisted) {
-      const error_description = `Token ${jti} is blacklisted.`
+    if (revoked) {
+      const error_description = `Token ${jti} is revoked.`
       const error_uri = undefined
       throw new InvalidTokenError({ error_description, error_uri })
     }
   }
 
-  return validateAccessTokenNotBlacklisted
+  return validateAccessTokenNotRevoked
 }

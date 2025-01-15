@@ -8,7 +8,19 @@ import {
   ServerError
 } from '../../../lib/fastify-errors/index.js'
 import type { JWKSPublicURL } from '../../../lib/jwks/index.js'
+import type {
+  AccessTokenImmutableRecord,
+  AccessTokenMutableRecord,
+  RefreshTokenImmutableRecord,
+  RefreshTokenMutableRecord,
+  RetrieveAccessToken
+} from '../../../lib/storage-api/index.js'
 import { type AccessTokenClaims, verify } from '../../../lib/token/index.js'
+import { throwIfDoesNotConform } from '../../../lib/validators.js'
+import {
+  config as config_schema,
+  type Config
+} from '../schemas/route-revoke-post.js'
 
 interface RequestBody {
   revocation_reason?: string
@@ -20,24 +32,11 @@ interface RouteGeneric extends RouteGenericInterface {
   Body: RequestBody
 }
 
-interface Config {
-  include_error_description: boolean
-  issuer: string
-  jwks_url: JWKSPublicURL
-  log_prefix: string
-  max_access_token_age: string
-  me: string
-  retrieveAccessToken: (jti: string) => Promise<any>
-  retrieveRefreshToken: (refresh_token: string) => Promise<any>
-  storeAccessToken: (foo: any) => Promise<any>
-  storeRefreshToken: (foo: any) => Promise<any>
-}
-
 interface AccessTokenConfig {
   issuer: string
   jwks_url: JWKSPublicURL
   max_token_age: string
-  retrieveAccessToken: (jti: string) => Promise<any>
+  retrieveAccessToken: RetrieveAccessToken
   token: string
 }
 
@@ -66,14 +65,20 @@ const accessTokenResult = async (config: AccessTokenConfig) => {
   //   return reply.code(200).send({ message })
   // }
 
-  const { error: retrieve_error, value: access_token_record } =
-    await retrieveAccessToken(claims.jti)
-
-  if (retrieve_error) {
-    return { error: retrieve_error }
+  let record: AccessTokenImmutableRecord | AccessTokenMutableRecord | undefined
+  try {
+    record = await retrieveAccessToken(claims.jti)
+  } catch (ex: any) {
+    const message = `The provided retrieveAccessToken threw an exception: ${ex.message}`
+    return { error: new Error(message) }
   }
 
-  return { value: { claims, record: access_token_record } }
+  if (!record) {
+    const message = `The provided retrieveAccessToken could not find an access token that has jti=${claims.jti}`
+    return { error: new Error(message) }
+  }
+
+  return { value: { claims, record } }
 }
 
 /**
@@ -100,17 +105,27 @@ const accessTokenResult = async (config: AccessTokenConfig) => {
  * @see [Revocation Response - OAuth 2.0 Token Revocation (RFC 7009)](https://www.rfc-editor.org/rfc/rfc7009.html#section-2.2)
  */
 export const defRevocationPost = (config: Config) => {
+  const ajv = config.ajv
+
+  throwIfDoesNotConform(
+    { prefix: 'revocation-endpoint post method config ' },
+    ajv,
+    config_schema,
+    config
+  )
+
   const {
     include_error_description,
     issuer,
     jwks_url,
     log_prefix,
-    max_access_token_age: max_token_age,
+    max_access_token_age,
     me,
+
     retrieveAccessToken,
-    retrieveRefreshToken
-    // storeAccessToken,
-    // storeRefreshToken
+    retrieveRefreshToken,
+    revokeAccessToken,
+    revokeRefreshToken
   } = config
 
   const revocationPost: RouteHandler<RouteGeneric> = async (request, reply) => {
@@ -126,32 +141,56 @@ export const defRevocationPost = (config: Config) => {
 
     const found: {
       access_token_value:
-        | { record: Record<string, any>; claims: AccessTokenClaims }
+        | {
+            record: AccessTokenImmutableRecord | AccessTokenMutableRecord
+            claims: AccessTokenClaims
+          }
         | undefined
-      refresh_token_record: Record<string, any> | undefined
+      refresh_token_record:
+        | RefreshTokenImmutableRecord
+        | RefreshTokenMutableRecord
+        | undefined
     } = {
       access_token_value: undefined,
       refresh_token_record: undefined
     }
 
     if (token_type_hint === 'refresh_token') {
-      request.log.debug(`${log_prefix}search among refresh tokens`)
-      const { value: record } = await retrieveRefreshToken(token)
+      request.log.debug(
+        `${log_prefix}search among refresh tokens given that token_type_hint=${token_type_hint}`
+      )
+
+      let record:
+        | RefreshTokenImmutableRecord
+        | RefreshTokenMutableRecord
+        | undefined
+
+      try {
+        record = await retrieveRefreshToken(token)
+      } catch (ex: any) {
+        request.log.warn(
+          `${log_prefix}token not found among refresh tokens. User-provided retrieveRefreshToken threw an exception: ${ex.message}`
+        )
+      }
 
       if (record) {
+        request.log.debug(`${log_prefix}token found among refresh tokens`)
         found.refresh_token_record = record
       } else {
-        request.log.debug(`${log_prefix}search among access tokens`)
+        request.log.debug(
+          `${log_prefix}token not found among refresh tokens. Searching among access tokens`
+        )
 
         const { value } = await accessTokenResult({
           issuer,
           jwks_url,
           token,
-          max_token_age,
+          max_token_age: max_access_token_age,
           retrieveAccessToken
         })
 
         if (value) {
+          request.log.debug(`${log_prefix}token found among access tokens`)
           found.access_token_value = value
         }
       }
@@ -161,17 +200,31 @@ export const defRevocationPost = (config: Config) => {
       const { value } = await accessTokenResult({
         issuer,
         jwks_url,
-        token,
-        max_token_age,
-        retrieveAccessToken
+        max_token_age: max_access_token_age,
+        retrieveAccessToken,
+        token
       })
 
+      let record:
+        | RefreshTokenImmutableRecord
+        | RefreshTokenMutableRecord
+        | undefined
+
       if (value) {
+        request.log.debug(`${log_prefix}token found among access tokens`)
         found.access_token_value = value
       } else {
         request.log.debug(`${log_prefix}search among refresh tokens`)
-        const { value: record } = await retrieveRefreshToken(token)
+        try {
+          record = await retrieveRefreshToken(token)
+        } catch (ex: any) {
+          request.log.warn(
+            `${log_prefix}token not found among stored refresh tokens. User-provided retrieveRefreshToken threw an exception: ${ex.message}`
+          )
+        }
+
         if (record) {
+          request.log.debug(`${log_prefix}token found among refresh tokens`)
           found.refresh_token_record = record
         }
       }
@@ -179,7 +232,7 @@ export const defRevocationPost = (config: Config) => {
 
     if (found.access_token_value) {
       request.log.debug(`${log_prefix}token found among access tokens`)
-      const { claims, record } = found.access_token_value
+      const { claims } = found.access_token_value
 
       if (!claims.me) {
         const message = 'Cannot revoke token because it has no `me` claim.'
@@ -205,6 +258,7 @@ export const defRevocationPost = (config: Config) => {
         request.log.debug(`${log_prefix}${message}`)
         return reply.code(200).send({ message })
       }
+      const jti = claims.jti
 
       if (!claims.scope) {
         const message = 'Cannot revoke token because it has no `scope` claim.'
@@ -227,34 +281,18 @@ export const defRevocationPost = (config: Config) => {
         return reply.code(200).send({ message })
       }
 
-      const revoke_error: any = false
-      const value = { message: 'todo handle token revocation' }
-      // const { error: revoke_error, value } = await storeAccessToken({
-      //   ...record,
-      //   jti: claims.jti,
-      //   revoked: true,
-      //   revocation_reason
-      // })
-
-      // The revocation itself can fail, and if it's not the client's fault, it
-      // does not make sense to return a 4xx. A generic server error is more
-      // appropriate.
-      if (revoke_error) {
-        const original = revoke_error.message
-        const error_description = `Cannot revoke token: ${original}`
+      try {
+        await revokeAccessToken({ jti, revocation_reason })
+      } catch (ex: any) {
+        const error_description = `The provided onAccessTokenRevocation threw an exception: ${ex.message}`
+        request.log.warn(`${log_prefix}${error_description}`)
         const err = new ServerError({ error_description })
         return reply
           .code(err.statusCode)
           .send(err.payload({ include_error_description }))
       }
 
-      if (value && value.message) {
-        request.log.debug(`${log_prefix}${value.message as string}`)
-      }
-
-      return reply
-        .code(200)
-        .send({ message: `Access token ${claims.jti} revoked` })
+      return reply.code(200).send({ message: `Access token ${jti} revoked` })
     } else if (found.refresh_token_record) {
       request.log.debug(`${log_prefix}token found among refresh tokens`)
       const record = found.refresh_token_record
@@ -278,29 +316,15 @@ export const defRevocationPost = (config: Config) => {
         return reply.code(200).send({ message })
       }
 
-      const revoke_error: any = false
-      const value = { message: 'todo handle token revocation' }
-      // const { error: revoke_error, value } = await storeRefreshToken({
-      //   ...record,
-      //   refresh_token: token,
-      //   revoked: true,
-      //   revocation_reason
-      // })
-
-      // The revocation itself can fail, and if it's not the client's fault, it
-      // does not make sense to return a 4xx. A generic server error is more
-      // appropriate.
-      if (revoke_error) {
-        const original = revoke_error.message
-        const error_description = `Cannot revoke token: ${original}`
+      try {
+        await revokeRefreshToken({ refresh_token: token, revocation_reason })
+      } catch (ex: any) {
+        const error_description = `The provided onAccessTokenRevocation threw an exception: ${ex.message}`
+        request.log.warn(`${log_prefix}${error_description}`)
         const err = new ServerError({ error_description })
         return reply
           .code(err.statusCode)
           .send(err.payload({ include_error_description }))
-      }
-
-      if (value && value.message) {
-        request.log.debug(`${log_prefix}${value.message as string}`)
       }
 
       return reply.code(200).send({ message: `Refresh token ${token} revoked` })

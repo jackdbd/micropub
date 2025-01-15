@@ -5,22 +5,23 @@ import {
   report_all_ajv_errors
 } from '../../../lib/schemas/index.js'
 import { issuer, userinfo_endpoint } from '../../../lib/indieauth/index.js'
-import { expiration } from '../../../lib/issue-tokens/index.js'
+import {
+  expiration,
+  onIssuedTokens,
+  type OnIssuedTokens
+} from '../../../lib/issue-tokens/index.js'
 import { jwks_private } from '../../../lib/jwks/index.js'
 import {
   authorization_endpoint,
   revocation_endpoint
 } from '../../../lib/oauth2/index.js'
-import { DEFAULT } from '../constants.js'
 import {
   isAccessTokenRevoked,
-  type IsAccessTokenRevoked
-} from './is-access-token-revoked.js'
-import { onIssuedTokens, type OnIssuedTokens } from './on-issued-tokens.js'
-import {
   retrieveRefreshToken,
+  type IsAccessTokenRevoked,
   type RetrieveRefreshToken
-} from './retrieve-refresh-token.js'
+} from '../../../lib/storage-api/schemas.js'
+import { DEFAULT } from '../constants.js'
 
 export const options = Type.Object(
   {

@@ -22,10 +22,15 @@ export {
   authorization_code_mutable_record,
   client_application_immutable_record,
   client_application_mutable_record,
+  isAccessTokenRevoked,
   refresh_token_immutable_record,
   refresh_token_mutable_record,
   user_profile_immutable_record,
-  user_profile_mutable_record
+  user_profile_mutable_record,
+  retrieveAccessToken,
+  retrieveRefreshToken,
+  revokeAccessToken,
+  revokeRefreshToken
 } from './schemas.js'
 
 export type {
@@ -35,8 +40,13 @@ export type {
   AuthorizationCodeMutableRecord,
   ClientApplicationImmutableRecord,
   ClientApplicationMutableRecord,
+  IsAccessTokenRevoked,
   RefreshTokenImmutableRecord,
   RefreshTokenMutableRecord,
+  RetrieveAccessToken,
+  RetrieveRefreshToken,
+  RevokeAccessToken,
+  RevokeRefreshToken,
   UserProfileImmutableRecord,
   UserProfileMutableRecord
 } from './schemas.js'

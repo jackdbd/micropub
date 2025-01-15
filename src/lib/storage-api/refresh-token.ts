@@ -1,5 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
-import { refresh_token_props } from '../token-storage-interface/index.js'
+import { refresh_token } from '../oauth2/index.js'
+import {
+  refresh_token_props,
+  revocation_reason
+} from '../token-storage-interface/index.js'
 import { immutable_record, mutable_record } from './record.js'
 
 export const refresh_token_immutable_record = Type.Object(
@@ -40,3 +44,47 @@ export const refresh_token_mutable_record = Type.Object(
 export type RefreshTokenMutableRecord = Static<
   typeof refresh_token_mutable_record
 >
+
+const description = `Function that retrieves a refresh token from a storage backend.`
+const title = 'retrieveRefreshToken'
+
+const retrieveRefreshToken_ = Type.Function(
+  [refresh_token],
+  Type.Promise(
+    Type.Union([refresh_token_immutable_record, refresh_token_mutable_record])
+  ),
+  { description, title }
+)
+
+/**
+ * Function that retrieves a refresh token from a storage backend.
+ */
+export type RetrieveRefreshToken = Static<typeof retrieveRefreshToken_>
+
+/**
+ * Function that retrieves a refresh token from a storage backend.
+ */
+export const retrieveRefreshToken = Type.Any({ description, title })
+
+const revokeRefreshToken_description = `Handler invoked when the token revocation endpoint has met all requirements to revoke a token. You should use it to mark the refresh token as revoked in your storage backend.`
+
+const revokeRefreshToken_title = 'revokeRefreshToken'
+
+const props = Type.Object({
+  refresh_token,
+  revocation_reason: Type.Optional(revocation_reason)
+})
+
+export type RevokeRefreshTokenProps = Static<typeof props>
+
+const revokeRefreshToken_ = Type.Function([props], Type.Promise(Type.Void()), {
+  description: revokeRefreshToken_description,
+  title: revokeRefreshToken_title
+})
+
+export type RevokeRefreshToken = Static<typeof revokeRefreshToken_>
+
+export const revokeRefreshToken = Type.Any({
+  description: revokeRefreshToken_description,
+  title: revokeRefreshToken_title
+})

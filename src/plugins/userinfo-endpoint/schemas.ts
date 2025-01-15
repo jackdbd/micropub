@@ -1,12 +1,12 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 // import type { Profile } from '../../lib/indieauth/schemas.js'
-import type { RetrieveRecord } from '../../lib/storage-api/index.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked,
-  report_all_ajv_errors
-} from '../../lib/schemas/index.js'
+  type RetrieveRecord
+} from '../../lib/storage-api/index.js'
+import { report_all_ajv_errors } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object({

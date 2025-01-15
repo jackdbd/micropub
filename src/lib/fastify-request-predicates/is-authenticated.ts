@@ -1,6 +1,6 @@
 import type { FastifyRequest } from 'fastify'
 import { unixTimestampInSeconds } from '../date.js'
-import type { IsAccessTokenRevoked } from '../schemas/index.js'
+import type { IsAccessTokenRevoked } from '../../lib/storage-api/schemas.js'
 
 export interface Config {
   isAccessTokenRevoked: IsAccessTokenRevoked
@@ -37,17 +37,18 @@ export const defIsAuthenticated = (config: Config) => {
     request.log.debug(
       `${log_refix}checking if jti '${claims.jti}' is blacklisted`
     )
-    const { error, value: blacklisted } = await isAccessTokenRevoked(claims.jti)
-
-    if (error) {
-      const error_description = error.message
+    let revoked = false
+    try {
+      revoked = await isAccessTokenRevoked(claims.jti)
+    } catch (ex: any) {
+      const error_description = ex.message
       // throw new ServerError({ error_description })
       request.log.error(`${log_refix}${error_description}`)
       return false
     }
 
-    if (blacklisted) {
-      const error_description = `Token ${claims.jti} is blacklisted.`
+    if (revoked) {
+      const error_description = `Token ${claims.jti} is revoked.`
       //   throw new InvalidTokenError({ error_description })
       request.log.warn(`${log_refix}${error_description}`)
       return false

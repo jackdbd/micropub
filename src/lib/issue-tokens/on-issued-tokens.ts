@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { issued_info } from '../../../lib/issue-tokens/index.js'
+import { issued_info } from './issued-info.js'
 
 const description = `Handler invoked when the token endpoint has issued an 
 access token and a refresh token. You should use it to persist the tokens to 

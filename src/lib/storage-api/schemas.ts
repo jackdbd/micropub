@@ -1,8 +1,16 @@
 export {
   access_token_immutable_record,
   access_token_mutable_record,
-  type AccessTokenImmutableRecord,
-  type AccessTokenMutableRecord
+  isAccessTokenRevoked,
+  retrieveAccessToken,
+  revokeAccessToken
+} from './access-token.js'
+export type {
+  AccessTokenImmutableRecord,
+  AccessTokenMutableRecord,
+  IsAccessTokenRevoked,
+  RetrieveAccessToken,
+  RevokeAccessToken
 } from './access-token.js'
 
 export {
@@ -22,8 +30,14 @@ export {
 export {
   refresh_token_immutable_record,
   refresh_token_mutable_record,
-  type RefreshTokenImmutableRecord,
-  type RefreshTokenMutableRecord
+  retrieveRefreshToken,
+  revokeRefreshToken
+} from './refresh-token.js'
+export type {
+  RefreshTokenImmutableRecord,
+  RefreshTokenMutableRecord,
+  RetrieveRefreshToken,
+  RevokeRefreshToken
 } from './refresh-token.js'
 
 export {

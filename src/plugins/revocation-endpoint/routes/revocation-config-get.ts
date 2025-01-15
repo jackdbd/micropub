@@ -1,5 +1,5 @@
 import type { RouteHandler } from 'fastify'
-import type { Options } from '../schemas.js'
+import type { Options } from '../schemas/index.js'
 
 // These configuration values are sensitive and should not be included in the
 // response body.

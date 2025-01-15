@@ -22,12 +22,8 @@ import {
 export type {
   AccessTokenResponseBodySuccess,
   AccessTokenRequestBody,
-  IsAccessTokenRevoked,
-  OnIssuedTokens,
   Options,
-  RefreshRequestBody,
-  RetrieveAccessToken,
-  RetrieveRefreshToken
+  RefreshRequestBody
 } from './schemas/index.js'
 
 const defaults: Partial<Options> = {
@@ -140,7 +136,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       includeErrorDescription,
       issuer,
       jwks,
-      logPrefix: prefix,
+      log_prefix: prefix,
       onIssuedTokens,
       refreshTokenExpiration,
       retrieveRefreshToken,

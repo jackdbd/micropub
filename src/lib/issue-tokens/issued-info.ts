@@ -37,7 +37,7 @@ export interface Config extends Static<typeof config_schema> {
   ajv: Ajv
 }
 
-export const return_value_schema = Type.Object({
+export const issued_info = Type.Object({
   access_token,
   access_token_expires_in: expires_in,
   client_id,
@@ -50,7 +50,7 @@ export const return_value_schema = Type.Object({
   scope
 })
 
-export type ReturnValue = Static<typeof return_value_schema>
+export type ReturnValue = Static<typeof issued_info>
 
 /**
  * Issues an access token and a refresh token. Returns both tokens and some
@@ -124,7 +124,7 @@ export const issuedInfo = async (config: Config) => {
 
   const { refresh_token, exp: refresh_token_expires_at } = refresh_token_value
 
-  const return_value = {
+  const data = {
     access_token,
     access_token_expires_in: expires_in,
     client_id,
@@ -141,8 +141,8 @@ export const issuedInfo = async (config: Config) => {
     newConformResult(
       {
         ajv,
-        schema: return_value_schema,
-        data: return_value
+        schema: issued_info,
+        data
       },
       { basePath: 'issuedInfo-return-value' }
     )

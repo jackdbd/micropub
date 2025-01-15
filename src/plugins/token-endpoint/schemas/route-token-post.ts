@@ -8,7 +8,11 @@ import {
   profile,
   userinfo_endpoint
 } from '../../../lib/indieauth/index.js'
-import { expiration } from '../../../lib/issue-tokens/index.js'
+import {
+  expiration,
+  onIssuedTokens,
+  type OnIssuedTokens
+} from '../../../lib/issue-tokens/index.js'
 import { jwks_private } from '../../../lib/jwks/index.js'
 import {
   access_token,
@@ -21,38 +25,40 @@ import {
   scope
 } from '../../../lib/oauth2/index.js'
 import { code_verifier } from '../../../lib/pkce/index.js'
-import { DEFAULT } from '../constants.js'
-import { onIssuedTokens, type OnIssuedTokens } from './on-issued-tokens.js'
 import {
   retrieveRefreshToken,
   type RetrieveRefreshToken
-} from './retrieve-refresh-token.js'
+} from '../../../lib/storage-api/schemas.js'
+import { DEFAULT } from '../constants.js'
 
-export const config = Type.Object({
-  accessTokenExpiration: expiration,
+export const config = Type.Object(
+  {
+    accessTokenExpiration: expiration,
 
-  ajv: Type.Any(),
+    ajv: Type.Any(),
 
-  authorizationEndpoint: authorization_endpoint,
+    authorizationEndpoint: authorization_endpoint,
 
-  includeErrorDescription: include_error_description,
+    includeErrorDescription: include_error_description,
 
-  issuer,
+    issuer,
 
-  jwks: jwks_private,
+    jwks: jwks_private,
 
-  logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
+    log_prefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
-  onIssuedTokens,
+    onIssuedTokens,
 
-  refreshTokenExpiration: expiration,
+    refreshTokenExpiration: expiration,
 
-  retrieveRefreshToken,
+    retrieveRefreshToken,
 
-  revocationEndpoint: revocation_endpoint,
+    revocationEndpoint: revocation_endpoint,
 
-  userinfoEndpoint: userinfo_endpoint
-})
+    userinfoEndpoint: userinfo_endpoint
+  },
+  { additionalProperties: false, $id: 'token-endpoint-post-method-config' }
+)
 
 export interface Config extends Static<typeof config> {
   ajv: Ajv

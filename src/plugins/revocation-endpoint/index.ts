@@ -7,7 +7,7 @@ import fp from 'fastify-plugin'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
-  defValidateAccessTokenNotBlacklisted,
+  defValidateAccessTokenNotRevoked,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
 import { error_response } from '../../lib/oauth2/index.js'
@@ -20,12 +20,12 @@ import {
   type Options,
   revocation_request_body,
   revocation_response_body_success
-} from './schemas.js'
+} from './schemas/index.js'
 
 export type {
   RevocationRequestBody,
   RevocationResponseBodySuccess
-} from './schemas.js'
+} from './schemas/index.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
@@ -50,9 +50,9 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
     me,
     reportAllAjvErrors: report_all_ajv_errors,
     retrieveAccessToken,
-    retrieveRefreshToken
-    // storeAccessToken,
-    // storeRefreshToken
+    retrieveRefreshToken,
+    revokeAccessToken,
+    revokeRefreshToken
   } = config
 
   let ajv: Ajv
@@ -97,8 +97,10 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
 
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
+  const validateAccessTokenNotBlacklisted = defValidateAccessTokenNotRevoked({
+    ajv,
+    isAccessTokenRevoked
+  })
 
   // === ROUTES ============================================================= //
   fastify.get('/revoke/config', defConfigGet(config))
@@ -123,6 +125,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
       }
     },
     defRevocationPost({
+      ajv,
       include_error_description,
       issuer,
       jwks_url,
@@ -130,9 +133,9 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
       max_access_token_age,
       me,
       retrieveAccessToken,
-      retrieveRefreshToken
-      // storeAccessToken,
-      // storeRefreshToken
+      retrieveRefreshToken,
+      revokeAccessToken,
+      revokeRefreshToken
     })
   )
 

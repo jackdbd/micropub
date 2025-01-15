@@ -14,6 +14,7 @@ import type { Environment } from 'nunjucks'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
+import { OnIssuedTokens } from './lib/issue-tokens/on-issued-tokens.js'
 import { defR2 } from './lib/r2-storage/client.js'
 import type { SelectQuery } from './lib/storage-api/index.js'
 import { defStorage } from './lib/storage-implementations/index.js'
@@ -32,7 +33,7 @@ import introspection from './plugins/introspection-endpoint/index.js'
 import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
-import token, { type OnIssuedTokens } from './plugins/token-endpoint/index.js'
+import token from './plugins/token-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -50,11 +51,15 @@ import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
 import { defSQLiteUtils } from './sqlite-utils.js'
 import {
-  defAuthorizationCodeHandlers,
   defIsAccessTokenRevoked,
+  defOnAuthorizationCodeVerified,
   defOnIssuedTokens,
+  defOnUserApprovedRequest,
   defRetrieveAccessToken,
-  defRetrieveRefreshToken
+  defRetrieveAuthorizationCode,
+  defRetrieveRefreshToken,
+  defRevokeAccessToken,
+  defRevokeRefreshToken
 } from './storage-handlers/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -199,10 +204,10 @@ export async function defFastify(config: Config) {
 
   const token_log = {
     debug: (message: string) => {
-      fastify.log.debug(`token-handler ${message}`)
+      fastify.log.debug(`[app/token-storage] ${message}`)
     },
     error: (message: string) => {
-      fastify.log.error(`token-handler ${message}`)
+      fastify.log.error(`[app/token-storage] ${message}`)
     }
   }
 
@@ -218,11 +223,17 @@ export async function defFastify(config: Config) {
     return storage.user_profile.retrieveOne(query)
   }
 
-  const {
-    onAuthorizationCodeVerified,
-    onUserApprovedRequest,
-    retrieveAuthorizationCode
-  } = defAuthorizationCodeHandlers(storage.authorization_code)
+  const onAuthorizationCodeVerified = defOnAuthorizationCodeVerified({
+    storage: storage.authorization_code
+  })
+
+  const onUserApprovedRequest = defOnUserApprovedRequest({
+    storage: storage.authorization_code
+  })
+
+  const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
+    storage: storage.authorization_code
+  })
 
   // TODO: rename to isAccessTokenRevoked when all plugins are updated
   const isAccessTokenRevoked = defIsAccessTokenRevoked({
@@ -236,6 +247,16 @@ export async function defFastify(config: Config) {
   })
 
   const retrieveRefreshToken = defRetrieveRefreshToken({
+    log: token_log,
+    storage: storage.refresh_token
+  })
+
+  const revokeAccessToken = defRevokeAccessToken({
+    log: token_log,
+    storage: storage.access_token
+  })
+
+  const revokeRefreshToken = defRevokeRefreshToken({
     log: token_log,
     storage: storage.refresh_token
   })
@@ -351,9 +372,9 @@ export async function defFastify(config: Config) {
     me,
     reportAllAjvErrors,
     retrieveAccessToken,
-    retrieveRefreshToken
-    // storeAccessToken,
-    // storeRefreshToken
+    retrieveRefreshToken,
+    revokeAccessToken,
+    revokeRefreshToken
   })
 
   fastify.register(token, {
@@ -361,7 +382,7 @@ export async function defFastify(config: Config) {
     ajv,
     authorizationEndpoint,
     includeErrorDescription,
-    isAccessTokenRevoked: isAccessTokenRevoked,
+    isAccessTokenRevoked,
     issuer,
     jwks,
     onIssuedTokens,

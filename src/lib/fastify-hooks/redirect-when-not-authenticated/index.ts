@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { IsAccessTokenRevoked } from '../../../lib/storage-api/schemas.js'
 import { defIsAuthenticated } from '../../fastify-request-predicates/index.js'
-import { IsAccessTokenRevoked } from '../../schemas/index.js'
 
 export interface Config {
   isAccessTokenRevoked: IsAccessTokenRevoked

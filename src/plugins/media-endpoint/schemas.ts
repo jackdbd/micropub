@@ -6,11 +6,13 @@ import {
 } from '../../lib/indieauth/index.js'
 import {
   deleteContentOrMedia,
-  isAccessTokenRevoked,
-  type IsAccessTokenRevoked,
   report_all_ajv_errors,
   uploadMedia
 } from '../../lib/schemas/index.js'
+import {
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
+} from '../../lib/storage-api/index.js'
 
 import { DEFAULT } from './constants.js'
 

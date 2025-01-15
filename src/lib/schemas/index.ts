@@ -23,11 +23,6 @@ export { info, type Info } from './info.js'
 
 export { storage, type Introspection } from './introspection.js'
 
-export {
-  isAccessTokenRevoked,
-  type IsAccessTokenRevoked
-} from './is-access-token-revoked.js'
-
 export { jf2, type JF2 } from './jf2.js'
 
 export { jf2ToContent, type JF2ToContent } from './jf2-to-content.js'

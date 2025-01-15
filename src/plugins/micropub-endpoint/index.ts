@@ -11,7 +11,7 @@ import {
   defDecodeJwtAndSetClaims,
   defLogIatAndExpClaims,
   defValidateClaim,
-  defValidateAccessTokenNotBlacklisted
+  defValidateAccessTokenNotRevoked
 } from '../../lib/fastify-hooks/index.js'
 import type { SyndicateToItem } from '../../lib/micropub/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
@@ -126,8 +126,10 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
 
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
+  const validateAccessTokenNotBlacklisted = defValidateAccessTokenNotRevoked({
+    ajv,
+    isAccessTokenRevoked
+  })
 
   const validateGetRequest = defValidateGetRequest({ ajv })
 

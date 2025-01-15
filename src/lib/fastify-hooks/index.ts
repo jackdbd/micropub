@@ -8,4 +8,4 @@ export { defValidateClaim } from './validate-claim/index.js'
 
 export { defValidateScope } from './validate-scope/index.js'
 
-export { defValidateAccessTokenNotBlacklisted } from './validate-token/not-blacklisted.js'
+export { defValidateAccessTokenNotRevoked } from './validate-token/not-revoked.js'

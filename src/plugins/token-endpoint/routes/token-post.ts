@@ -73,7 +73,7 @@ export const defTokenPost = (config: TokenPostConfig) => {
     includeErrorDescription: include_error_description,
     issuer,
     jwks,
-    logPrefix: prefix,
+    log_prefix: prefix,
     onIssuedTokens,
     refreshTokenExpiration: refresh_token_expiration,
     retrieveRefreshToken,

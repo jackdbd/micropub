@@ -11,7 +11,7 @@ import {
   defLogIatAndExpClaims,
   defValidateClaim,
   defValidateScope,
-  defValidateAccessTokenNotBlacklisted
+  defValidateAccessTokenNotRevoked
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
@@ -95,8 +95,10 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
 
   const validateScopeMedia = defValidateScope({ ajv, scope: 'media' })
 
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
+  const validateAccessTokenNotBlacklisted = defValidateAccessTokenNotRevoked({
+    ajv,
+    isAccessTokenRevoked
+  })
 
   // === ROUTES ============================================================= //
   fastify.get('/media', defMediaGet({ delete: deleteMedia }))

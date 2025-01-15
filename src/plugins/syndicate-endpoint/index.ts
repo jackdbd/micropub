@@ -8,7 +8,7 @@ import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
   defLogIatAndExpClaims,
-  defValidateAccessTokenNotBlacklisted,
+  defValidateAccessTokenNotRevoked,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
@@ -89,8 +89,10 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
 
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
-  const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
+  const validateAccessTokenNotBlacklisted = defValidateAccessTokenNotRevoked({
+    ajv,
+    isAccessTokenRevoked
+  })
 
   // === ROUTES ============================================================= //
   fastify.get('/syndication/config', defConfigGet(config))
