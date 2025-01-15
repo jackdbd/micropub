@@ -32,7 +32,7 @@ import introspection from './plugins/introspection-endpoint/index.js'
 import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
-import token from './plugins/token-endpoint/index.js'
+import token, { type OnIssuedTokens } from './plugins/token-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -48,9 +48,13 @@ import {
 } from './error-handlers/index.js'
 import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
+import { defSQLiteUtils } from './sqlite-utils.js'
 import {
   defAuthorizationCodeHandlers,
-  defTokenHandlers
+  defIsAccessTokenRevoked,
+  defOnIssuedTokens,
+  defRetrieveAccessToken,
+  defRetrieveRefreshToken
 } from './storage-handlers/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -168,25 +172,16 @@ export async function defFastify(config: Config) {
 
   const environment = NODE_ENV === 'production' ? 'prod' : 'dev'
 
+  const backend = 'sqlite'
   const { error: storage_error, value: storage } = defStorage({
     ajv,
-    backend: 'sqlite',
+    backend,
     env: environment
   })
 
   if (storage_error) {
     throw storage_error
   }
-
-  const retrieveProfile = async (query: SelectQuery) => {
-    return storage.user_profile.retrieveOne(query)
-  }
-
-  const {
-    onAuthorizationCodeVerified,
-    onUserApprovedRequest,
-    retrieveAuthorizationCode
-  } = defAuthorizationCodeHandlers(storage.authorization_code)
 
   const fastify = Fastify({
     logger: {
@@ -202,22 +197,47 @@ export async function defFastify(config: Config) {
     }
   })
 
-  const {
-    isAccessTokenRevoked: isAccessTokenBlacklisted,
-    issueTokens,
-    retrieveAccessToken,
-    retrieveRefreshToken
-  } = defTokenHandlers({
-    access_tokens_storage: storage.access_token,
-    refresh_tokens_storage: storage.refresh_token,
-    log: {
-      debug: (message: string) => {
-        fastify.log.debug(`token-handler ${message}`)
-      },
-      error: (message: string) => {
-        fastify.log.error(`token-handler ${message}`)
-      }
+  const token_log = {
+    debug: (message: string) => {
+      fastify.log.debug(`token-handler ${message}`)
+    },
+    error: (message: string) => {
+      fastify.log.error(`token-handler ${message}`)
     }
+  }
+
+  let onIssuedTokens: OnIssuedTokens
+  if (backend === 'sqlite') {
+    const { batchTransaction } = defSQLiteUtils({ env: environment })
+    onIssuedTokens = defOnIssuedTokens({ log: token_log, batchTransaction })
+  } else {
+    onIssuedTokens = defOnIssuedTokens({ log: token_log, storage })
+  }
+
+  const retrieveProfile = async (query: SelectQuery) => {
+    return storage.user_profile.retrieveOne(query)
+  }
+
+  const {
+    onAuthorizationCodeVerified,
+    onUserApprovedRequest,
+    retrieveAuthorizationCode
+  } = defAuthorizationCodeHandlers(storage.authorization_code)
+
+  // TODO: rename to isAccessTokenRevoked when all plugins are updated
+  const isAccessTokenRevoked = defIsAccessTokenRevoked({
+    log: token_log,
+    storage: storage.access_token
+  })
+
+  const retrieveAccessToken = defRetrieveAccessToken({
+    log: token_log,
+    storage: storage.access_token
+  })
+
+  const retrieveRefreshToken = defRetrieveRefreshToken({
+    log: token_log,
+    storage: storage.refresh_token
   })
 
   // === PLUGINS ============================================================ //
@@ -301,7 +321,7 @@ export async function defFastify(config: Config) {
     githubOAuthClientSecret,
     includeErrorDescription,
     introspectionEndpoint,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     issuer,
     micropubEndpoint,
     redirectUris: indieauth_client_redirect_uris,
@@ -315,7 +335,7 @@ export async function defFastify(config: Config) {
   fastify.register(introspection, {
     ajv,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     issuer,
     jwksUrl: jwks_url,
     reportAllAjvErrors
@@ -324,7 +344,7 @@ export async function defFastify(config: Config) {
   fastify.register(revocation, {
     ajv,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     issuer,
     jwksUrl: jwks_url,
     maxAccessTokenAge: access_token_expiration,
@@ -341,10 +361,10 @@ export async function defFastify(config: Config) {
     ajv,
     authorizationEndpoint,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked: isAccessTokenRevoked,
     issuer,
-    issueTokens,
     jwks,
+    onIssuedTokens,
     refreshTokenExpiration: refresh_token_expiration,
     reportAllAjvErrors,
     retrieveRefreshToken,
@@ -355,7 +375,7 @@ export async function defFastify(config: Config) {
   fastify.register(userinfo, {
     ajv,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     // me,
     reportAllAjvErrors,
     retrieveProfile
@@ -402,7 +422,7 @@ export async function defFastify(config: Config) {
     ajv,
     delete: r2.delete,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     me,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
@@ -414,7 +434,7 @@ export async function defFastify(config: Config) {
     create: github.create,
     delete: github.delete,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     me,
     mediaEndpoint,
     micropubEndpoint,
@@ -437,7 +457,7 @@ export async function defFastify(config: Config) {
     ajv,
     get: github.get,
     includeErrorDescription,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     me,
     publishedUrlToStorageLocation: github.publishedUrlToStorageLocation,
     syndicators: { [uid]: telegram_syndicator },

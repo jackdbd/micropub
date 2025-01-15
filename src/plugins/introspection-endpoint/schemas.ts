@@ -8,9 +8,9 @@ import { exp, iat, iss, jti } from '../../lib/jwt/index.js'
 import { jwks_url } from '../../lib/jwks/index.js'
 import { access_token, refresh_token, scope } from '../../lib/oauth2/index.js'
 import {
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
-  report_all_ajv_errors
+  report_all_ajv_errors,
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
 } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
 
@@ -24,7 +24,7 @@ export const options = Type.Object(
       Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
     ),
 
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked: isAccessTokenRevoked,
 
     issuer,
 
@@ -46,7 +46,7 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
 }
 
 const active = Type.Boolean({

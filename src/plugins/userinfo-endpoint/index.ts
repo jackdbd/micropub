@@ -24,7 +24,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   const config = applyToDefaults(defaults, options) as Required<Options>
 
   const {
-    // isAccessTokenBlacklisted,
+    // isAccessTokenRevoked,
     includeErrorDescription: include_error_description,
     logPrefix: log_prefix,
     // me,
@@ -69,7 +69,7 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   // const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   // const validateAccessTokenNotBlacklisted =
-  //   defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
+  //   defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
 
   // const validateScopeEmail = defValidateScope({ ajv, scope: 'email' })
 

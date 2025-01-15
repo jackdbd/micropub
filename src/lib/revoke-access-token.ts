@@ -4,7 +4,7 @@ import type {
   StoreRecord
 } from '../lib/storage-api/index.js'
 import { secondsToUTCString, unixTimestampInSeconds } from './date.js'
-import type { JWKSPublicURL } from './schemas/index.js'
+import type { JWKSPublicURL } from './jwks/index.js'
 import { type AccessTokenClaims, verify } from './token/index.js'
 
 export interface Config {

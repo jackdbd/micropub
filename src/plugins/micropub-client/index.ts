@@ -90,7 +90,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     indieAuthStartPath: indieauth_start_path,
     // indieAuthRedirectPath: indieauth_redirect_path,
     introspectionEndpoint: introspection_endpoint,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     issuer,
     logPrefix: log_prefix,
     micropubEndpoint: micropub_endpoint,
@@ -204,7 +204,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
   })
 
   const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     logPrefix: `${log_prefix}[hook] `,
     redirectPath: '/login'
   })

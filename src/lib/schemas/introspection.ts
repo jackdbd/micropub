@@ -1,15 +1,15 @@
 import { Static, Type } from '@sinclair/typebox'
 import { info } from './info.js'
 import {
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted
-} from './is-blacklisted.js'
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
+} from './is-access-token-revoked.js'
 
 export const storage = Type.Object({
   info,
-  isAccessTokenBlacklisted
+  isAccessTokenRevoked: isAccessTokenRevoked
 })
 
 export interface Introspection extends Static<typeof storage> {
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
 }

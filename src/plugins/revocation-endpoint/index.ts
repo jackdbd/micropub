@@ -42,7 +42,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
 
   const {
     includeErrorDescription: include_error_description,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     issuer,
     jwksUrl: jwks_url,
     logPrefix: log_prefix,
@@ -98,7 +98,7 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
 
   // === ROUTES ============================================================= //
   fastify.get('/revoke/config', defConfigGet(config))

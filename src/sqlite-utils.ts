@@ -11,12 +11,20 @@ export interface BatchConfig {
   inserts: { table: string; props: BaseProps }[]
 }
 
+export type BatchTransaction = (cfg: BatchConfig) => Promise<
+  | { error: Error; value?: undefined }
+  | {
+      error?: undefined
+      value: { message: string; result_sets: any[] }
+    }
+>
+
 export const defSQLiteUtils = (config: Config) => {
   const { env } = config
 
   const client = createClient(SQLITE_DATABASE[env])
 
-  const batchTransaction = async (cfg: BatchConfig) => {
+  const batchTransaction: BatchTransaction = async (cfg) => {
     const { inserts } = cfg
 
     const tables = [...new Set(inserts.map(({ table }) => table))]

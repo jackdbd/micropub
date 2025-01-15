@@ -36,7 +36,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   const {
     delete: deleteMedia,
     includeErrorDescription: include_error_description,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     logPrefix: log_prefix,
     me,
     multipartFormDataMaxFileSize: fileSize,
@@ -96,7 +96,7 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
   const validateScopeMedia = defValidateScope({ ajv, scope: 'media' })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
 
   // === ROUTES ============================================================= //
   fastify.get('/media', defMediaGet({ delete: deleteMedia }))

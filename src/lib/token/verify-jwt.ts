@@ -1,5 +1,5 @@
 import * as jose from 'jose'
-import { type JWKSPublicURL } from '../schemas/jwks.js'
+import { type JWKSPublicURL } from '../jwks/index.js'
 
 export interface VerifyConfig {
   issuer: string

@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { defIsAuthenticated } from '../../fastify-request-predicates/index.js'
-import { IsAccessTokenBlacklisted } from '../../schemas/is-blacklisted.js'
+import { IsAccessTokenRevoked } from '../../schemas/index.js'
 
 export interface Config {
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
   logPrefix: string
   redirectPath: string
 }
@@ -13,10 +13,10 @@ export interface Config {
 // TODO: define this hook in micropub-client, not here. And use less indirection.
 
 export const defRedirectWhenNotAuthenticated = (config: Config) => {
-  const { isAccessTokenBlacklisted, logPrefix, redirectPath } = config
+  const { isAccessTokenRevoked, logPrefix, redirectPath } = config
 
   const isAuthenticated = defIsAuthenticated({
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     logPrefix
   })
 

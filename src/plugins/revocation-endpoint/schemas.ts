@@ -7,9 +7,9 @@ import {
 } from '../../lib/indieauth/index.js'
 import { jwks_url } from '../../lib/jwks/index.js'
 import {
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
-  report_all_ajv_errors
+  report_all_ajv_errors,
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
 } from '../../lib/schemas/index.js'
 import type {
   RetrieveRecord,
@@ -20,7 +20,7 @@ import { DEFAULT } from './constants.js'
 export const options = Type.Object({
   ajv: Type.Optional(Type.Any()),
 
-  isAccessTokenBlacklisted,
+  isAccessTokenRevoked,
 
   includeErrorDescription: Type.Optional(
     Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
@@ -55,7 +55,7 @@ export const options = Type.Object({
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
   retrieveAccessToken: RetrieveRecord
   retrieveRefreshToken: RetrieveRecord
   // storeAccessToken: StoreRecord

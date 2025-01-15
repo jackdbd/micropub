@@ -10,8 +10,6 @@ import {
   type Create,
   deleteContentOrMedia,
   type DeleteContentOrMedia,
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
   syndicate_to_item,
   report_all_ajv_errors,
   undelete,
@@ -20,6 +18,9 @@ import {
   type Update
 } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
+
+const isAccessTokenRevoked = Type.Any()
+export type IsAccessTokenRevoked = (jti: string) => Promise<boolean>
 
 export const options = Type.Object(
   {
@@ -33,7 +34,7 @@ export const options = Type.Object(
       Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
     ),
 
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked: isAccessTokenRevoked,
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
@@ -77,7 +78,7 @@ export interface Options extends Static<typeof options> {
   ajv?: Ajv
   create: Create
   delete: DeleteContentOrMedia
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
   undelete?: Undelete
   update: Update
 }

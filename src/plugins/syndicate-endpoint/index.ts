@@ -47,7 +47,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
 
   const {
     get,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     me,
     publishedUrlToStorageLocation,
     syndicators,
@@ -90,7 +90,7 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
 
   // === ROUTES ============================================================= //
   fastify.get('/syndication/config', defConfigGet(config))

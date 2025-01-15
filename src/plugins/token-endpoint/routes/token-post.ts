@@ -1,6 +1,3 @@
-import { applyToDefaults } from '@hapi/hoek'
-import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import type { Profile } from '../../../lib/indieauth/index.js'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
@@ -12,6 +9,7 @@ import {
   ServerError
 } from '../../../lib/fastify-errors/index.js'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
+import { issuedInfo, type IssuedInfo } from '../../../lib/issue-tokens/index.js'
 import { retrieveProfile } from '../../../lib/retrieve-profile.js'
 import { revokeToken } from '../../../lib/revoke-token.js'
 import type {
@@ -20,33 +18,15 @@ import type {
 } from '../../../lib/storage-api/index.js'
 import { throwIfDoesNotConform } from '../../../lib/validators.js'
 import { verifyAuthorizationCode } from '../../../lib/verify-authorization-code.js'
-import { DEFAULT } from '../constants.js'
-import { token_post_options } from '../schemas.js'
+import { token_post_config } from '../schemas/index.js'
 import type {
   AccessTokenRequestBody,
-  IssueTokensReturnValue,
   RefreshRequestBody,
-  TokenPostOptions
-} from '../schemas.js'
+  TokenPostConfig
+} from '../schemas/index.js'
 
 interface RouteGeneric extends RouteGenericInterface {
   Body: AccessTokenRequestBody | RefreshRequestBody
-}
-
-// TODO: decide whether to issue a refresh token only if `offline_access` is
-// included in `scope`.
-// The offline_access scope is specified only in OpenID Connect. It's not
-// mentioned in OAuth 2.0 or IndieAuth.
-// https://github.com/manfredsteyer/angular-oauth2-oidc/issues/1241
-// https://github.com/GluuFederation/oxAuth/issues/1172
-// https://openid.net/specs/openid-connect-basic-1_0.html#OfflineAccessPrivacy
-
-const defaults: Partial<TokenPostOptions> = {
-  accessTokenExpiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
-  includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
-  logPrefix: DEFAULT.LOG_PREFIX,
-  refreshTokenExpiration: DEFAULT.REFRESH_TOKEN_EXPIRATION,
-  reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
 /**
@@ -85,43 +65,28 @@ const defaults: Partial<TokenPostOptions> = {
  * credentials (or assigned other authentication requirements), the client MUST
  * authenticate with the authorization server.
  */
-export const defTokenPost = (options: TokenPostOptions) => {
-  const config = applyToDefaults(
-    defaults,
-    options
-  ) as Required<TokenPostOptions>
-
+export const defTokenPost = (config: TokenPostConfig) => {
   const {
     accessTokenExpiration: access_token_expiration,
+    ajv,
     authorizationEndpoint: authorization_endpoint,
     includeErrorDescription: include_error_description,
     issuer,
-    issueTokens,
     jwks,
     logPrefix: prefix,
+    onIssuedTokens,
     refreshTokenExpiration: refresh_token_expiration,
-    reportAllAjvErrors: report_all_ajv_errors,
     retrieveRefreshToken,
     revocationEndpoint: revocation_endpoint,
     userinfoEndpoint: userinfo_endpoint
   } = config
 
-  let ajv: Ajv
-  if (config.ajv) {
-    ajv = config.ajv
-  } else {
-    ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), [
-      'email',
-      'uri'
-    ])
-  }
-
-  throwIfDoesNotConform({ prefix }, ajv, token_post_options, config)
+  throwIfDoesNotConform({ prefix }, ajv, token_post_config, config)
 
   const tokenPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     const { grant_type } = request.body
 
-    let issue_tokens_value: IssueTokensReturnValue
+    let issued_info: IssuedInfo
     if (grant_type === 'refresh_token') {
       const { refresh_token, scope } = request.body
 
@@ -269,24 +234,38 @@ export const defTokenPost = (options: TokenPostOptions) => {
         `${prefix}revoked access token with revocation_reason: ${revocation_reason}`
       )
 
+      // check that issuer === record.iss?
+
+      const { error, value } = await issuedInfo({
+        access_token_expiration,
+        ajv,
+        client_id: record.client_id,
+        issuer, // or record.iss
+        // jti: record.jti,
+        jwks,
+        log: request.log,
+        me: record.me,
+        redirect_uri: record.redirect_uri,
+        refresh_token_expiration,
+        scope
+      })
+
+      if (error) {
+        const error_description = error.message
+        request.log.error(`${prefix}${error_description}`)
+        const error_uri = undefined
+        const err = new ServerError({ error_description, error_uri })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
+      }
+
+      issued_info = value
+
       try {
-        issue_tokens_value = await issueTokens({
-          access_token_expiration,
-          client_id: record.client_id,
-          issuer,
-          jwks,
-          jti: record.jti,
-          me: record.me,
-          redirect_uri: record.redirect_uri,
-          refresh_token_expiration,
-          scope
-        })
-        console.log(
-          `🚀 ~ after issueTokens (${grant_type}) ~ issue_tokens_value`,
-          issue_tokens_value
-        )
+        await onIssuedTokens(issued_info)
       } catch (ex: any) {
-        let error_description = `The user-provided issueTokens function threw an exception.`
+        let error_description = `The user-provided onIssuedTokens function threw an exception.`
         if (ex && ex.message) {
           error_description = `${error_description} Here is the original error message: ${ex.message}`
         }
@@ -297,34 +276,12 @@ export const defTokenPost = (options: TokenPostOptions) => {
           .code(err.statusCode)
           .send(err.payload({ include_error_description }))
       }
-
-      // const { error: issue_error, value } = await issueToken({
-      //   access_token_expiration,
-      //   client_id: record.client_id as string,
-      //   issuer,
-      //   jwks,
-      //   // jti: record.jti,
-      //   me: record.me as string,
-      //   redirect_uri: record.redirect_uri as string,
-      //   refresh_token_expiration,
-      //   scope,
-      //   storeAccessToken,
-      //   storeRefreshToken
-      // })
-
-      // if (issue_error) {
-      //   const payload = issue_error.payload({ include_error_description })
-      //   request.log.error(
-      //     `${prefix}cannot issue access token and refresh token: ${payload.error_description}`
-      //   )
-      //   return reply.code(issue_error.statusCode).send(payload)
-      // }
-
-      request.log.debug(`${prefix}issued access token and refresh token`)
-      // END of grant_type === 'refresh_token' /////////////////////////////////
+      // === END of grant_type === 'refresh_token' ========================== //
     } else if (grant_type === 'authorization_code') {
       const { client_id, code, code_verifier, redirect_uri } = request.body
 
+      // Do I need to do this in the token endpoint or in the authorization
+      // endpoint?
       request.log.warn(
         `${prefix}TODO: verify that 'code_verifier' ${code_verifier} hashes to the same value as given in the code_challenge in the original authorization request`
       )
@@ -384,24 +341,37 @@ export const defTokenPost = (options: TokenPostOptions) => {
       request.log.debug(
         `${prefix}issuer ${issuer} will now try issuing an access token and a refresh token that can be used by client_id ${client_id} to access resources owned by ${me}`
       )
+
+      const { error, value } = await issuedInfo({
+        access_token_expiration,
+        ajv,
+        client_id,
+        issuer, // or record.iss
+        // jti: record.jti,
+        jwks,
+        log: request.log,
+        me,
+        redirect_uri,
+        refresh_token_expiration,
+        scope
+      })
+
+      if (error) {
+        const error_description = error.message
+        request.log.error(`${prefix}${error_description}`)
+        const error_uri = undefined
+        const err = new ServerError({ error_description, error_uri })
+        return reply
+          .code(err.statusCode)
+          .send(err.payload({ include_error_description }))
+      }
+
+      issued_info = value
+
       try {
-        issue_tokens_value = await issueTokens({
-          access_token_expiration,
-          client_id,
-          issuer,
-          jti: 'fake jti',
-          jwks,
-          me,
-          redirect_uri,
-          refresh_token_expiration,
-          scope
-        })
-        console.log(
-          `🚀 ~ after issueTokens (${grant_type}) ~ issue_tokens_value`,
-          issue_tokens_value
-        )
+        await onIssuedTokens(issued_info)
       } catch (ex: any) {
-        let error_description = `The user-provided issueTokens function threw an exception.`
+        let error_description = `The user-provided onIssuedTokens function threw an exception.`
         if (ex && ex.message) {
           error_description = `${error_description} Here is the original error message: ${ex.message}`
         }
@@ -412,30 +382,6 @@ export const defTokenPost = (options: TokenPostOptions) => {
           .code(err.statusCode)
           .send(err.payload({ include_error_description }))
       }
-
-      // const { error: issue_error, value } = await issueToken({
-      //   access_token_expiration,
-      //   client_id,
-      //   issuer,
-      //   jwks,
-      //   me,
-      //   redirect_uri,
-      //   refresh_token_expiration,
-      //   scope,
-      //   storeAccessToken,
-      //   storeRefreshToken
-      // })
-
-      // if (issue_error) {
-      //   console.log('🚀 ~ issue_error:', issue_error)
-      //   const payload = issue_error.payload({ include_error_description })
-      //   request.log.error(
-      //     `${prefix}cannot issue access token and refresh token: ${payload.error_description}`
-      //   )
-      //   return reply.code(issue_error.statusCode).send(payload)
-      // }
-
-      request.log.debug(`${prefix}issued access token and refresh token`)
     } else {
       const error_description = `This endpoint does not support grant type ${grant_type}.`
       const error_uri = undefined
@@ -448,8 +394,13 @@ export const defTokenPost = (options: TokenPostOptions) => {
         .send(err.payload({ include_error_description }))
     }
 
-    const { access_token, expires_in, me, refresh_token, scope } =
-      issue_tokens_value
+    const {
+      access_token,
+      access_token_expires_in: expires_in,
+      me,
+      refresh_token,
+      scope
+    } = issued_info
 
     const scopes = scope.split(' ')
 
@@ -481,6 +432,7 @@ export const defTokenPost = (options: TokenPostOptions) => {
     // credentials, or other sensitive information, as well as the "Pragma"
     // response header field with a value of "no-cache".
     // https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
+    // https://indieauth.spec.indieweb.org/#access-token-response
     return reply
       .code(200)
       .header('Cache-Control', 'no-store')

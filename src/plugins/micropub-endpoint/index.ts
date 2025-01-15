@@ -45,7 +45,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     create,
     delete: deleteContent,
     includeErrorDescription: include_error_description,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     logPrefix: log_prefix,
     mediaEndpoint: media_endpoint,
     micropubEndpoint: micropub_endpoint,
@@ -127,7 +127,7 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
   const validateClaimJti = defValidateClaim({ claim: 'jti' }, { ajv })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
 
   const validateGetRequest = defValidateGetRequest({ ajv })
 

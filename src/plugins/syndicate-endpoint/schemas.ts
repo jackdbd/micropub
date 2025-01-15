@@ -7,8 +7,8 @@ import {
 import {
   get,
   type Get,
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked,
   publishedUrlToStorageLocation,
   type PublishedUrlToStorageLocation,
   report_all_ajv_errors,
@@ -29,7 +29,7 @@ export const options = Type.Object({
     Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
   ),
 
-  isAccessTokenBlacklisted,
+  isAccessTokenRevoked,
 
   logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
@@ -53,7 +53,7 @@ export const options = Type.Object({
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
   get: Get
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
   publishedUrlToStorageLocation: PublishedUrlToStorageLocation
   update: Update
 }

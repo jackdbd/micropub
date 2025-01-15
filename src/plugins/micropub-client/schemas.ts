@@ -19,12 +19,11 @@ import {
   revocation_endpoint,
   token_endpoint
 } from '../../lib/oauth2/index.js'
-import {
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
-  report_all_ajv_errors
-} from '../../lib/schemas/index.js'
+import { report_all_ajv_errors } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
+
+const isAccessTokenRevoked = Type.Any()
+export type IsAccessTokenRevoked = (jti: string) => Promise<boolean>
 
 export const options = Type.Object(
   {
@@ -172,7 +171,7 @@ export const options = Type.Object(
      * Predicate function that will be called to check whether a previously
      * issued token is blacklisted or not.
      */
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked: isAccessTokenRevoked,
 
     /**
      * Issuer identifier. If not provided, the one found in the OAuth Client ID
@@ -237,7 +236,7 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
 }
 
 // export const consent_get_request_querystring = Type.Object({

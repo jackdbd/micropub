@@ -7,7 +7,7 @@ import {
   ServerError
 } from '../../../lib/fastify-errors/index.js'
 import { isExpired } from '../../../lib/predicates.js'
-import type { IsAccessTokenBlacklisted } from '../../../lib/schemas/index.js'
+import type { IsAccessTokenRevoked } from '../../../lib/schemas/index.js'
 import { safeDecode, verify } from '../../../lib/token/index.js'
 import { conformResult } from '../../../lib/validators.js'
 import { introspection_response_body_success } from '../schemas.js'
@@ -15,7 +15,7 @@ import { introspection_response_body_success } from '../schemas.js'
 export interface Config {
   ajv: Ajv
   include_error_description: boolean
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
   issuer: string
   jwks_url: any // URL
   log_prefix: string
@@ -40,7 +40,7 @@ export const defIntrospectPost = (config: Config) => {
   const {
     ajv,
     include_error_description,
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked,
     issuer,
     jwks_url,
     log_prefix,
@@ -127,7 +127,7 @@ export const defIntrospectPost = (config: Config) => {
       request.log.debug(
         `${log_prefix}check whether token ID ${jti} is blacklisted`
       )
-      const { error: black_err, value } = await isAccessTokenBlacklisted(jti)
+      const { error: black_err, value } = await isAccessTokenRevoked(jti)
 
       if (black_err) {
         const error_description = `Cannot determine whether token ID ${jti} is blacklisted or not: ${black_err.message}`

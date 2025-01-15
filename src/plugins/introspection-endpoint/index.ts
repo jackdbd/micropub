@@ -51,7 +51,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
 
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
-  const { isAccessTokenBlacklisted, issuer, jwksUrl: jwks_url } = config
+  const { isAccessTokenRevoked, issuer, jwksUrl: jwks_url } = config
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)
@@ -94,7 +94,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
   // const validateScopeMedia = defValidateScope({ scope: 'introspect' })
 
   const validateAccessTokenNotBlacklisted =
-    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenBlacklisted })
+    defValidateAccessTokenNotBlacklisted({ ajv, isAccessTokenRevoked })
 
   // === ROUTES ============================================================= //
   fastify.get('/introspect/config', defConfigGet(config))
@@ -113,7 +113,7 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     defIntrospectPost({
       ajv,
       include_error_description,
-      isAccessTokenBlacklisted,
+      isAccessTokenRevoked,
       issuer,
       jwks_url,
       log_prefix

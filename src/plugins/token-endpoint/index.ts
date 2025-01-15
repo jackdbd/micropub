@@ -17,12 +17,18 @@ import {
   options as options_schema,
   refresh_request_body,
   type Options
-} from './schemas.js'
+} from './schemas/index.js'
 
-export {
-  access_token_response_body_success,
-  type AccessTokenResponseBodySuccess
-} from './schemas.js'
+export type {
+  AccessTokenResponseBodySuccess,
+  AccessTokenRequestBody,
+  IsAccessTokenRevoked,
+  OnIssuedTokens,
+  Options,
+  RefreshRequestBody,
+  RetrieveAccessToken,
+  RetrieveRefreshToken
+} from './schemas/index.js'
 
 const defaults: Partial<Options> = {
   accessTokenExpiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
@@ -46,11 +52,11 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
     accessTokenExpiration,
     authorizationEndpoint,
     includeErrorDescription,
-    // isAccessTokenBlacklisted,
+    // isAccessTokenRevoked,
     issuer,
-    issueTokens,
     jwks,
     logPrefix: prefix,
+    onIssuedTokens,
     refreshTokenExpiration,
     reportAllAjvErrors,
     retrieveRefreshToken,
@@ -92,7 +98,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
-  //   isAccessTokenBlacklisted,
+  //   isAccessTokenRevoked,
   //   logPrefix: `${prefix}[hook] `,
   //   redirectPath: '/login'
   // })
@@ -133,9 +139,10 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
       authorizationEndpoint,
       includeErrorDescription,
       issuer,
-      issueTokens,
       jwks,
       logPrefix: prefix,
+      onIssuedTokens,
+      refreshTokenExpiration,
       retrieveRefreshToken,
       revocationEndpoint,
       userinfoEndpoint

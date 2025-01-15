@@ -1,11 +1,10 @@
 import type Ajv from 'ajv'
 import { Static, Type } from '@sinclair/typebox'
 import { report_all_ajv_errors } from '../../schemas/flags.js'
-import {
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted
-} from '../../schemas/is-blacklisted.js'
 import { DEFAULT } from './constants.js'
+
+const isAccessTokenRevoked = Type.Any()
+export type IsAccessTokenRevoked = (jti: string) => Promise<boolean>
 
 export const options = Type.Object({
   accessTokenSessionKey: Type.Optional(
@@ -20,7 +19,7 @@ export const options = Type.Object({
     Type.String({ minLength: 1, default: DEFAULT.HEADER_KEY })
   ),
 
-  isAccessTokenBlacklisted,
+  isAccessTokenRevoked: isAccessTokenRevoked,
 
   key_in_session: Type.Optional(Type.String({ default: 'access_token' })),
 
@@ -40,5 +39,5 @@ export const options = Type.Object({
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
 }

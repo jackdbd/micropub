@@ -3,8 +3,8 @@ import type Ajv from 'ajv'
 // import type { Profile } from '../../lib/indieauth/schemas.js'
 import type { RetrieveRecord } from '../../lib/storage-api/index.js'
 import {
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked,
   report_all_ajv_errors
 } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
@@ -12,7 +12,7 @@ import { DEFAULT } from './constants.js'
 export const options = Type.Object({
   ajv: Type.Optional(Type.Any()),
 
-  isAccessTokenBlacklisted,
+  isAccessTokenRevoked,
 
   includeErrorDescription: Type.Optional(
     Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
@@ -35,6 +35,6 @@ export const options = Type.Object({
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
   retrieveProfile: RetrieveRecord // RetrieveRecord<Profile>
 }

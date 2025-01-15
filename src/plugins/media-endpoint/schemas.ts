@@ -6,11 +6,12 @@ import {
 } from '../../lib/indieauth/index.js'
 import {
   deleteContentOrMedia,
-  isAccessTokenBlacklisted,
-  type IsAccessTokenBlacklisted,
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked,
   report_all_ajv_errors,
   uploadMedia
 } from '../../lib/schemas/index.js'
+
 import { DEFAULT } from './constants.js'
 
 /**
@@ -48,7 +49,7 @@ export const options = Type.Object(
       Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
     ),
 
-    isAccessTokenBlacklisted,
+    isAccessTokenRevoked: isAccessTokenRevoked,
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
@@ -82,5 +83,5 @@ export const options = Type.Object(
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv
-  isAccessTokenBlacklisted: IsAccessTokenBlacklisted
+  isAccessTokenRevoked: IsAccessTokenRevoked
 }
