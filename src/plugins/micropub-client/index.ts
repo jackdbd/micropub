@@ -1,5 +1,6 @@
 // import crypto from 'node:crypto'
 import fastifyCsrf from '@fastify/csrf-protection'
+import formbody from '@fastify/formbody'
 import oauth2 from '@fastify/oauth2'
 import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
@@ -112,6 +113,11 @@ const micropubClient: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   // === PLUGINS ============================================================ //
+  fastify.register(formbody)
+  fastify.log.debug(
+    `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
+  )
+
   fastify.register(fastifyCsrf, {
     // In OAuth 2.0, the state parameter is used to prevent CSRF attacks when
     // doing authorization requests. We use the same name for the session key.
