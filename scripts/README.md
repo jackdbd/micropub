@@ -9,64 +9,51 @@ Various scripts for development and testing.
 
 Seed the storage layer with some authorization codes, access tokens, refresh refresh, client applications, user profiles.
 
-Seed the filesystem storage.
+Seed with some fake data the local SQLite database used in development.
 
 ```sh
-npx tsm ./scripts/seed.ts --storage fs
+npx tsm ./scripts/seed.ts --backend sqlite -e dev
 ```
 
-Seed the in-memory storage, produce verbose output.
+Seed as before, but also reset all data first, and add an additional user profile about myself.
 
 ```sh
-npx tsm ./scripts/seed.ts --storage mem --verbose
-```
-
-Seed the development database.
-
-```sh
-npx tsm ./scripts/seed.ts --storage sqlite-dev
+npx tsm ./scripts/seed.ts -b sqlite -e dev --me --reset
 ```
 
 Seed the production database.
 
 ```sh
-npx tsm ./scripts/seed.ts --storage sqlite-prod
+npx tsm ./scripts/seed.ts -b sqlite -e prod
 ```
 
-Revoke all access tokens that are currently stored in the filesystem.
+## Token revocation
+
+Revoke all access tokens and all refresh tokens that are currently stored in the SQLite database used in development. Add also an optional reason for their revocation.
 
 ```sh
-npx tsm ./scripts/revoke-tokens.ts --storage fs --access-tokens
-```
-
-Revoke all access tokens and all refresh tokens that are currently stored in the development database; give a reason for their revocation; produce verbose output.
-
-```sh
-npx tsm ./scripts/revoke-tokens.ts --storage sqlite-dev \
-  --access-tokens \
-  --refresh-tokens \
-  --revocation-reason testing-revoke-all \
-  --verbose
+npx tsm ./scripts/revoke-tokens.ts -b sqlite -e dev \
+  --revoke-all \
+  --revocation-reason "security breach"
 ```
 
 ## CRUD
 
-Small CRUD demos to test various storage implementations.
+Small CRUD scripts. Useful when developing / testing / troubleshooting a storage backend.
+
+Example:
 
 ```sh
 npx tsm ./scripts/crud-access-token.ts --backend fs-jsonl --reset
+```
 
-npx tsm ./scripts/crud-authorization-code.ts --backend fs-jsonl --reset
+Other examples:
 
-npx tsm ./scripts/crud-client.ts --backend fs-jsonl --reset
-
-npx tsm ./scripts/crud-user-profile.ts --backend fs-jsonl --reset
-
-npx tsm ./scripts/crud-user-profile.ts --backend sqlite --env dev
-
-npx tsm ./scripts/crud-refresh-token.ts --backend fs-jsonl --reset
-
-npx tsm ./scripts/crud-access-token.ts --backend mem
+```sh
+npx tsm ./scripts/crud-authorization-code.ts -b fs-jsonl --reset
+npx tsm ./scripts/crud-client.ts --b fs-jsonl --reset
+npx tsm ./scripts/crud-refresh-token.ts -b fs-jsonl --reset
+npx tsm ./scripts/crud-user-profile.ts -b fs-jsonl --reset
 ```
 
 ## JSON Schemas
@@ -88,17 +75,12 @@ Sign a JWT using a random private key from the private JWKS.
 npx tsm ./scripts/sign-jwt.ts
 ```
 
+TODO: use [open](https://www.npmjs.com/package/open) to open https://jwt.io/ in the browser.
+
 Verify a JWT using the public JWKS.
 
 ```sh
 npx tsm ./scripts/verify-jwt.ts
-```
-
-Issue a JWT and immediately revoke it.
-
-```sh
-npx tsm ./scripts/issue-and-revoke-jwt.ts --impl fs
-npx tsm ./scripts/issue-and-revoke-jwt.ts --impl mem
 ```
 
 ## JSON Web Key Set (JWKS)
@@ -144,41 +126,14 @@ Try also with these `me` URLs:
 - https://paulrobertlloyd.com/
 - https://www.jvt.me/
 
-Register an IndieAuth client.
-
-```sh
-npx tsm ./scripts/register-client.ts \
-  --me https://giacomodebidda.com/ \
-  --client-id http://localhost:3001/id \
-  --redirect-id http://localhost:3001/auth/callback
-```
-
 Build the IndieAuth [authorization request URL](https://indieauth.spec.indieweb.org/#authorization-request).
 
 ```sh
 npx tsm ./scripts/indieauth-authorization-request.ts
+```
 
+Build the IndieAuth authorization request URL using a custom `me`.
+
+```sh
 npx tsm ./scripts/indieauth-authorization-request.ts --me https://aaronparecki.com/
 ```
-
-Store information about a profile URL.
-
-```sh
-npx tsm ./scripts/store-profile.ts --impl fs \
-  --me https://giacomodebidda.com/ \
-  --name "Giacomo Debidda" \
-  --photo "https://avatars.githubusercontent.com/u/5048090" \
-  --url "https://www.giacomodebidda.com/" \
-  --email "giacomo@giacomodebidda.com"
-```
-
-```sh
-npx tsm ./scripts/store-profile.ts --impl turso \
-  --me https://giacomodebidda.com/ \
-  --name "Giacomo Debidda" \
-  --photo "https://avatars.githubusercontent.com/u/5048090" \
-  --url "https://www.giacomodebidda.com/" \
-  --email "giacomo@giacomodebidda.com"
-```
-
-Should my profile URL be something like `https://giacomodebidda.com/me`?
