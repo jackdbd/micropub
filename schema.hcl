@@ -149,6 +149,37 @@ table "clients" {
   }
 }
 
+table "posts" {
+  schema = schema.main
+
+  column "id" {
+    null = false
+    type = integer
+    auto_increment = true
+  }
+
+  column "mf2" {
+    null = false
+    type = json
+  }
+
+  column "created_at" {
+    null = true
+    type = integer
+  }
+
+  column "updated_at" {
+    null = true
+    type = integer
+  }
+
+  primary_key {
+    columns = [
+      column.id
+    ]
+  }
+}
+
 table "profiles" {
   schema = schema.main
 
