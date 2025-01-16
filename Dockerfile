@@ -82,7 +82,6 @@ COPY --from=builder ${BUILDER_APP_DIR}/dist ./dist
 RUN chown -R ${APP_USER} ./
 
 # RUN echo "RUNNER APP_NAME is ${APP_NAME} and WORKDIR is /home/${APP_USER}/${APP_NAME}"
-
 # run everything AFTER as non-privileged user
 USER ${APP_USER}
 

@@ -61,6 +61,7 @@ in {
     git
     json-schema-for-humans # generate HTML documentation from a JSON schema
     nodejs
+    trivy # vulnerability scanner for containers
     turso-cli # CLI for Turso DB
   ];
 
@@ -96,6 +97,8 @@ in {
         --env CLOUDFLARE_R2_BUCKET_NAME=${config.env.CLOUDFLARE_R2_BUCKET_NAME} \
         --env CLOUDFLARE_R2_SECRET_ACCESS_KEY=${config.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY} \
         --env DEBUG="*" \
+        --env GITHUB_OAUTH_APP_CLIENT_ID=${config.env.GITHUB_OAUTH_APP_CLIENT_ID} \
+        --env GITHUB_OAUTH_APP_CLIENT_SECRET=${config.env.GITHUB_OAUTH_APP_CLIENT_SECRET} \
         --env GITHUB_OWNER=jackdbd \
         --env GITHUB_REPO=giacomodebidda-content \
         --env GITHUB_TOKEN=${config.env.GITHUB_TOKEN} \

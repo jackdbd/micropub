@@ -4,7 +4,7 @@ import { report_all_ajv_errors } from '../../schemas/flags.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '../../storage-api/schemas.js'
+} from '../../storage-api/index.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object({

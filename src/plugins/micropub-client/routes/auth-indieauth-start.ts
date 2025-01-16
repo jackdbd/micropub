@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 // import { type RegisterClient } from '../../../lib/clients-storage-interface/index.js'
-import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
+import { InvalidRequestError } from '../../../lib/fastify-error-response/index.js'
 import {
   authorizationRequestUrl,
   metadataEndpoint,

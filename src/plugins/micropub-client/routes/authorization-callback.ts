@@ -4,7 +4,7 @@ import {
   InvalidTokenError,
   ServerError,
   UnauthorizedError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 import { safeDecode } from '../../../lib/token/decode.js'
 import { AccessTokenClaims } from '../../../lib/token/claims.js'

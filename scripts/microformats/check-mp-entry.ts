@@ -1,5 +1,4 @@
-import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
+import { defAjv } from '../../src/ajv.js'
 import {
   dt_accessed,
   dt_published,
@@ -35,21 +34,7 @@ import {
 } from '../../src/lib/micropub/jf2/index.js'
 import { check } from '../utils.js'
 
-// https://ajv.js.org/packages/ajv-formats.html#formats
-// https://ajv.js.org/guide/modifying-data.html#assigning-defaults
-// https://ajv.js.org/strict-mode.html#ignored-defaults
-// https://ajv.js.org/strict-mode.html#strict-mode
-// The useDefaults option modifies original data.
-// const ajv = addFormats(
-//   new Ajv({ allErrors: true, useDefaults: true, strict: 'log' }),
-//   ['date', 'date-time', 'email', 'uri']
-// )
-const ajv = addFormats(new Ajv({ allErrors: true }), [
-  'date',
-  'date-time',
-  'email',
-  'uri'
-])
+const ajv = defAjv({ allErrors: true })
 
 const main = () => {
   ajv.compile(dt_accessed)

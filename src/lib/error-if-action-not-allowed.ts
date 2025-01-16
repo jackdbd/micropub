@@ -5,7 +5,7 @@ import type { AccessTokenClaims } from './token/index.js'
 import {
   InsufficientScopeError,
   UnauthorizedError
-} from '../lib/fastify-errors/index.js'
+} from './fastify-error-response/index.js'
 
 export interface Options {
   // logPrefix?: string

@@ -16,7 +16,7 @@ import {
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '../../lib/storage-api/schemas.js'
+} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
 
 // import type { Syndicator } from '../../lib/micropub/index.js'

@@ -1,5 +1,5 @@
 import type { FastifyError } from '@fastify/error'
-// import type { ErrorType } from '../../lib/indieauth/index.js'
+//  import type { ErrorType } from '../../lib/indieauth/index.js'
 // import type { ErrorType } from '../../lib/micropub/index.js'
 // import type { ErrorType } from '../../lib/oauth2/index.js'
 
@@ -13,11 +13,16 @@ export interface PayloadOptions {
   include_error_description?: boolean
 }
 
-// Error Response in OAuth 2.0, IndieAuth, Micropub
-// https://datatracker.ietf.org/doc/html/rfc6749#section-4.2.2.1
-// https://indieauth.spec.indieweb.org/#error-responses
-// https://micropub.spec.indieweb.org/#error-response
-
+/**
+ * Base class for creating an error response that has all the properties
+ * required by these protocols:
+ *
+ * - [OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc6749#section-4.2.2.1)
+ * - [IndieAuth](https://indieauth.spec.indieweb.org/#error-responses)
+ * - [Micropub](https://micropub.spec.indieweb.org/#error-response)
+ *
+ * @see [Error Response - The OAuth 2.0 Authorization Framework (RFC 6749)]()
+ */
 class BaseError extends Error implements FastifyError {
   public readonly code: string
   public readonly statusCode: number
@@ -33,7 +38,6 @@ class BaseError extends Error implements FastifyError {
     name: string,
     data: ErrorData
   ) {
-    // const message = error
     const message = `${error}: ${data.error_description}`
     super(message)
     this.statusCode = statusCode

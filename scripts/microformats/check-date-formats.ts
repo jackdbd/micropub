@@ -1,14 +1,12 @@
-import Ajv from 'ajv'
 import dayjs from 'dayjs'
-import addFormats from 'ajv-formats'
+import { defAjv } from '../../src/ajv.js'
 import {
   date_time as date_time_schema,
   date_or_date_time as date_or_date_time_schema
 } from '../../src/lib/microformats2/date.js'
 import { check } from '../utils.js'
 
-// https://ajv.js.org/packages/ajv-formats.html#formats
-const ajv = addFormats(new Ajv({ allErrors: true }), ['date', 'date-time'])
+const ajv = defAjv({ allErrors: true })
 
 const microformats2 = (date: dayjs.Dayjs) => {
   console.log('\n=== dates for Microformats2 ===')

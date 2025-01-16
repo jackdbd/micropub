@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { ServerError } from '../lib/fastify-errors/index.js'
+import { ServerError } from './fastify-error-response/index.js'
 import { me_after_url_canonicalization } from '../lib/indieauth/index.js'
 import { errorResponseFromJSONResponse, scope } from '../lib/oauth2/index.js'
 

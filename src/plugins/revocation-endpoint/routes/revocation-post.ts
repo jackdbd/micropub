@@ -6,7 +6,7 @@ import {
 import {
   InvalidRequestError,
   ServerError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import type { JWKSPublicURL } from '../../../lib/jwks/index.js'
 import type {
   AccessTokenImmutableRecord,

@@ -173,21 +173,6 @@ export async function defFastify(config: Config) {
   // console.log(`=== app config ===`)
   // console.log(config)
 
-  const ajv = defAjv({ allErrors: reportAllAjvErrors })
-
-  const environment = NODE_ENV === 'production' ? 'prod' : 'dev'
-
-  const backend = 'sqlite'
-  const { error: storage_error, value: storage } = defStorage({
-    ajv,
-    backend,
-    env: environment
-  })
-
-  if (storage_error) {
-    throw storage_error
-  }
-
   const fastify = Fastify({
     logger: {
       // https://getpino.io/#/docs/help?id=level-string
@@ -201,6 +186,25 @@ export async function defFastify(config: Config) {
       level: log_level
     }
   })
+
+  const ajv = defAjv({ allErrors: reportAllAjvErrors })
+
+  const backend = 'sqlite'
+  const environment = NODE_ENV === 'production' ? 'prod' : 'dev'
+
+  const { error: storage_error, value: storage } = defStorage({
+    ajv,
+    backend,
+    env: environment
+  })
+
+  if (storage_error) {
+    throw storage_error
+  }
+
+  fastify.log.debug(
+    `${LOG_PREFIX}storage backend ${backend} [${environment}] initialized`
+  )
 
   const token_log = {
     debug: (message: string) => {

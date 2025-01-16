@@ -7,7 +7,7 @@ import {
   ForbiddenError,
   InvalidRequestError,
   UnauthorizedError
-} from '../../fastify-errors/index.js'
+} from '../../fastify-error-response/index.js'
 import { throwIfDoesNotConform } from '../../validators.js'
 import { DEFAULT } from './constants.js'
 import {

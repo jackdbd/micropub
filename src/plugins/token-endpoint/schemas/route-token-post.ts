@@ -28,7 +28,7 @@ import { code_verifier } from '../../../lib/pkce/index.js'
 import {
   retrieveRefreshToken,
   type RetrieveRefreshToken
-} from '../../../lib/storage-api/schemas.js'
+} from '../../../lib/storage-api/index.js'
 import { DEFAULT } from '../constants.js'
 
 export const config = Type.Object(

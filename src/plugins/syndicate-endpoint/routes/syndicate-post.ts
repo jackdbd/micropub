@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser'
 import {
   InvalidRequestError,
   ServerError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { normalizeJf2, type Syndicator } from '../../../lib/micropub/index.js'
 import type {
   Get,

@@ -9,7 +9,7 @@ import type {
   ClientApplicationMutableRecord,
   RefreshTokenMutableRecord,
   UserProfileMutableRecord
-} from './lib/storage-api/schemas.js'
+} from './lib/storage-api/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

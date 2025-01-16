@@ -2,7 +2,7 @@ import {
   ForbiddenError,
   InvalidRequestError,
   UnauthorizedError
-} from '../../lib/fastify-errors/index.js'
+} from '../../lib/fastify-error-response/index.js'
 
 const DEFAULT_STATUS_CODE_ERROR = 400
 const DEFAULT_STATUS_CODE_SUCCESS = 200

@@ -17,7 +17,7 @@ import {
 import { PROPS_SCHEMAS } from '../../props-schemas.js'
 import { hashMapRecordSchemas } from '../../record-schemas.js'
 import type { StorageApi } from '../storage-api/index.js'
-// import type { AccessTokenMutableRecord } from '../storage-api/schemas.js'
+//  import type { AccessTokenMutableRecord } from '../storage-api/index.js'
 
 // TypeScript does not like this
 // export const ATOM = {

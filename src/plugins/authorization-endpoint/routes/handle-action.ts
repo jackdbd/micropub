@@ -1,7 +1,7 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import ms, { StringValue } from 'ms'
 import { unixTimestampInMs } from '../../../lib/date.js'
-import { ServerError } from '../../../lib/fastify-errors/index.js'
+import { ServerError } from '../../../lib/fastify-error-response/index.js'
 import { authorizationResponseUrl } from '../../../lib/indieauth/index.js'
 import { canonicalUrl } from '../../../lib/url-canonicalization.js'
 import type {

@@ -1,5 +1,4 @@
-import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
+import { defAjv } from '../../src/ajv.js'
 import {
   dt_accessed,
   dt_published,
@@ -13,12 +12,7 @@ import {
 } from '../../src/lib/microformats2/index.js'
 import { check } from '../utils.js'
 
-// https://ajv.js.org/packages/ajv-formats.html#formats
-const ajv = addFormats(new Ajv({ allErrors: true }), [
-  'date',
-  'date-time',
-  'uri'
-])
+const ajv = defAjv({ allErrors: true })
 
 const main = () => {
   ajv.compile(dt_accessed)

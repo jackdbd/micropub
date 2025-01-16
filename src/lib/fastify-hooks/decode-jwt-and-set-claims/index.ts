@@ -5,7 +5,7 @@ import type { onRequestAsyncHookHandler } from 'fastify'
 import {
   InvalidTokenError,
   UnauthorizedError
-} from '../../fastify-errors/index.js'
+} from '../../fastify-error-response/index.js'
 import { accessTokenFromRequestHeader } from '../../fastify-utils/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
 import { throwIfDoesNotConform } from '../../validators.js'

@@ -4,7 +4,7 @@ import {
   InvalidRequestError,
   InvalidTokenError,
   ServerError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { isExpired } from '../../../lib/predicates.js'
 import { safeDecode, verify } from '../../../lib/token/index.js'
 import {

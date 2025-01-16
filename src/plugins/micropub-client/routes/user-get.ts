@@ -3,7 +3,7 @@ import {
   InvalidRequestError,
   ServerError,
   UnauthorizedError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 
 interface RouteGeneric extends RouteGenericInterface {

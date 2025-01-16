@@ -8,7 +8,7 @@ An IndieAuth Token Endpoint is responsible for generating and verifying OAuth 2.
 
 TODO
 
-## Configuation
+## Configuration
 
 TODO: add AJV schema with documentation generated automatically.
 
@@ -29,10 +29,6 @@ The [refresh tokens](https://indieauth.spec.indieweb.org/#refresh-tokens) issued
 
 > [!TIP]
 > Read the article [Why we chose NanoIDs for PlanetScale’s API](https://planetscale.com/blog/why-we-chose-nanoids-for-planetscales-api) for a comparison of Nano ID with UUIDs.
-
-## Persistence of access tokens and refresh tokens
-
-In order to store/retrieve access tokens and refresh tokens, a user of this plugin must implement the [token storage interface](../../lib/token-storage-interface/README.md).
 
 ## References
 

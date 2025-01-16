@@ -7,7 +7,7 @@ import {
   UnauthorizedError,
   UnsupportedGrantTypeError,
   ServerError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
 import { issuedInfo, type IssuedInfo } from '../../../lib/issue-tokens/index.js'
 import { retrieveProfile } from '../../../lib/retrieve-profile.js'

@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { ServerError } from '../lib/fastify-errors/index.js'
+import { ServerError } from './fastify-error-response/index.js'
 import { errorResponseFromJSONResponse } from '../lib/oauth2/index.js'
 
 export const revocation_response_body_success = Type.Object({

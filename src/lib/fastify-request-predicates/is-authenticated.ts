@@ -1,6 +1,6 @@
 import type { FastifyRequest } from 'fastify'
 import { unixTimestampInSeconds } from '../date.js'
-import type { IsAccessTokenRevoked } from '../../lib/storage-api/schemas.js'
+import type { IsAccessTokenRevoked } from '../../lib/storage-api/index.js'
 
 export interface Config {
   isAccessTokenRevoked: IsAccessTokenRevoked
@@ -9,7 +9,7 @@ export interface Config {
 
 // TODO: at the moment this works only if I authenticate with IndieAuth.
 // If I authenticate with another authention provider (e.g. GitHub), the logic
-// is a bit different and I cannot call my isBlacklisted function.
+// is a bit different and I cannot call my isAccessTokenRevoked function.
 
 export const defIsAuthenticated = (config: Config) => {
   const { isAccessTokenRevoked } = config

@@ -15,7 +15,7 @@ import { include_error_description } from '../../../lib/schemas/index.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '../../../lib/storage-api/schemas.js'
+} from '../../../lib/storage-api/index.js'
 import { DEFAULT } from '../constants.js'
 
 const active = Type.Boolean({

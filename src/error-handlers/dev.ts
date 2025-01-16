@@ -16,7 +16,7 @@ import {
   InvalidScopeError,
   ServerError,
   UnauthorizedError
-} from '../lib/fastify-errors/index.js'
+} from '../lib/fastify-error-response/index.js'
 import { clientAcceptsHtml } from '../lib/fastify-request-predicates/index.js'
 import { throwIfDoesNotConform } from '../lib/validators.js'
 import { DEFAULT } from './constants-dev.js'

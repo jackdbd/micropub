@@ -3,7 +3,7 @@ import { clientMetadata } from '../../../lib/indieauth/index.js'
 import {
   InvalidClientError,
   InvalidRequestError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { canonicalUrl } from '../../../lib/url-canonicalization.js'
 import type { AuthorizationRequestQuerystring } from '../schemas.js'
 

@@ -1,27 +1,11 @@
-import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
 import { defValidateJf2 } from '../../src/plugins/micropub-endpoint/validate-jf2.js'
+import { defAjv } from '../../src/ajv.js'
 import { check } from '../utils.js'
 
 // TODO: convert most of this stuff to tests for the microformats2 library
 
 const main = async () => {
-  const ajv = addFormats(new Ajv({ allErrors: true }), [
-    'date',
-    'date-time',
-    'email',
-    'hostname',
-    'ipv4',
-    'ipv6',
-    'json-pointer',
-    'regex',
-    'relative-json-pointer',
-    'time',
-    'uri',
-    'uri-reference',
-    'uri-template',
-    'uuid'
-  ])
+  const ajv = defAjv({ allErrors: true })
 
   const {
     validateGeoURI,

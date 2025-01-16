@@ -4,7 +4,7 @@ import type {
   FastifyRequest,
   RouteGenericInterface
 } from 'fastify'
-import { ServerError } from '../../../lib/fastify-errors/index.js'
+import { ServerError } from '../../../lib/fastify-error-response/index.js'
 import type { AuthorizationResponseQuerystring } from '../../authorization-endpoint/index.js'
 
 interface RouteGeneric extends RouteGenericInterface {

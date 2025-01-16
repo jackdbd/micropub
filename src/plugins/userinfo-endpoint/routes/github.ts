@@ -1,7 +1,7 @@
 import {
   ServerError,
   UnauthorizedError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 
 export interface GitHubUser {
   login: string

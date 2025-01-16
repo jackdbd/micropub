@@ -16,10 +16,6 @@ TODO: add AJV schema with documentation generated automatically.
 
 The [authorization codes](https://indieauth.spec.indieweb.org/#authorization-request) issued by the authorization endpoint implemented by this plugin are [Nano IDs](https://zelark.github.io/nano-id-cc/) generated with [nanoid](https://github.com/ai/nanoid).
 
-## Persistence of authorization codes
-
-In order to store/retrieve authorization codes, a user of this plugin must implement the [authorization code storage interface](../../lib/authorization-code-storage-interface/README.md).
-
 ## References
 
 - [Redeeming the Authorization Code](https://indieauth.spec.indieweb.org/#redeeming-the-authorization-code)

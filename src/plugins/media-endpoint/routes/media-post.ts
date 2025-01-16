@@ -4,7 +4,7 @@ import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-all
 import {
   InvalidRequestError,
   ServerError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import type { Action } from '../../../lib/micropub/index.js'
 import type {
   DeleteContentOrMedia,

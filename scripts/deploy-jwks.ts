@@ -4,9 +4,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import * as DEFAULT from '../src/defaults.js'
 import { APPLICATION_JSON } from '../src/lib/content-type.js'
-// import { generateJWKS } from './generate-jwks.js'
+import * as DEFAULT from '../src/defaults.js'
 
 const execAsync = promisify(exec)
 
@@ -77,10 +76,8 @@ const run = async () => {
   await deployPublicJWKSToCloudflareR2({ public_jwks })
   await deployPrivateJWKSToFly({ private_jwks: DEFAULT.JWKS! })
 
-  console.log(
-    `Do NOT forget to update the secret on GitHub too (TODO: set it programmatically)`
-  )
-  console.log(`Copy and paste the JSON string here:`)
+  console.log(`Do NOT forget to update the secret on GitHub too`)
+  console.log(`Copy and paste the JSON string secrets/jwks.json here:`)
   console.log(
     'https://github.com/jackdbd/micropub/settings/secrets/actions/JWKS'
   )

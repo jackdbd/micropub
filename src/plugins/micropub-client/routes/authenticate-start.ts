@@ -1,5 +1,5 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
+import { InvalidRequestError } from '../../../lib/fastify-error-response/index.js'
 // import {
 //   metadataEndpoint,
 //   serverMetadata

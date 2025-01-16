@@ -16,14 +16,14 @@ import {
   retrieveAccessToken,
   revokeAccessToken,
   revokeRefreshToken
-} from '../../../lib/storage-api/schemas.js'
+} from '../../../lib/storage-api/index.js'
 import type {
   IsAccessTokenRevoked,
   RetrieveAccessToken,
   RetrieveRefreshToken,
   RevokeAccessToken,
   RevokeRefreshToken
-} from '../../../lib/storage-api/schemas.js'
+} from '../../../lib/storage-api/index.js'
 import { DEFAULT } from '../constants.js'
 
 export const options = Type.Object({

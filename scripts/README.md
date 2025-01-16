@@ -91,11 +91,16 @@ Generate a public [JWKS](https://datatracker.ietf.org/doc/html/rfc7517#section-5
 npx tsm ./scripts/generate-jwks.ts
 ```
 
-Deploy the public JWKS to Cloudflare R2, and set the private JWKS as [Fly secret](https://fly.io/docs/apps/secrets/).
+Deploy the public JWKS to Cloudflare R2, and set the private JWKS as a [Fly secret](https://fly.io/docs/apps/secrets/).
 
 ```sh
 npx tsm ./scripts/deploy-jwks.ts
 ```
+
+> [!WARNING]
+> Do NOT forget to update the `JWKS` secret on GitHub (I don't know id it's possible to set it programmatically).
+>
+> Copy and paste the JSON string `secrets/jwks.json` in [this GitHub Actions secret](https://github.com/jackdbd/micropub/settings/secrets/actions/JWKS).
 
 ## RelMeAuth
 
@@ -136,4 +141,40 @@ Build the IndieAuth authorization request URL using a custom `me`.
 
 ```sh
 npx tsm ./scripts/indieauth-authorization-request.ts --me https://aaronparecki.com/
+```
+
+## Container
+
+These scripts are implemented in the `devenv.nix` file.
+
+Build the container image.
+
+```sh
+container-build
+```
+
+Inspect the layers of the container image.
+
+```sh
+container-dive
+```
+
+Scan the container image for vulnerabilities.
+
+```sh
+container-scan
+```
+
+Run the container. TODO: this does not work at the moment. Also, apply migrations when the application starts.
+
+```sh
+docker-compose up
+```
+
+You can also run `container-run` if you create the Docker volume first.
+
+Ensure the user inside the container can read and write the SQLite database.
+
+```sh
+chmod a+rw micropub-dev.db
 ```

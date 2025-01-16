@@ -2,7 +2,7 @@ import { Static, Type } from '@sinclair/typebox'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '../storage-api/schemas.js'
+} from '../storage-api/index.js'
 import { info } from './info.js'
 
 export const storage = Type.Object({

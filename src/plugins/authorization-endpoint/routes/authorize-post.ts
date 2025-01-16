@@ -6,7 +6,7 @@ import type {
 import {
   InvalidGrantError,
   ServerError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { codeChallenge } from '../../../lib/pkce/index.js'
 import { isExpired } from '../../../lib/predicates.js'
 import type {

@@ -1,6 +1,6 @@
 import Ajv from 'ajv'
 import type { preHandlerHookHandler } from 'fastify'
-import { InvalidRequestError } from '../../lib/fastify-errors/index.js'
+import { InvalidRequestError } from '../../lib/fastify-error-response/index.js'
 import { micropub_get_request } from './routes/schemas.js'
 
 // export interface ValidateAccessTokenConfig {

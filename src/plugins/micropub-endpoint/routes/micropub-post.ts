@@ -7,7 +7,7 @@ import { rfc3339 } from '../../../lib/date.js'
 import {
   InsufficientScopeError,
   InvalidRequestError
-} from '../../../lib/fastify-errors/index.js'
+} from '../../../lib/fastify-error-response/index.js'
 import { hasScope } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
 import { type Action, normalizeJf2 } from '../../../lib/micropub/index.js'

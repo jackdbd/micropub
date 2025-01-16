@@ -1,5 +1,5 @@
 import type { RouteHandler } from 'fastify'
-import { UnauthorizedError } from '../../../lib/fastify-errors/index.js'
+import { UnauthorizedError } from '../../../lib/fastify-error-response/index.js'
 import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type { IntrospectionResponseBodySuccess } from '../../introspection-endpoint/index.js'
 

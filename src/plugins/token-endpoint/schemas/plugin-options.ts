@@ -20,7 +20,7 @@ import {
   retrieveRefreshToken,
   type IsAccessTokenRevoked,
   type RetrieveRefreshToken
-} from '../../../lib/storage-api/schemas.js'
+} from '../../../lib/storage-api/index.js'
 import { DEFAULT } from '../constants.js'
 
 export const options = Type.Object(

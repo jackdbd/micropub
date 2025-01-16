@@ -1,4 +1,4 @@
-import { ServerError } from '../../../lib/fastify-errors/index.js'
+import { ServerError } from '../../../lib/fastify-error-response/index.js'
 import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
 import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
 
