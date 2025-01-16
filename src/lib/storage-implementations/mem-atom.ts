@@ -51,7 +51,7 @@ export const implementation = (config: Config) => {
   if (env !== 'dev') {
     return {
       error: new Error(
-        `storage backend fs-json only supports a dev environment`
+        `storage backend mem-atom only supports a dev environment`
       )
     }
   }

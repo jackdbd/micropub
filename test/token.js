@@ -1,17 +1,15 @@
 import assert from 'node:assert'
 import { describe, it } from 'node:test'
+import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from '../dist/lib/date.js'
 import { randomKid, safeDecode, sign, verify } from '../dist/lib/token/index.js'
 import { issueJWT } from './test_utils.js'
 import {
-  DEFAULT_EXPIRATION,
-  DEFAULT_ISSUER,
+  ACCESS_TOKEN_EXPIRATION,
+  ISSUER,
   jwks,
   jwks_url
 } from './test_utils.js'
-import { nanoid } from 'nanoid'
-
-// const __filename = fileURLToPath(import.meta.url)
 
 describe('safeDecode', () => {
   it('does not throw when trying to decode an invalid JWT', () => {
@@ -28,8 +26,8 @@ describe('safeDecode', () => {
   })
 
   it('returns the expected claims, if the JWT was signed with a valid secret', async () => {
-    const expiration = DEFAULT_EXPIRATION
-    const issuer = DEFAULT_ISSUER
+    const expiration = ACCESS_TOKEN_EXPIRATION
+    const issuer = ISSUER
     const payload = { abc: nanoid(), xyz: nanoid() }
 
     const { error: kid_error, value: kid } = randomKid(jwks.keys)
@@ -69,7 +67,7 @@ describe('sign', () => {
 
     const { error, value: jwt } = await sign({
       expiration: '1 hour',
-      issuer: DEFAULT_ISSUER,
+      issuer: ISSUER,
       jwks,
       kid,
       payload: { foo: 'bar' }
@@ -82,8 +80,8 @@ describe('sign', () => {
 
 describe('verify', () => {
   it('does not throw when trying to verify an invalid JWT', async () => {
-    const expiration = DEFAULT_EXPIRATION
-    const issuer = DEFAULT_ISSUER
+    const expiration = ACCESS_TOKEN_EXPIRATION
+    const issuer = ISSUER
 
     assert.doesNotThrow(async () => {
       await verify({

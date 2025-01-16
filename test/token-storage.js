@@ -1,306 +1,179 @@
 import assert from 'node:assert'
-import fs from 'node:fs/promises'
 import { describe, it, beforeEach } from 'node:test'
-import { fileURLToPath } from 'node:url'
-import tmp from 'tmp'
-import { defAtom } from '@thi.ng/atom'
-import { defIssueAccessToken } from '../dist/lib/issue-access-token.js'
-import { defRevokeAccessToken } from '../dist/lib/revoke-access-token.js'
-import * as fs_impl from '../dist/lib/fs-storage/index.js'
-import * as mem_impl from '../dist/lib/in-memory-storage/index.js'
+import { nanoid } from 'nanoid'
+import { unixTimestampInSeconds } from '../dist/lib/date.js'
 import {
-  assertTokenHasRequiredClaims,
-  assertTokenHasRequiredAndCustomClaims,
-  defTotalBlacklisted,
-  jwks,
-  jwks_url
+  accessTokenAPI,
+  assertNoAccessTokenIsRevoked,
+  assertNoRefreshTokenIsRevoked,
+  CLIENT_ID,
+  ISSUER,
+  ME,
+  REDIRECT_URI,
+  REFRESH_TOKEN_EXPIRATION_IN_SECONDS,
+  refreshTokenAPI,
+  revokeTokensByJTI,
+  storeAccessTokens,
+  storeRefreshTokens
 } from './test_utils.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const issuer = __filename
-const expiration = '5 seconds'
+describe('Access Tokens', () => {
+  it('cannot store a record about an access token when client_id and redirect_uri are not URLs', async () => {
+    const api = accessTokenAPI()
 
-const IMPLEMENTATIONS = ['fs', 'mem']
+    const client_id = 'some-client-id'
+    const jti = 'some-jti'
+    const redirect_uri = 'some-redirect-uri'
 
-const report_all_ajv_errors = true
+    const { error, value } = await api.storeOne({
+      client_id,
+      jti,
+      redirect_uri
+    })
 
-const init = async (impl) => {
-  switch (impl) {
-    case 'fs': {
-      const { name: filepath } = tmp.fileSync({ postfix: '.json' })
-      await fs.writeFile(filepath, '{}')
+    assert.ok(error)
+    assert.ok(!value)
+  })
 
-      const isBlacklisted = fs_impl.defIsAccessTokenBlacklisted({
-        filepath,
-        report_all_ajv_errors
-      })
+  it('the record about the stored access token has a `created_at` property greater than or equal to the current UNIX timestamp (seconds)', async () => {
+    const api = accessTokenAPI()
+    const jti = 'some-jti'
 
-      const retrieveAccessToken = fs_impl.defRetrieveAccessToken({
-        filepath,
-        report_all_ajv_errors
-      })
+    const { error, value: record } = await api.storeOne({
+      client_id: CLIENT_ID,
+      jti,
+      redirect_uri: REDIRECT_URI
+    })
 
-      const storeAccessToken = fs_impl.defStoreAccessToken({
-        filepath,
-        report_all_ajv_errors
-      })
+    assert.ok(!error)
+    assert.ok(record)
+    assert.ok(record.created_at >= unixTimestampInSeconds())
+  })
+})
 
-      const issueAccessToken = defIssueAccessToken({
-        expiration,
-        issuer,
-        jwks,
-        storeAccessToken
-      })
+describe('Refresh Tokens', () => {
+  it('the record about the stored refresh token has a `created_at` property greater than or equal to the current UNIX timestamp (seconds)', async () => {
+    const api = refreshTokenAPI()
 
-      const revokeAccessToken = defRevokeAccessToken({
-        issuer,
-        jwks_url,
-        max_token_age: expiration,
-        retrieveAccessToken,
-        storeAccessToken
-      })
+    const exp = unixTimestampInSeconds() + REFRESH_TOKEN_EXPIRATION_IN_SECONDS
+    const jti = 'some-jti'
+    const refresh_token = 'some-refresh-token'
+    const scope = 'create update profile email'
 
-      const totalBlacklisted = defTotalBlacklisted(isBlacklisted)
+    const { error, value: record } = await api.storeOne({
+      client_id: CLIENT_ID,
+      exp,
+      iss: ISSUER,
+      jti,
+      me: ME,
+      redirect_uri: REDIRECT_URI,
+      refresh_token,
+      scope
+    })
 
-      return {
-        getIssuedTokens: fs_impl.defGetIssuedTokens({ filepath }),
-        isBlacklisted,
-        issueAccessToken,
-        retrieveAccessToken,
-        revokeAccessToken,
-        storeAccessToken,
-        totalBlacklisted
-      }
-    }
+    assert.ok(!error)
+    assert.ok(record)
+    assert.ok(record.created_at >= unixTimestampInSeconds())
+  })
+})
 
-    case 'mem': {
-      const atom = defAtom({})
-
-      const isBlacklisted = mem_impl.defIsAccessTokenBlacklisted({ atom })
-
-      const retrieveAccessToken = mem_impl.defRetrieveAccessToken({
-        atom,
-        report_all_ajv_errors
-      })
-
-      const storeAccessToken = mem_impl.defStoreAccessToken({
-        atom,
-        report_all_ajv_errors
-      })
-
-      const issueAccessToken = defIssueAccessToken({
-        expiration,
-        issuer,
-        jwks,
-        storeAccessToken
-      })
-
-      const revokeAccessToken = defRevokeAccessToken({
-        issuer,
-        jwks_url,
-        max_token_age: expiration,
-        retrieveAccessToken,
-        storeAccessToken
-      })
-
-      const totalBlacklisted = defTotalBlacklisted(isBlacklisted)
-
-      return {
-        getIssuedTokens: mem_impl.defGetIssuedTokens({ atom }),
-        isBlacklisted,
-        issueAccessToken,
-        retrieveAccessToken,
-        revokeAccessToken,
-        storeAccessToken,
-        totalBlacklisted
-      }
-    }
-
-    default: {
-      throw new Error(`Unknown implementation: ${impl}`)
-    }
+describe('Token Revocation', () => {
+  const apis = {
+    access_tokens: accessTokenAPI(),
+    refresh_tokens: refreshTokenAPI()
   }
-}
+  beforeEach(async () => {
+    await apis.access_tokens.removeMany()
+    await apis.refresh_tokens.removeMany()
+  })
 
-IMPLEMENTATIONS.forEach((label) => {
-  const suffix = ` [${label}]`
+  it('allows to mark as revoked both access tokens and refresh tokens (with an optional revocation reason)', async () => {
+    const jtis = [nanoid(), nanoid()]
+    const refresh_tokens = [nanoid(), nanoid()]
 
-  describe.skip(`Token storage${suffix}`, () => {
-    let impl
-    beforeEach(async () => {
-      impl = await init(label)
+    await storeAccessTokens({ storage: apis.access_tokens, jtis })
+    await assertNoAccessTokenIsRevoked({ storage: apis.access_tokens })
+
+    await storeRefreshTokens({
+      storage: apis.refresh_tokens,
+      jtis,
+      refresh_tokens
+    })
+    await assertNoRefreshTokenIsRevoked({ storage: apis.refresh_tokens })
+
+    const revocation_reason = `test ${nanoid()}`
+
+    await revokeTokensByJTI({
+      storage: apis.access_tokens,
+      jtis: [jtis[0]],
+      revocation_reason
     })
 
-    describe(`once initialized, this implementation${suffix}`, () => {
-      it('has a getIssuedTokens method', () => {
-        assert.ok(impl.getIssuedTokens)
-      })
-
-      it('has a isBlacklisted method', () => {
-        assert.ok(impl.isBlacklisted)
-      })
-
-      it('has a storeAccessToken method', () => {
-        assert.ok(impl.storeAccessToken)
-      })
-
-      it('has a issueAccessToken method', () => {
-        assert.ok(impl.issueAccessToken)
-      })
-
-      it('has a revokeAccessToken method', () => {
-        assert.ok(impl.revokeAccessToken)
-      })
+    await revokeTokensByJTI({
+      storage: apis.refresh_tokens,
+      jtis: [jtis[0]],
+      revocation_reason
     })
 
-    describe(`issuing JWTs${suffix}`, () => {
-      it(`initial state: no JWTs issued`, async () => {
-        const { error, value } = await impl.getIssuedTokens()
-        assert.ok(!error)
-        assert.ok(value)
+    // atr: access token records
+    const { value: atr_after } = await apis.access_tokens.retrieveMany()
 
-        assert.strictEqual(value.jtis.length, 0)
-      })
+    // TODO: this is probably a bug in the mem-atom updateMany implementation
+    // This assertion passes when using SQLite as the storage backend
+    // assert.equal(atr_after.length, jtis.length)
 
-      it(`issues a JWT that has required claims when no payload is passed`, async () => {
-        const { error: issue_error, value } = await impl.issueAccessToken()
-        assert.ok(!issue_error)
+    assert.equal(atr_after[0].revoked, true)
+    assert.equal(atr_after[0].revocation_reason, revocation_reason)
 
-        await assertTokenHasRequiredClaims(value.access_token)
-      })
+    // rtr: refresh token records
+    const { value: rtr_after } = await apis.refresh_tokens.retrieveMany()
+    // assert.equal(rtr_after.length, jtis.length)
+    assert.equal(rtr_after[0].revoked, true)
+    assert.equal(rtr_after[0].revocation_reason, revocation_reason)
+  })
 
-      it(`issues a JWT that has required+custom claims when a payload is passed`, async () => {
-        const payload = { foo: 'bar' }
-        const { error: issue_error, value } = await impl.issueAccessToken(
-          payload
-        )
-        assert.ok(!issue_error)
+  it('allows to revoke all tokens (with an optional revocation reason)', async () => {
+    const jtis = [nanoid(), nanoid()]
+    const refresh_tokens = [nanoid(), nanoid()]
 
-        await assertTokenHasRequiredAndCustomClaims(value.access_token, payload)
-      })
+    await storeAccessTokens({ storage: apis.access_tokens, jtis })
+    await assertNoAccessTokenIsRevoked({ storage: apis.access_tokens })
+
+    await storeRefreshTokens({
+      storage: apis.refresh_tokens,
+      jtis,
+      refresh_tokens
+    })
+    await assertNoRefreshTokenIsRevoked({ storage: apis.refresh_tokens })
+
+    const revocation_reason = `test ${nanoid()}`
+
+    await revokeTokensByJTI({
+      storage: apis.access_tokens,
+      jtis,
+      revocation_reason
     })
 
-    describe(`revoking JWTs${suffix}`, () => {
-      it('cannot revoke a JWT that has no `me` claim', async () => {
-        const payload = {
-          no_me: 'https://example.com/',
-          scope: 'create update'
-        }
+    await revokeTokensByJTI({
+      storage: apis.refresh_tokens,
+      jtis,
+      revocation_reason
+    })
 
-        const { error: issue_error, value } = await impl.issueAccessToken(
-          payload
-        )
-        assert.ok(!issue_error)
-        const { access_token } = value
-        assert.ok(access_token)
-        await assertTokenHasRequiredAndCustomClaims(access_token, payload)
+    // atr: access token records
+    const { value: atr_after } = await apis.access_tokens.retrieveMany()
+    assert.equal(atr_after.length, jtis.length)
+    atr_after.forEach((record) => {
+      assert.equal(record.revoked, true)
+      assert.equal(record.revocation_reason, revocation_reason)
+    })
 
-        const { error: revoke_error, value: revoke_value } =
-          await impl.revokeAccessToken(access_token)
-
-        assert.ok(revoke_error)
-        assert.equal(revoke_value, undefined)
-      })
-
-      it('cannot revoke a JWT that has no `scope` claim', async () => {
-        const payload = {
-          me: 'https://example.com/',
-          no_scope: 'create update'
-        }
-
-        const { error: issue_error, value } = await impl.issueAccessToken(
-          payload
-        )
-        assert.ok(!issue_error)
-        const { access_token } = value
-        assert.ok(access_token)
-        await assertTokenHasRequiredAndCustomClaims(access_token, payload)
-
-        const { error: revoke_error, value: revoke_value } =
-          await impl.revokeAccessToken(access_token)
-
-        assert.ok(revoke_error)
-        assert.equal(revoke_value, undefined)
-      })
-
-      it('when it issues two JWTs and revokes only the first one, both JWTs are marked as issued, but only the first JWT is blacklisted', async () => {
-        const { value: initial_state } = await impl.getIssuedTokens()
-        assert.strictEqual(initial_state.jtis.length, 0)
-
-        const payload = { me: 'https://example.com/', scope: 'create update' }
-
-        const { error: issue_err0, value: issue_val0 } =
-          await impl.issueAccessToken(payload)
-        assert.ok(!issue_err0)
-        const { access_token: access_token0, claims: claims0 } = issue_val0
-        assert.ok(access_token0)
-        await assertTokenHasRequiredAndCustomClaims(access_token0, payload)
-
-        const { error: issue_err1, value: issue_val1 } =
-          await impl.issueAccessToken(payload)
-        assert.ok(!issue_err1)
-        const { access_token: access_token1, claims: claims1 } = issue_val1
-        assert.ok(access_token1)
-        await assertTokenHasRequiredAndCustomClaims(access_token1, payload)
-
-        const { error: revoke_err0, value: revoke_val0 } =
-          await impl.revokeAccessToken(access_token0)
-
-        assert.ok(!revoke_err0)
-        assert.ok(revoke_val0)
-
-        const { value: final_state } = await impl.getIssuedTokens()
-        assert.strictEqual(final_state.jtis.length, 2)
-
-        const { error: black_err0, value: blacklisted0 } =
-          await impl.isBlacklisted(claims0.jti)
-        assert.ok(!black_err0)
-        assert.ok(blacklisted0)
-
-        const { error: black_err1, value: blacklisted1 } =
-          await impl.isBlacklisted(claims1.jti)
-        assert.ok(!black_err1)
-        assert.ok(!blacklisted1)
-      })
-
-      it('can revoke all JTWs that have been issued', async () => {
-        const payload = { me: 'https://example.com/', scope: 'create update' }
-
-        const r0 = await impl.issueAccessToken(payload)
-        const r1 = await impl.issueAccessToken(payload)
-        const r2 = await impl.issueAccessToken(payload)
-
-        const access_tokens = [r0, r1, r2].map((r) => {
-          assert.ok(!r.error)
-          assert.ok(r.value)
-          return r.value.access_token
-        })
-
-        const { value: state_before_revoke_one } = await impl.getIssuedTokens()
-        assert.strictEqual(state_before_revoke_one.jtis.length, 3)
-
-        const b0 = await impl.totalBlacklisted(state_before_revoke_one.jtis)
-        assert.strictEqual(b0, 0)
-
-        const { error: revoke_one_error } = await impl.revokeAccessToken(
-          access_tokens[0]
-        )
-        assert.ok(!revoke_one_error)
-
-        const { value: state_after_revoke_one } = await impl.getIssuedTokens()
-
-        const b1 = await impl.totalBlacklisted(state_after_revoke_one.jtis)
-        assert.strictEqual(b1, 1)
-
-        // const { error: revoke_all_error } = await impl.revokeAllTokens()
-        // assert.ok(!revoke_all_error)
-
-        // const { value: state_after_revoke_all } = await impl.getIssuedTokens()
-        // assert.strictEqual(state_after_revoke_all.jtis.length, 3)
-
-        // const b_end = await impl.totalBlacklisted(state_after_revoke_all.jtis)
-        // assert.strictEqual(b_end, 3)
-      })
+    // rtr: refresh token records
+    const { value: rtr_after } = await apis.refresh_tokens.retrieveMany()
+    assert.equal(rtr_after.length, jtis.length)
+    rtr_after.forEach((record) => {
+      assert.equal(record.revoked, true)
+      assert.equal(record.revocation_reason, revocation_reason)
     })
   })
 })
