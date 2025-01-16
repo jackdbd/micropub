@@ -9,7 +9,7 @@ import {
   defPredicate,
   Predicate
 } from '../storage-implementations/predicate.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 
 interface Config<R extends BaseRecord = BaseRecord> {
   ajv: Ajv
@@ -53,7 +53,7 @@ export const defRetrieveRecord = <R extends BaseRecord = BaseRecord>(
 
     const validationErrorsSeparator = ';'
     // ;(record as any).foo = 123 // uncomment to see validation errors
-    const { error, value } = newConformResult(
+    const { error, value } = conformResult(
       { ajv, schema, data: record },
       { validationErrorsSeparator }
     )

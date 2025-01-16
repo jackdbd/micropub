@@ -146,10 +146,15 @@ export const defIntrospectPost = (config: Config) => {
     const response_body = { ...claims, active }
 
     const { error: conform_error } = conformResult(
-      { prefix: log_prefix },
-      ajv,
-      introspection_response_body_success,
-      response_body
+      {
+        ajv,
+        schema: introspection_response_body_success,
+        data: response_body
+      },
+      {
+        basePath: 'introspection-endpoint-response-body-success',
+        validationErrorsSeparator: ';'
+      }
     )
 
     if (conform_error) {

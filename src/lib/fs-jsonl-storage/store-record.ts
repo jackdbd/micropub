@@ -1,7 +1,7 @@
 import type { Ajv, Schema } from 'ajv'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { BaseProps, StoreRecord } from '../storage-api/index.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { appendMany, init } from './jsonl.js'
 import { newRecord } from './record.js'
 
@@ -20,7 +20,7 @@ export const defStoreRecord = <Props extends BaseProps = BaseProps>(
   const storeRecord: StoreRecord<Props> = async (props) => {
     const validationErrorsSeparator = ';'
 
-    const { error: error_before, value } = newConformResult(
+    const { error: error_before, value } = conformResult(
       {
         ajv,
         schema: schema_props,
@@ -68,7 +68,7 @@ export const defStoreRecord = <Props extends BaseProps = BaseProps>(
 
     const record = records[0]
 
-    const { error: error_after, value: value_after } = newConformResult(
+    const { error: error_after, value: value_after } = conformResult(
       {
         ajv,
         schema: schema_record,

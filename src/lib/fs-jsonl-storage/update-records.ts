@@ -8,7 +8,7 @@ import {
   defPredicate,
   type Predicate
 } from '../storage-implementations/predicate.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { appendMany, parse, type JSONLRecord } from './jsonl.js'
 import { newRecord } from './record.js'
 
@@ -64,7 +64,7 @@ export const defUpdateRecords = <R extends JSONLRecord = JSONLRecord>(
 
     const validationErrorsSeparator = ';'
     // ;(records as any)[0].foo = 123 // uncomment to see validation errors
-    const { error, value } = newConformResult(
+    const { error, value } = conformResult(
       {
         ajv,
         schema,

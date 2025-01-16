@@ -7,7 +7,7 @@ import {
   defPredicate,
   type Predicate
 } from '../storage-implementations/predicate.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { init, parse, type JSONLRecord } from './jsonl.js'
 
 interface Config {
@@ -57,7 +57,7 @@ export const defRetrieveRecords = <R extends JSONLRecord = JSONLRecord>(
 
     const validationErrorsSeparator = ';'
     // ;(records as any)[0].foo = 123 // uncomment to see validation errors
-    const { error, value } = newConformResult(
+    const { error, value } = conformResult(
       { ajv, schema, data: records },
       { validationErrorsSeparator }
     )

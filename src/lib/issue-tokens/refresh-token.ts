@@ -4,7 +4,7 @@ import ms, { StringValue } from 'ms'
 import { nanoid } from 'nanoid'
 import { exp } from '../jwt/index.js'
 import { refresh_token } from '../oauth2/index.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { expiration, logger } from './schemas.js'
 import { DEFAULT } from './defaults.js'
 import { unixTimestampInMs } from '../date.js'
@@ -36,7 +36,7 @@ export const refreshToken = async (config: Config) => {
   const ajv = config.ajv
 
   const { error: config_conform_error, value: config_validated } =
-    newConformResult(
+    conformResult(
       {
         ajv,
         schema: config_schema,

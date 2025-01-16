@@ -17,44 +17,6 @@ export const validationErrors = <V>(ajv: Ajv, schema: Schema, value: V) => {
   }
 }
 
-interface Config {
-  prefix?: string
-}
-
-/**
- * Validates that a value conforms to a schema. Returns a result object.
- */
-export const conformResult = <V>(
-  config: Config,
-  ajv: Ajv,
-  schema: Schema,
-  value: V
-) => {
-  const prefix = config.prefix ?? ''
-
-  const errors = validationErrors(ajv, schema, value)
-
-  let spec = 'schema'
-  if ((schema as any).title) {
-    spec = `schema '${(schema as any).title}'`
-  }
-  if ((schema as any).$id) {
-    spec = `schema ID '${(schema as any).$id}'`
-  }
-
-  if (errors.length > 0) {
-    return {
-      error: new Error(
-        `${prefix}value does not conform to ${spec}: ${errors.join('; ')}`
-      )
-    }
-  } else {
-    return {
-      value: { validated: value, message: `${prefix}value conforms to ${spec}` }
-    }
-  }
-}
-
 interface ConformConfig<V> {
   ajv: Ajv
   schema: Schema
@@ -68,7 +30,11 @@ interface ConformOptions {
 
 // TODO: create factory that accepts ajv and schema, and compile the schema (to avoid recompiling the schema every single time)
 
-export const newConformResult = <V>(
+/**
+ * Validates that a value conforms to a schema. Returns a result object.
+ */
+
+export const conformResult = <V>(
   config: ConformConfig<V>,
   options?: ConformOptions
 ) => {
@@ -128,20 +94,24 @@ export const newConformResult = <V>(
   return { error: new Error(errors.join(separator)) }
 }
 
+interface ThrowIfDoesNotConformConfig {
+  prefix?: string
+}
+
 /**
  * Throws if a value does not conform to a schema.
  */
 export const throwIfDoesNotConform = <V>(
-  config: Config,
+  config: ThrowIfDoesNotConformConfig,
   ajv: Ajv,
   schema: Schema,
   value: V
 ) => {
-  const { error } = newConformResult(
+  const { error } = conformResult(
     { ajv, schema, data: value },
     { basePath: config.prefix, validationErrorsSeparator: ';' }
   )
-  // const { error } = conformResult(config, ajv, schema, value)
+
   if (error) {
     throw error
   }

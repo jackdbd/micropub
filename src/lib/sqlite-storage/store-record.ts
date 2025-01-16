@@ -2,7 +2,7 @@ import type { Client } from '@libsql/client'
 import type { Ajv, Schema } from 'ajv'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { StoreRecord } from '../storage-api/index.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { insertQuery } from './queries.js'
 import {
   jsPropsToSQLite,
@@ -23,7 +23,7 @@ export const defStoreRecord = (config: Config) => {
   const separator = ';'
 
   const storeRecord: StoreRecord = async (props) => {
-    const { error: error_before, value } = newConformResult(
+    const { error: error_before, value } = conformResult(
       {
         ajv,
         schema: schema_before,
@@ -77,7 +77,7 @@ export const defStoreRecord = (config: Config) => {
 
     const record = sqliteRecordToJS(records[0])
 
-    const { error: error_after, value: value_after } = newConformResult(
+    const { error: error_after, value: value_after } = conformResult(
       {
         ajv,
         schema: schema_after,

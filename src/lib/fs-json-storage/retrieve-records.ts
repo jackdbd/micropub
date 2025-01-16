@@ -7,7 +7,7 @@ import {
 } from '../storage-implementations/predicate.js'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { RetrieveRecords } from '../storage-api/index.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { init, parse, type JSONRecord } from './json.js'
 
 interface Config {
@@ -53,7 +53,7 @@ export const defRetrieveRecords = <R extends JSONRecord = JSONRecord>(
 
     const validationErrorsSeparator = ';'
     // ;(records as any)[0].foo = 123 // uncomment to see validation errors
-    const { error, value } = newConformResult(
+    const { error, value } = conformResult(
       { ajv, schema, data: records },
       { validationErrorsSeparator }
     )

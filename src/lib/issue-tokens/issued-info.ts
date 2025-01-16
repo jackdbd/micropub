@@ -15,7 +15,7 @@ import {
   scope
 } from '../oauth2/index.js'
 import { safeDecode, type AccessTokenClaims } from '../token/index.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { accessToken } from './access-token.js'
 import { DEFAULT } from './defaults.js'
 import { refreshToken } from './refresh-token.js'
@@ -61,7 +61,7 @@ export const issuedInfo = async (config: Config) => {
   const log = config.log ?? DEFAULT.log
 
   const { error: config_conform_error, value: config_validated } =
-    newConformResult(
+    conformResult(
       {
         ajv,
         schema: config_schema,
@@ -138,7 +138,7 @@ export const issuedInfo = async (config: Config) => {
   }
 
   const { error: return_value_conform_error, value: return_value_validated } =
-    newConformResult(
+    conformResult(
       {
         ajv,
         schema: issued_info,

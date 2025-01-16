@@ -5,7 +5,7 @@ import { randomKid, sign } from '../token/index.js'
 import { jwks_private } from '../jwks/index.js'
 import { issuer, me_after_url_canonicalization } from '../indieauth/index.js'
 import { access_token, expires_in, scope } from '../oauth2/index.js'
-import { newConformResult } from '../validators.js'
+import { conformResult } from '../validators.js'
 import { DEFAULT } from './defaults.js'
 import { expiration, logger } from './schemas.js'
 
@@ -40,7 +40,7 @@ export const accessToken = async (config: Config) => {
   const ajv = config.ajv
 
   const { error: config_conform_error, value: config_validated } =
-    newConformResult(
+    conformResult(
       {
         ajv,
         schema: config_schema,
@@ -84,7 +84,7 @@ export const accessToken = async (config: Config) => {
 
   const value = { access_token, expires_in }
   const { error: return_value_conform_error, value: return_value_validated } =
-    newConformResult(
+    conformResult(
       {
         ajv,
         schema: return_value_schema,
