@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename)
 const secrets_dir = path.join(__dirname, '..', 'secrets')
 const assets_dir = path.join(__dirname, '..', 'assets')
 
-const USAGE = `Generate JSON Web Key Sets.`
+const USAGE = `Generate a private JSON Web Key Set (JWKS) and a public JWKS, each one containing n JSON Web Keys (JWK).`
 
 const argv = await yargs(process.argv.slice(2))
   .usage(`./$0 - ${USAGE}`)

@@ -85,20 +85,22 @@ npx tsm ./scripts/verify-jwt.ts
 
 ## JSON Web Key Set (JWKS)
 
-Generate a public [JWKS](https://datatracker.ietf.org/doc/html/rfc7517#section-5) and a private JWKS and store them on the filesystem. The public JWKS will be stored in [assets](../assets/README.md). The private JWKS will be stored in [secrets](../secrets/README.md).
+Generate a public [JWKS](https://datatracker.ietf.org/doc/html/rfc7517#section-5) and a private JWKS, each set with 2 JSON Web Keys (JWK) and store them on the filesystem. The public JWKS will be stored in [assets](../assets/README.md). The private JWKS will be stored in [secrets](../secrets/README.md).
 
 ```sh
-npx tsm ./scripts/generate-jwks.ts
+npx tsm ./scripts/generate-jwks.ts -n 2
 ```
 
 Deploy the public JWKS to Cloudflare R2, and set the private JWKS as a [Fly secret](https://fly.io/docs/apps/secrets/).
 
 ```sh
-npx tsm ./scripts/deploy-jwks.ts
+npx tsm ./scripts/deploy-jwks.ts \
+  --public cloudflare-r2 \
+  --private fly-secrets
 ```
 
 > [!WARNING]
-> Do NOT forget to update the `JWKS` secret on GitHub (I don't know id it's possible to set it programmatically).
+> Do NOT forget to update the `JWKS` secret on GitHub (I don't know if it's possible to set it programmatically).
 >
 > Copy and paste the JSON string `secrets/jwks.json` in [this GitHub Actions secret](https://github.com/jackdbd/micropub/settings/secrets/actions/JWKS).
 

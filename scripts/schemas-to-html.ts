@@ -9,7 +9,7 @@ import {
   h_event,
   p_content
 } from '../src/lib/microformats2/index.js'
-import { options as indieauth_client_options } from '../src/plugins/indieauth-client/schemas.js'
+// import { options } from '../src/plugins/micropub-client/schemas.js'
 import { options } from '../src/plugins/micropub-endpoint/schemas.js'
 import {
   micropub_get_request,
