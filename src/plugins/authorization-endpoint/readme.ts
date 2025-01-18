@@ -10,7 +10,7 @@ import {
   compactEmptyLines,
   transcludeFile
 } from '@thi.ng/transclude'
-import { schemaToMarkdown } from '../../../scripts/utils.js'
+import { schemaToMarkdown } from '../../schema-to-markdown.js'
 import {
   options as plugin_options,
   access_token_request_body,
@@ -20,32 +20,6 @@ import {
   // profile_url_request_body,
   // profile_url_response_body_success
 } from './schemas.js'
-
-// interface SchemaToMarkdownConfig {
-//   level: number // initial markdown heading level
-//   schema: TObject
-//   schemas_root: string
-// }
-
-// const schemaToMarkdown = (config: SchemaToMarkdownConfig) => {
-//   const { level, schema, schemas_root } = config
-
-//   if (!schema.title) {
-//     const s = JSON.stringify(schema, null, 2)
-//     throw new Error(
-//       `this schema of type ${schema.type} does not have a title:\n${s}`
-//     )
-//   }
-//   const schema_name = `${schema.$id}-schema`
-//   const schema_str = JSON.stringify(schema, null, 2)
-
-//   const fpath = path.join(schemas_root, `${schema_name}.json`)
-//   writeFileSync(fpath, schema_str, { encoding: 'utf8' })
-//   console.log(`wrote ${fpath}`)
-
-//   // https://github.com/simonwalz/jsonschema2mk#command-line-options
-//   return execSync(`jsonschema2mk --schema ${fpath} --level ${level}`).toString()
-// }
 
 const run = async () => {
   const { values } = parseArgs({

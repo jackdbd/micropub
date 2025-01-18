@@ -8,7 +8,7 @@ import {
   toc,
   transcludeFile
 } from '@thi.ng/transclude'
-import { schemaToMarkdown } from '../../../scripts/utils.js'
+import { schemaToMarkdown } from '../../schema-to-markdown.js'
 import { options as plugin_options } from './schemas/index.js'
 
 const run = async () => {
