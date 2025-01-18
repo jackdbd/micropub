@@ -30,6 +30,7 @@ import micropubClient, {
 import micropub from './plugins/micropub-endpoint/index.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
 import introspection from './plugins/introspection-endpoint/index.js'
+import renderConfig from './plugins/render-config/index.js'
 import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
@@ -37,12 +38,7 @@ import token from './plugins/token-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
-import {
-  entriesSafeToRender,
-  DO_NOT_RENDER,
-  SENSITIVE,
-  type Config
-} from './config.js'
+import type { Config } from './config.js'
 import {
   defErrorHandlerDev,
   defErrorHandlerProd
@@ -322,7 +318,7 @@ export async function defFastify(config: Config) {
     )
   }
 
-  fastify.register(auth, {
+  const authOptions = {
     ajv,
     authorizationCodeExpiration,
     includeErrorDescription,
@@ -331,7 +327,17 @@ export async function defFastify(config: Config) {
     onAuthorizationCodeVerified,
     onUserApprovedRequest,
     retrieveAuthorizationCode
-  })
+  }
+
+  fastify.register(auth, authOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/auth/config',
+      exclude: ['ajv'],
+      pluginOptions: authOptions
+    })
+  }
 
   fastify.register(micropubClient, {
     ajv,
@@ -366,7 +372,22 @@ export async function defFastify(config: Config) {
     reportAllAjvErrors
   })
 
-  fastify.register(revocation, {
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/introspect/config',
+      exclude: ['ajv'],
+      pluginOptions: {
+        ajv,
+        includeErrorDescription,
+        isAccessTokenRevoked,
+        issuer,
+        jwksUrl: jwks_url,
+        reportAllAjvErrors
+      }
+    })
+  }
+
+  const revocationOptions = {
     ajv,
     includeErrorDescription,
     isAccessTokenRevoked,
@@ -379,9 +400,19 @@ export async function defFastify(config: Config) {
     retrieveRefreshToken,
     revokeAccessToken,
     revokeRefreshToken
-  })
+  }
 
-  fastify.register(token, {
+  fastify.register(revocation, revocationOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/revoke/config',
+      exclude: ['ajv'],
+      pluginOptions: revocationOptions
+    })
+  }
+
+  const tokenOptions = {
     accessTokenExpiration: access_token_expiration,
     ajv,
     authorizationEndpoint,
@@ -395,7 +426,17 @@ export async function defFastify(config: Config) {
     retrieveRefreshToken,
     revocationEndpoint,
     userinfoEndpoint
-  })
+  }
+
+  fastify.register(token, tokenOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/token/config',
+      pluginOptions: tokenOptions,
+      exclude: ['ajv', 'jwks']
+    })
+  }
 
   fastify.register(userinfo, {
     ajv,
@@ -478,7 +519,7 @@ export async function defFastify(config: Config) {
     uid
   })
 
-  fastify.register(syndicate, {
+  const syndicateOptions = {
     ajv,
     get: github.get,
     includeErrorDescription,
@@ -488,6 +529,32 @@ export async function defFastify(config: Config) {
     syndicators: { [uid]: telegram_syndicator },
     reportAllAjvErrors,
     update: github.update
+  }
+
+  fastify.register(syndicate, syndicateOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/syndication/config',
+      pluginOptions: syndicateOptions,
+      exclude: ['ajv']
+    })
+  }
+
+  fastify.register(renderConfig, {
+    route: '/config',
+    pluginOptions: config,
+    exclude: [
+      'ajv',
+      'cloudflare_r2_access_key_id',
+      'cloudflare_r2_secret_access_key',
+      'github_oauth_client_secret',
+      'github_token',
+      'jwks',
+      'secure_session_key_one_buf',
+      'secure_session_key_two_buf',
+      'telegram_token'
+    ]
   })
 
   // TODO: register this plugin in micropub-client, not here.
@@ -521,18 +588,6 @@ export async function defFastify(config: Config) {
   // === HOOKS ============================================================== //
 
   // === ROUTES ============================================================= //
-
-  fastify.get('/config', async (_request, reply) => {
-    return reply.successResponse(200, {
-      title: 'Config',
-      description: 'Configuration page the app',
-      summary: 'Configuration of the app',
-      payload: {
-        ...Object.fromEntries(entriesSafeToRender(config)),
-        not_shown: [...DO_NOT_RENDER.keys(), ...SENSITIVE.keys()]
-      }
-    })
-  })
 
   return fastify
 }

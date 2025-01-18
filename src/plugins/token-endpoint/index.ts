@@ -9,7 +9,6 @@ import fp from 'fastify-plugin'
 import { error_response } from '../../lib/oauth2/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { access_token_request_body } from '../authorization-endpoint/index.js'
-import { defConfigGet } from './routes/token-config-get.js'
 import { defTokenPost } from './routes/token-post.js'
 import { DEFAULT, NAME } from './constants.js'
 import {
@@ -100,8 +99,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   // })
 
   // === ROUTES ============================================================= //
-  fastify.get('/token/config', defConfigGet(config))
-
   fastify.post(
     '/token',
     {

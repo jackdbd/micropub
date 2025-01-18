@@ -9,7 +9,6 @@ import fp from 'fastify-plugin'
 import { error_response } from '../../lib/oauth2/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
-import { defConfigGet } from './routes/authorization-config-get.js'
 import { defAuthorizePage } from './routes/authorize-page.js'
 import { defAuthorizePost } from './routes/authorize-post.js'
 import { defHandleAction } from './routes/handle-action.js'
@@ -91,7 +90,6 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  fastify.get('/auth/config', defConfigGet(config))
 
   const redirect_path_on_submit = '/consent'
 

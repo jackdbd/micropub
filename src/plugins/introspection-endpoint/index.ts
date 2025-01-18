@@ -12,7 +12,6 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
-import { defConfigGet } from './routes/introspection-config-get.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
 import { options as options_schema, type Options } from './schemas/index.js'
 
@@ -103,8 +102,6 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  fastify.get('/introspect/config', defConfigGet(config))
-
   fastify.post(
     '/introspect',
     {

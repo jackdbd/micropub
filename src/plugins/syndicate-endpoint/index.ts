@@ -13,7 +13,6 @@ import {
 } from '../../lib/fastify-hooks/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
-import { defConfigGet } from './routes/syndication-config-get.js'
 import { defSyndicatePost } from './routes/syndicate-post.js'
 import { options as options_schema, type Options } from './schemas.js'
 
@@ -95,8 +94,6 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  fastify.get('/syndication/config', defConfigGet(config))
-
   fastify.post(
     '/syndicate',
     {

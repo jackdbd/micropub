@@ -13,7 +13,6 @@ import {
 import { error_response } from '../../lib/oauth2/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
-import { defConfigGet } from './routes/revocation-config-get.js'
 import { defRevocationPost } from './routes/revocation-post.js'
 import {
   options as options_schema,
@@ -103,8 +102,6 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-  fastify.get('/revoke/config', defConfigGet(config))
-
   fastify.post(
     '/revoke',
     {

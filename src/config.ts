@@ -158,32 +158,6 @@ export const SENSITIVE = new Set([
   'telegram_token'
 ])
 
-// These configuration values are not sensitive, but either they can't be
-// rendered in a template (e.g. a function), or they fail to render in a
-// template (e.g. ajv).
-export const DO_NOT_RENDER = new Set(['ajv'] as string[])
-
-// export const sensitive_fields = [...SENSITIVE]
-
-// export const sentiveEntries = (config: Config) => {
-//   return Object.entries(config).filter(([key]) => {
-//     return SENSITIVE.has(key) ? true : false
-//   })
-// }
-
-// export const unsentiveEntries = (config: Config) => {
-//   return Object.entries(config).filter(([key]) => {
-//     return SENSITIVE.has(key) ? false : true
-//   })
-// }
-
-export const entriesSafeToRender = (config: Config) => {
-  return Object.entries(config).filter(([key]) => {
-    const hide = SENSITIVE.has(key) || DO_NOT_RENDER.has(key)
-    return hide ? false : true
-  })
-}
-
 // Most likely, a few configuration values will be asynchronous. Here is why
 // this function is async.
 export const defConfig = async (): Promise<Config> => {
