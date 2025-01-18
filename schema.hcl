@@ -152,7 +152,7 @@ table "clients" {
 table "posts" {
   schema = schema.main
 
-  column "id" {
+  column "rowid" {
     null = false
     type = integer
     auto_increment = true
@@ -175,7 +175,7 @@ table "posts" {
 
   primary_key {
     columns = [
-      column.id
+      column.rowid
     ]
   }
 }
