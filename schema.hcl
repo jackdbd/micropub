@@ -120,6 +120,12 @@ table "authorization_codes" {
 table "clients" {
   schema = schema.main
 
+  column "rowid" {
+    null = false
+    type = integer
+    auto_increment = true
+  }
+  
   column "client_id" {
     type = text
   }
@@ -144,7 +150,7 @@ table "clients" {
 
   primary_key {
     columns = [
-      column.client_id
+      column.rowid
     ]
   }
 }
