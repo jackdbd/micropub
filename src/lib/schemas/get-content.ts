@@ -19,8 +19,6 @@ const result_promise = Type.Promise(Type.Union([failure, success]))
 
 // This would be ideal, but it CANNOT be used with a standard JSON Schema
 // validator. However, we can still use its TypeScript type.
-const get_ = Type.Function([location], result_promise)
+export const get = Type.Function([location], result_promise)
 
-export type Get = Static<typeof get_>
-
-export const get = Type.Any()
+export type Get = Static<typeof get>

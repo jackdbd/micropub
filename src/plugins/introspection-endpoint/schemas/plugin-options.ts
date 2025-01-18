@@ -2,7 +2,7 @@ import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import { issuer } from '../../../lib/indieauth/index.js'
 import { jwks_url } from '../../../lib/jwks/index.js'
-import { report_all_ajv_errors } from '../../../lib/schemas/index.js'
+import { ajv, report_all_ajv_errors } from '../../../lib/schemas/index.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
@@ -11,7 +11,7 @@ import { DEFAULT } from '../constants.js'
 
 export const options = Type.Object(
   {
-    ajv: Type.Optional(Type.Any()),
+    ajv: Type.Optional(ajv),
 
     includeErrorDescription: Type.Optional(
       Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })

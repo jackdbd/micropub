@@ -1,10 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { report_all_ajv_errors } from '../../schemas/index.js'
+import { ajv, report_all_ajv_errors } from '../../schemas/index.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object({
-  ajv: Type.Optional(Type.Any()),
+  ajv: Type.Optional(ajv),
 
   claimsSessionKey: Type.Optional(
     Type.String({ minLength: 1, default: DEFAULT.CLAIMS_SESSION_KEY })

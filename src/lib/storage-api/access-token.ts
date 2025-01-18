@@ -49,7 +49,10 @@ export type AccessTokenMutableRecord = Static<
 const retrieveAccessToken_description = `Function that retrieves an access token from a storage backend.`
 const retrieveAccessToken_title = 'retrieveAccessToken'
 
-const retrieveAccessToken_ = Type.Function(
+/**
+ * Function that retrieves an access token from a storage backend.
+ */
+export const retrieveAccessToken = Type.Function(
   [jti],
   Type.Promise(
     Type.Union([access_token_immutable_record, access_token_mutable_record])
@@ -63,28 +66,19 @@ const retrieveAccessToken_ = Type.Function(
 /**
  * Function that retrieves an access token from a storage backend.
  */
-export type RetrieveAccessToken = Static<typeof retrieveAccessToken_>
+export type RetrieveAccessToken = Static<typeof retrieveAccessToken>
 
 /**
- * Function that retrieves an access token from a storage backend.
+ * Predicate function that returns true if a jti (JSON Web Token ID) is revoked.
+ * This function will most likely need to access a storage backend in order to
+ * come up with an answer.
  */
-export const retrieveAccessToken = Type.Any({
-  description: retrieveAccessToken_description,
-  title: retrieveAccessToken_title
-})
-
-const isAccessTokenRevoked_description = `Predicate function that returns true if a jti (JSON Web Token ID) is revoked.`
-const isAccessTokenRevoked_title = 'isAccessTokenRevoked'
-
-// AFAIK, Type.Function and Type.Promise cannot be used with a standard JSON
-// Schema validators. However, we can still use them to generate TypeScript types.
-// https://github.com/sinclairzx81/typebox?tab=readme-ov-file#javascript-types
-const isAccessTokenRevoked_ = Type.Function(
+export const isAccessTokenRevoked = Type.Function(
   [jti],
   Type.Promise(Type.Boolean()),
   {
-    description: isAccessTokenRevoked_description,
-    title: isAccessTokenRevoked_title
+    description: `Predicate function that returns true if a jti (JSON Web Token ID) is revoked.`,
+    title: 'isAccessTokenRevoked'
   }
 )
 
@@ -93,21 +87,7 @@ const isAccessTokenRevoked_ = Type.Function(
  * This function will most likely need to access a storage backend in order to
  * come up with an answer.
  */
-export type IsAccessTokenRevoked = Static<typeof isAccessTokenRevoked_>
-
-/**
- * Predicate function that returns true if a jti (JSON Web Token ID) is revoked.
- * This function will most likely need to access a storage backend in order to
- * come up with an answer.
- */
-export const isAccessTokenRevoked = Type.Any({
-  description: isAccessTokenRevoked_description,
-  title: isAccessTokenRevoked_title
-})
-
-const revokeAccessToken_description = `Handler invoked when the token revocation endpoint has met all requirements to revoke a token. You should use it to mark the access token as revoked in your storage backend.`
-
-const revokeAccessToken_title = 'revokeAccessToken'
+export type IsAccessTokenRevoked = Static<typeof isAccessTokenRevoked>
 
 const props = Type.Object({
   jti,
@@ -116,14 +96,13 @@ const props = Type.Object({
 
 export type RevokeAccessTokenProps = Static<typeof props>
 
-const revokeAccessToken_ = Type.Function([props], Type.Promise(Type.Void()), {
-  description: revokeAccessToken_description,
-  title: revokeAccessToken_title
-})
+export const revokeAccessToken = Type.Function(
+  [props],
+  Type.Promise(Type.Void()),
+  {
+    description: `Handler invoked when the token revocation endpoint has met all requirements to revoke a token. You should use it to mark the access token as revoked in your storage backend.`,
+    title: 'revokeAccessToken'
+  }
+)
 
-export type RevokeAccessToken = Static<typeof revokeAccessToken_>
-
-export const revokeAccessToken = Type.Any({
-  description: revokeAccessToken_description,
-  title: revokeAccessToken_title
-})
+export type RevokeAccessToken = Static<typeof revokeAccessToken>

@@ -6,11 +6,15 @@ import {
   type IsAccessTokenRevoked,
   type RetrieveRecord
 } from '../../lib/storage-api/index.js'
-import { report_all_ajv_errors } from '../../lib/schemas/index.js'
+import { ajv, report_all_ajv_errors } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
 
+const retrieveProfile = Type.Any({
+  description: `Function that retrieves a user's profile from some storage.`
+})
+
 export const options = Type.Object({
-  ajv: Type.Optional(Type.Any()),
+  ajv: Type.Optional(ajv),
 
   isAccessTokenRevoked,
 
@@ -30,7 +34,7 @@ export const options = Type.Object({
   /**
    * Function that retrieves a user's profile from some storage.
    */
-  retrieveProfile: Type.Any()
+  retrieveProfile
 })
 
 export interface Options extends Static<typeof options> {

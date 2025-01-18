@@ -1,18 +1,18 @@
 import { Static, Type } from '@sinclair/typebox'
 import { issued_info } from './issued-info.js'
 
-const description = `Handler invoked when the token endpoint has issued an 
-access token and a refresh token. You should use it to persist the tokens to 
-storage.`
-
-const title = 'onIssuedTokens'
-
-const onIssuedTokens_ = Type.Function(
+/**
+ * Handler invoked when the token endpoint has issued an access token and a
+ * refresh token. You should use it to persist the tokens to storage.
+ */
+export const onIssuedTokens = Type.Function(
   [issued_info],
   Type.Promise(Type.Void()),
-  { description, title }
+  {
+    $id: 'on-issued-tokens',
+    title: 'onIssuedTokens',
+    description: `Handler invoked when the token endpoint has issued an access token and a refresh token. You should use it to persist the tokens to storage.`
+  }
 )
 
-export type OnIssuedTokens = Static<typeof onIssuedTokens_>
-
-export const onIssuedTokens = Type.Any({ description, title })
+export type OnIssuedTokens = Static<typeof onIssuedTokens>

@@ -4,6 +4,7 @@ import ms, { StringValue } from 'ms'
 import { nanoid } from 'nanoid'
 import { exp } from '../jwt/index.js'
 import { refresh_token } from '../oauth2/index.js'
+import { ajv } from '../schemas/index.js'
 import { conformResult } from '../validators.js'
 import { expiration, logger } from './schemas.js'
 import { DEFAULT } from './defaults.js'
@@ -11,7 +12,7 @@ import { unixTimestampInMs } from '../date.js'
 
 export const config_schema = Type.Object(
   {
-    ajv: Type.Any(),
+    ajv,
     expiration,
     log: Type.Optional(logger)
   },

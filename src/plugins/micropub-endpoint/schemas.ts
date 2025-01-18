@@ -6,25 +6,29 @@ import {
 } from '../../lib/indieauth/index.js'
 import { media_endpoint, micropub_endpoint } from '../../lib/micropub/index.js'
 import {
+  ajv,
   create,
-  type Create,
   deleteContentOrMedia,
-  type DeleteContentOrMedia,
   syndicate_to_item,
   report_all_ajv_errors,
-  undelete,
-  type Undelete,
-  update,
-  type Update
+  // undelete,
+  update
 } from '../../lib/schemas/index.js'
+import type {
+  Create,
+  DeleteContentOrMedia,
+  Undelete,
+  Update
+} from '../../lib/schemas/index.js'
+import {
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
+} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
-
-const isAccessTokenRevoked = Type.Any()
-export type IsAccessTokenRevoked = (jti: string) => Promise<boolean>
 
 export const options = Type.Object(
   {
-    ajv: Type.Optional(Type.Any()),
+    ajv: Type.Optional(ajv),
 
     create,
 
@@ -63,7 +67,8 @@ export const options = Type.Object(
 
     syndicateTo: Type.Optional(Type.Array(syndicate_to_item, { default: [] })),
 
-    undelete: Type.Optional(undelete),
+    // undelete: Type.Optional(undelete),
+    undelete: Type.Optional(Type.Any()),
 
     update
   },

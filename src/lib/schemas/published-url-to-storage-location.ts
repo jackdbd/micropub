@@ -2,10 +2,8 @@ import { Static, Type } from '@sinclair/typebox'
 import { location } from './location.js'
 import { url } from './url.js'
 
-const publishedUrlToStorageLocation_ = Type.Function([url], location)
+export const publishedUrlToStorageLocation = Type.Function([url], location)
 
 export type PublishedUrlToStorageLocation = Static<
-  typeof publishedUrlToStorageLocation_
+  typeof publishedUrlToStorageLocation
 >
-
-export const publishedUrlToStorageLocation = Type.Any()

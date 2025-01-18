@@ -9,8 +9,6 @@ const success = Type.Object({
 
 const result_promise = Type.Promise(Type.Union([failure, success]))
 
-const undelete_ = Type.Function([url], result_promise)
+export const undelete = Type.Function([url], result_promise)
 
-export type Undelete = Static<typeof undelete_>
-
-export const undelete = Type.Any()
+export type Undelete = Static<typeof undelete>

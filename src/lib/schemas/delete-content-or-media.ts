@@ -9,8 +9,6 @@ const success = Type.Object({
 
 const result_promise = Type.Promise(Type.Union([failure, success]))
 
-const deleteContentOrMedia_ = Type.Function([url], result_promise)
+export const deleteContentOrMedia = Type.Function([url], result_promise)
 
-export type DeleteContentOrMedia = Static<typeof deleteContentOrMedia_>
-
-export const deleteContentOrMedia = Type.Any()
+export type DeleteContentOrMedia = Static<typeof deleteContentOrMedia>

@@ -1,6 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import {
+  ajv,
   include_error_description,
   report_all_ajv_errors
 } from '../../../lib/schemas/index.js'
@@ -26,42 +27,49 @@ import type {
 } from '../../../lib/storage-api/index.js'
 import { DEFAULT } from '../constants.js'
 
-export const options = Type.Object({
-  ajv: Type.Optional(Type.Any()),
+export const options = Type.Object(
+  {
+    ajv: Type.Optional(ajv),
 
-  includeErrorDescription: Type.Optional({
-    ...include_error_description,
-    default: DEFAULT.INCLUDE_ERROR_DESCRIPTION
-  }),
+    includeErrorDescription: Type.Optional({
+      ...include_error_description,
+      default: DEFAULT.INCLUDE_ERROR_DESCRIPTION
+    }),
 
-  isAccessTokenRevoked,
+    isAccessTokenRevoked,
 
-  issuer,
+    issuer,
 
-  jwksUrl: jwks_url,
+    jwksUrl: jwks_url,
 
-  logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
+    logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
 
-  maxAccessTokenAge: Type.Optional(Type.String({ minLength: 1 })),
+    maxAccessTokenAge: Type.Optional(Type.String({ minLength: 1 })),
 
-  me: Type.Union([
-    me_before_url_canonicalization,
-    me_after_url_canonicalization
-  ]),
+    me: Type.Union([
+      me_before_url_canonicalization,
+      me_after_url_canonicalization
+    ]),
 
-  reportAllAjvErrors: Type.Optional({
-    ...report_all_ajv_errors,
-    default: DEFAULT.REPORT_ALL_AJV_ERRORS
-  }),
+    reportAllAjvErrors: Type.Optional({
+      ...report_all_ajv_errors,
+      default: DEFAULT.REPORT_ALL_AJV_ERRORS
+    }),
 
-  retrieveAccessToken,
+    retrieveAccessToken,
 
-  retrieveRefreshToken,
+    retrieveRefreshToken,
 
-  revokeAccessToken,
+    revokeAccessToken,
 
-  revokeRefreshToken
-})
+    revokeRefreshToken
+  },
+  {
+    $id: 'fastify-revocation-endpoint-options',
+    description: 'Options for the Fastify revocation-endpoint plugin',
+    title: 'Revocation Endpoint Options'
+  }
+)
 
 export interface Options extends Static<typeof options> {
   ajv?: Ajv

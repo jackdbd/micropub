@@ -1,5 +1,7 @@
 import { Type } from '@sinclair/typebox'
 
+export const ajv = Type.Any({ description: 'Instance of Ajv' })
+
 export { create, type Create } from './create-content.js'
 
 export { deleteContent, type Delete } from './delete-content.js'
@@ -35,8 +37,6 @@ export {
   publishedUrlToStorageLocation,
   type PublishedUrlToStorageLocation
 } from './published-url-to-storage-location.js'
-
-export { revokeAllTokens, type RevokeAllTokens } from './revoke-all-tokens.js'
 
 export { syndicate_to_item, type SyndicateToItem } from './syndicate-to.js'
 

@@ -3,6 +3,7 @@ import type { Ajv } from 'ajv'
 import ms, { StringValue } from 'ms'
 import { randomKid, sign } from '../token/index.js'
 import { jwks_private } from '../jwks/index.js'
+import { ajv } from '../schemas/index.js'
 import { issuer, me_after_url_canonicalization } from '../indieauth/index.js'
 import { access_token, expires_in, scope } from '../oauth2/index.js'
 import { conformResult } from '../validators.js'
@@ -11,7 +12,7 @@ import { expiration, logger } from './schemas.js'
 
 export const config_schema = Type.Object(
   {
-    ajv: Type.Any(),
+    ajv,
     expiration,
     issuer,
     jwks: jwks_private,

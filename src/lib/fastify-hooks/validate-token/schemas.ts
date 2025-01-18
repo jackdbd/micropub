@@ -1,6 +1,6 @@
 import type Ajv from 'ajv'
 import { Static, Type } from '@sinclair/typebox'
-import { report_all_ajv_errors } from '../../schemas/flags.js'
+import { ajv, report_all_ajv_errors } from '../../schemas/index.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
@@ -12,7 +12,7 @@ export const options = Type.Object({
     Type.String({ minLength: 1, default: DEFAULT.ACCESS_TOKEN_SESSION_KEY })
   ),
 
-  ajv: Type.Optional(Type.Any()),
+  ajv: Type.Optional(ajv),
 
   header: Type.Optional(Type.String({ minLength: 1, default: DEFAULT.HEADER })),
 

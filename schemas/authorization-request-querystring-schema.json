@@ -1,0 +1,92 @@
+{
+  "$id": "authorization-request-querystring",
+  "title": "Authorization Request Querystring",
+  "type": "object",
+  "properties": {
+    "client_id": {
+      "description": "The ID of the application that asks for authorization. An IndieAuth client ID is a URL.",
+      "format": "uri",
+      "type": "string"
+    },
+    "code_challenge": {
+      "$id": "pkce-code-challenge",
+      "description": "The PKCE code challenge. See [Client Creates the Code Challenge](https://datatracker.ietf.org/doc/html/rfc7636#section-4.2).",
+      "minLength": 43,
+      "maxLength": 128,
+      "title": "PKCE code challenge",
+      "type": "string"
+    },
+    "code_challenge_method": {
+      "$id": "pkce-code-challenge-method",
+      "description": "The hashing method used to calculate the code challenge in the PKCE OAuth 2.0 flow. See [Client Creates the Code Challenge](https://datatracker.ietf.org/doc/html/rfc7636#section-4.2).",
+      "title": "PKCE code challenge method",
+      "anyOf": [
+        {
+          "const": "plain",
+          "type": "string"
+        },
+        {
+          "const": "S256",
+          "type": "string"
+        }
+      ]
+    },
+    "me": {
+      "anyOf": [
+        {
+          "description": "Profile URL (before URL Canonicalization)",
+          "minLength": 1,
+          "title": "me (not canonicalized)",
+          "type": "string"
+        },
+        {
+          "description": "Profile URL (after URL Canonicalization)",
+          "format": "uri",
+          "title": "me (canonicalized)",
+          "type": "string"
+        }
+      ]
+    },
+    "redirect_uri": {
+      "description": "Holds a URL. A successful response from this endpoint results in a redirect to this URL.",
+      "format": "uri",
+      "type": "string"
+    },
+    "response_type": {
+      "$id": "oauth-2.0-response-type",
+      "description": "Tells the authorization server which grant to execute.",
+      "anyOf": [
+        {
+          "const": "code",
+          "type": "string"
+        },
+        {
+          "const": "token",
+          "type": "string"
+        }
+      ],
+      "default": "code"
+    },
+    "scope": {
+      "description": "Scope values. See [RFC8693 scope claim](https://www.rfc-editor.org/rfc/rfc8693.html#name-scope-scopes-claim)",
+      "minLength": 1,
+      "title": "OAuth 2.0 scope (scopes) claim",
+      "type": "string"
+    },
+    "state": {
+      "description": "An opaque value used by the client to maintain state between the request and callback. The parameter SHOULD be used for preventing cross-site request forgery. See [OAuth 2.0 Authorization Request](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.1).",
+      "minLength": 1,
+      "title": "OAuth 2.0 state parameter (CSRF token)",
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "code_challenge",
+    "code_challenge_method",
+    "me",
+    "redirect_uri",
+    "response_type",
+    "state"
+  ]
+}

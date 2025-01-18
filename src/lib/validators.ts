@@ -1,6 +1,10 @@
 import type Ajv from 'ajv'
 import type { Schema } from 'ajv'
 import { betterAjvErrors } from '@apideck/better-ajv-errors'
+import { Type } from '@sinclair/typebox'
+
+// used to replace a function in the schema (read the comment below)
+const any_value = Type.Any()
 
 export const validationErrors = <V>(ajv: Ajv, schema: Schema, value: V) => {
   const validate = ajv.compile(schema)
@@ -33,7 +37,6 @@ interface ConformOptions {
 /**
  * Validates that a value conforms to a schema. Returns a result object.
  */
-
 export const conformResult = <V>(
   config: ConformConfig<V>,
   options?: ConformOptions
@@ -48,6 +51,20 @@ export const conformResult = <V>(
   }
   if ((schema as any).$id) {
     spec = `schema ID '${(schema as any).$id}'`
+  }
+
+  // Workaround to handle functions in a schema. Here is why we need this:
+  // TypeBox allows defining functions in schemas, but JSON Schema (and
+  // therefore Ajv) does not support them. Ajv will throw an error if it
+  // encounters a function in the schema. To address this, we replace each
+  // function definition in the schema with Type.Any(), which is the most
+  // generic type available in TypeBox.
+  // See also:
+  // https://github.com/sinclairzx81/typebox?tab=readme-ov-file#javascript-types
+  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    if (typeof value === 'function') {
+      ;(schema as any).properties[key] = any_value
+    }
   }
 
   const validate = ajv.compile(schema)
@@ -94,6 +111,7 @@ export const conformResult = <V>(
   return { error: new Error(errors.join(separator)) }
 }
 
+// TODO: refactor this. Use the same config and options of conformResult
 interface ThrowIfDoesNotConformConfig {
   prefix?: string
 }

@@ -1,0 +1,587 @@
+{
+  "$id": "fastify-revocation-endpoint-options",
+  "description": "Options for the Fastify revocation-endpoint plugin",
+  "title": "Revocation Endpoint Options",
+  "type": "object",
+  "properties": {
+    "ajv": {
+      "description": "Instance of Ajv"
+    },
+    "includeErrorDescription": {
+      "description": "Whether to include an\n`error_description` property in all error responses.\nThis is meant to assist the client developer in understanding the error.\nThis is NOT meant to be shown to the end user.",
+      "type": "boolean",
+      "default": false
+    },
+    "isAccessTokenRevoked": {
+      "description": "Predicate function that returns true if a jti (JSON Web Token ID) is revoked.",
+      "title": "isAccessTokenRevoked",
+      "type": "Function",
+      "parameters": [
+        {
+          "description": "Unique identifier for the JWT",
+          "minLength": 1,
+          "title": "\"jti\" (JWT ID) Claim",
+          "type": "string"
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "type": "boolean"
+        }
+      }
+    },
+    "issuer": {
+      "description": "The authorization server's issuer identifier. It's a URL that uses the \"https\" scheme and has no query or fragment components. It MUST also be a prefix of the indieauth-metadata URL.",
+      "format": "uri",
+      "title": "Issuer",
+      "type": "string"
+    },
+    "jwksUrl": {
+      "additionalProperties": true,
+      "description": "URL where the public JSON Web Key Set is hosted.",
+      "title": "JWKS public URL",
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "pathname": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "search": {
+          "type": "string"
+        },
+        "searchParams": {},
+        "username": {
+          "type": "string"
+        },
+        "toJSON": {}
+      },
+      "required": [
+        "hash",
+        "host",
+        "href",
+        "hostname",
+        "origin",
+        "password",
+        "pathname",
+        "port",
+        "protocol",
+        "search",
+        "searchParams",
+        "username",
+        "toJSON"
+      ]
+    },
+    "logPrefix": {
+      "default": "revocation-endpoint ",
+      "type": "string"
+    },
+    "maxAccessTokenAge": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "me": {
+      "anyOf": [
+        {
+          "description": "Profile URL (before URL Canonicalization)",
+          "minLength": 1,
+          "title": "me (not canonicalized)",
+          "type": "string"
+        },
+        {
+          "description": "Profile URL (after URL Canonicalization)",
+          "format": "uri",
+          "title": "me (canonicalized)",
+          "type": "string"
+        }
+      ]
+    },
+    "reportAllAjvErrors": {
+      "description": "Whether to report all AJV validation errors.",
+      "title": "report all AJV errors",
+      "type": "boolean",
+      "default": false
+    },
+    "retrieveAccessToken": {
+      "description": "Function that retrieves an access token from a storage backend.",
+      "title": "retrieveAccessToken",
+      "type": "Function",
+      "parameters": [
+        {
+          "description": "Unique identifier for the JWT",
+          "minLength": 1,
+          "title": "\"jti\" (JWT ID) Claim",
+          "type": "string"
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "anyOf": [
+            {
+              "$id": "access-token-immutable-record",
+              "additionalProperties": false,
+              "description": "Represents a record of an access token. The values of this \n    record should never change. Any updates to the underlying entity should \n    create a new record.",
+              "title": "Access Token Immutable Record",
+              "type": "object",
+              "properties": {
+                "created_at": {
+                  "minimum": 1,
+                  "description": "Timestamp in milliseconds since UNIX epoch",
+                  "type": "number"
+                },
+                "id": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "type": "number"
+                    },
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  ]
+                },
+                "client_id": {
+                  "description": "The ID of the application that asks for authorization. An IndieAuth client ID is a URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "jti": {
+                  "description": "Unique identifier for the JWT",
+                  "minLength": 1,
+                  "title": "\"jti\" (JWT ID) Claim",
+                  "type": "string"
+                },
+                "redirect_uri": {
+                  "description": "Holds a URL. A successful response from this endpoint results in a redirect to this URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "revoked": {
+                  "type": "boolean"
+                },
+                "revocation_reason": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "created_at",
+                "id",
+                "client_id",
+                "jti",
+                "redirect_uri"
+              ]
+            },
+            {
+              "$id": "access-token-mutable-record",
+              "additionalProperties": false,
+              "description": "Represents a record of an access token with a predefined set \n    of properties (columns). While the structure of the record remains \n    consistent, the values of these properties may change over time.",
+              "title": "Access Token Mutable Record",
+              "type": "object",
+              "properties": {
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deleted_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "undeleted_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "client_id": {
+                  "description": "The ID of the application that asks for authorization. An IndieAuth client ID is a URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "jti": {
+                  "description": "Unique identifier for the JWT",
+                  "minLength": 1,
+                  "title": "\"jti\" (JWT ID) Claim",
+                  "type": "string"
+                },
+                "redirect_uri": {
+                  "description": "Holds a URL. A successful response from this endpoint results in a redirect to this URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "revoked": {
+                  "type": "boolean"
+                },
+                "revocation_reason": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "created_at",
+                "client_id",
+                "jti",
+                "redirect_uri"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "retrieveRefreshToken": {
+      "title": "retrieveRefreshToken",
+      "description": "Function that retrieves a refresh token from a storage backend.",
+      "type": "Function",
+      "parameters": [
+        {
+          "minLength": 1,
+          "type": "string"
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "anyOf": [
+            {
+              "$id": "refresh-token-immutable-record",
+              "additionalProperties": false,
+              "description": "Represents a record of a refresh token. The values of this\n    record should never change. Any updates to the underlying entity should \n    create a new record.",
+              "title": "Refresh Token Immutable Record",
+              "type": "object",
+              "properties": {
+                "created_at": {
+                  "minimum": 1,
+                  "description": "Timestamp in milliseconds since UNIX epoch",
+                  "type": "number"
+                },
+                "id": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "type": "number"
+                    },
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  ]
+                },
+                "client_id": {
+                  "description": "The ID of the application that asks for authorization. An IndieAuth client ID is a URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "exp": {
+                  "description": "UNIX timestamp when the JWT expires",
+                  "minimum": 0,
+                  "title": "\"exp\" (Expiration Time) Claim",
+                  "type": "number"
+                },
+                "iss": {
+                  "description": "Token issuer",
+                  "minLength": 1,
+                  "title": "\"iss\" (Issuer) Claim",
+                  "type": "string"
+                },
+                "jti": {
+                  "description": "Unique identifier for the JWT",
+                  "minLength": 1,
+                  "title": "\"jti\" (JWT ID) Claim",
+                  "type": "string"
+                },
+                "me": {
+                  "description": "Profile URL (after URL Canonicalization)",
+                  "format": "uri",
+                  "title": "me (canonicalized)",
+                  "type": "string"
+                },
+                "redirect_uri": {
+                  "description": "Holds a URL. A successful response from this endpoint results in a redirect to this URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "refresh_token": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "revoked": {
+                  "type": "boolean"
+                },
+                "revocation_reason": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "scope": {
+                  "description": "Scope values. See [RFC8693 scope claim](https://www.rfc-editor.org/rfc/rfc8693.html#name-scope-scopes-claim)",
+                  "minLength": 1,
+                  "title": "OAuth 2.0 scope (scopes) claim",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "created_at",
+                "id",
+                "client_id",
+                "exp",
+                "iss",
+                "jti",
+                "me",
+                "redirect_uri",
+                "refresh_token",
+                "scope"
+              ]
+            },
+            {
+              "$id": "refresh-token-mutable-record",
+              "additionalProperties": false,
+              "description": "Represents a record of a refresh token with a predefined set \n    of properties (columns). While the structure of the record remains \n    consistent, the values of these properties may change over time.",
+              "title": "Refresh Token Mutable Record",
+              "type": "object",
+              "properties": {
+                "created_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deleted_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "undeleted_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "anyOf": [
+                    {
+                      "minimum": 1,
+                      "description": "Timestamp in milliseconds since UNIX epoch",
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "client_id": {
+                  "description": "The ID of the application that asks for authorization. An IndieAuth client ID is a URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "exp": {
+                  "description": "UNIX timestamp when the JWT expires",
+                  "minimum": 0,
+                  "title": "\"exp\" (Expiration Time) Claim",
+                  "type": "number"
+                },
+                "iss": {
+                  "description": "Token issuer",
+                  "minLength": 1,
+                  "title": "\"iss\" (Issuer) Claim",
+                  "type": "string"
+                },
+                "jti": {
+                  "description": "Unique identifier for the JWT",
+                  "minLength": 1,
+                  "title": "\"jti\" (JWT ID) Claim",
+                  "type": "string"
+                },
+                "me": {
+                  "description": "Profile URL (after URL Canonicalization)",
+                  "format": "uri",
+                  "title": "me (canonicalized)",
+                  "type": "string"
+                },
+                "redirect_uri": {
+                  "description": "Holds a URL. A successful response from this endpoint results in a redirect to this URL.",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "refresh_token": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "revoked": {
+                  "type": "boolean"
+                },
+                "revocation_reason": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "scope": {
+                  "description": "Scope values. See [RFC8693 scope claim](https://www.rfc-editor.org/rfc/rfc8693.html#name-scope-scopes-claim)",
+                  "minLength": 1,
+                  "title": "OAuth 2.0 scope (scopes) claim",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "created_at",
+                "client_id",
+                "exp",
+                "iss",
+                "jti",
+                "me",
+                "redirect_uri",
+                "refresh_token",
+                "scope"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "revokeAccessToken": {
+      "description": "Handler invoked when the token revocation endpoint has met all requirements to revoke a token. You should use it to mark the access token as revoked in your storage backend.",
+      "title": "revokeAccessToken",
+      "type": "Function",
+      "parameters": [
+        {
+          "type": "object",
+          "properties": {
+            "jti": {
+              "description": "Unique identifier for the JWT",
+              "minLength": 1,
+              "title": "\"jti\" (JWT ID) Claim",
+              "type": "string"
+            },
+            "revocation_reason": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "jti"
+          ]
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "type": "void"
+        }
+      }
+    },
+    "revokeRefreshToken": {
+      "title": "revokeRefreshToken",
+      "description": "Handler invoked when the token revocation endpoint has met all requirements to revoke a token. You should use it to mark the refresh token as revoked in your storage backend.",
+      "type": "Function",
+      "parameters": [
+        {
+          "type": "object",
+          "properties": {
+            "refresh_token": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "revocation_reason": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "refresh_token"
+          ]
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "type": "void"
+        }
+      }
+    }
+  },
+  "required": [
+    "isAccessTokenRevoked",
+    "issuer",
+    "jwksUrl",
+    "me",
+    "retrieveAccessToken",
+    "retrieveRefreshToken",
+    "revokeAccessToken",
+    "revokeRefreshToken"
+  ]
+}

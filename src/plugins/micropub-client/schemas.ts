@@ -19,15 +19,16 @@ import {
   revocation_endpoint,
   token_endpoint
 } from '../../lib/oauth2/index.js'
-import { report_all_ajv_errors } from '../../lib/schemas/index.js'
+import { ajv, report_all_ajv_errors } from '../../lib/schemas/index.js'
+import {
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
+} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
-
-const isAccessTokenRevoked = Type.Any()
-export type IsAccessTokenRevoked = (jti: string) => Promise<boolean>
 
 export const options = Type.Object(
   {
-    ajv: Type.Optional(Type.Any()),
+    ajv: Type.Optional(ajv),
 
     authenticationStartPath: Type.Optional(
       Type.String({ default: DEFAULT.AUTHENTICATION_START_PATH })
@@ -171,7 +172,7 @@ export const options = Type.Object(
      * Predicate function that will be called to check whether a previously
      * issued token is blacklisted or not.
      */
-    isAccessTokenRevoked: isAccessTokenRevoked,
+    isAccessTokenRevoked,
 
     /**
      * Issuer identifier. If not provided, the one found in the OAuth Client ID

@@ -11,7 +11,7 @@ import {
   refresh_token,
   scope
 } from '../../../lib/oauth2/index.js'
-import { include_error_description } from '../../../lib/schemas/index.js'
+import { ajv, include_error_description } from '../../../lib/schemas/index.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
@@ -25,7 +25,7 @@ const active = Type.Boolean({
 
 export const config = Type.Object(
   {
-    ajv: Type.Any(),
+    ajv,
     include_error_description,
     isAccessTokenRevoked,
     issuer,

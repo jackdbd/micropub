@@ -37,18 +37,28 @@ export interface Config extends Static<typeof config_schema> {
   ajv: Ajv
 }
 
-export const issued_info = Type.Object({
-  access_token,
-  access_token_expires_in: expires_in,
-  client_id,
-  issuer,
-  jti,
-  me: me_after_url_canonicalization,
-  redirect_uri,
-  refresh_token,
-  refresh_token_expires_at: exp,
-  scope
-})
+export const issued_info = Type.Object(
+  {
+    access_token,
+    access_token_expires_in: expires_in,
+    client_id,
+    issuer,
+    jti,
+    me: me_after_url_canonicalization,
+    redirect_uri,
+    refresh_token,
+    refresh_token_expires_at: exp,
+    scope
+  },
+  {
+    $id: 'issued-info',
+    additionalProperties: false,
+    title: 'Issued Info',
+    description:
+      'Access token, refresh token, and some additional information about them'
+    // examples: [],
+  }
+)
 
 export type ReturnValue = Static<typeof issued_info>
 

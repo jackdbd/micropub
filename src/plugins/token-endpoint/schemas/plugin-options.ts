@@ -1,6 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import {
+  ajv,
   include_error_description,
   report_all_ajv_errors
 } from '../../../lib/schemas/index.js'
@@ -36,7 +37,7 @@ export const options = Type.Object(
       default: DEFAULT.ACCESS_TOKEN_EXPIRATION
     }),
 
-    ajv: Type.Optional(Type.Any()),
+    ajv: Type.Optional(ajv),
 
     /**
      * Endpoint that will be called to verify an authorization code before
@@ -88,7 +89,7 @@ export const options = Type.Object(
   {
     $id: 'fastify-token-endpoint-options',
     description: 'Options for the Fastify token-endpoint plugin',
-    title: 'Fastify plugin token-endpoint options'
+    title: 'Token Endpoint Options'
   }
 )
 

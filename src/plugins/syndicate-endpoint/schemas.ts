@@ -5,6 +5,7 @@ import {
   me_after_url_canonicalization
 } from '../../lib/indieauth/index.js'
 import {
+  ajv,
   get,
   type Get,
   publishedUrlToStorageLocation,
@@ -23,7 +24,7 @@ import { DEFAULT } from './constants.js'
 // syndicators: { [uid: string]: Syndicator }
 
 export const options = Type.Object({
-  ajv: Type.Optional(Type.Any()),
+  ajv: Type.Optional(ajv),
 
   get,
 

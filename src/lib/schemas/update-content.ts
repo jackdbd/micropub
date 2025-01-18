@@ -23,8 +23,6 @@ const success = Type.Object({
 
 const result_promise = Type.Promise(Type.Union([failure, success]))
 
-const update_ = Type.Function([url, update_patch], result_promise)
+export const update = Type.Function([url, update_patch], result_promise)
 
-export type Update = Static<typeof update_>
-
-export const update = Type.Any()
+export type Update = Static<typeof update>

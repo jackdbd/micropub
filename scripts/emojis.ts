@@ -1,6 +1,6 @@
 // 🚧❌🚨⛔❗🔐🧑🧑‍💻👤🗣️🆘🚩✅🔎🗑️➖🔁🔃♻️🗄️🌐
 // https://emojis.wiki/
-export const EMOJI = {
+export const EMOJI: Record<string, string> = {
   ACCESS_TOKEN: '🔑',
   AUTHORIZATION_CODE: '🔢',
   APPENDED: '➕',

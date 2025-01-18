@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { include_error_description } from '../../../lib/schemas/index.js'
+import { ajv, include_error_description } from '../../../lib/schemas/index.js'
 import {
   client_id,
   issuer,
@@ -35,7 +35,7 @@ export const config = Type.Object(
   {
     accessTokenExpiration: expiration,
 
-    ajv: Type.Any(),
+    ajv,
 
     authorizationEndpoint: authorization_endpoint,
 

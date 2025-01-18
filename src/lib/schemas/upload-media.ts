@@ -27,8 +27,6 @@ export interface UploadConfig extends Static<typeof upload_config> {
   body: Buffer
 }
 
-const uploadMedia_ = Type.Function([upload_config], result_promise)
+export const uploadMedia = Type.Function([upload_config], result_promise)
 
-export type UploadMedia = Static<typeof uploadMedia_>
-
-export const uploadMedia = Type.Any()
+export type UploadMedia = Static<typeof uploadMedia>

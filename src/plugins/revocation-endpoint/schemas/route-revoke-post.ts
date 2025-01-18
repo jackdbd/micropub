@@ -4,7 +4,7 @@ import {
   me_after_url_canonicalization
 } from '../../../lib/indieauth/index.js'
 import { jwks_url } from '../../../lib/jwks/index.js'
-import { include_error_description } from '../../../lib/schemas/index.js'
+import { ajv, include_error_description } from '../../../lib/schemas/index.js'
 import {
   retrieveRefreshToken,
   retrieveAccessToken,
@@ -50,7 +50,7 @@ export type RevocationResponseBodySuccess = Static<
 
 export const config = Type.Object(
   {
-    ajv: Type.Any(),
+    ajv,
     include_error_description,
     issuer,
     jwks_url,

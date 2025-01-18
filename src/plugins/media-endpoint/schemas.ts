@@ -5,6 +5,7 @@ import {
   me_after_url_canonicalization
 } from '../../lib/indieauth/index.js'
 import {
+  ajv,
   deleteContentOrMedia,
   report_all_ajv_errors,
   uploadMedia
@@ -43,7 +44,7 @@ import { DEFAULT } from './constants.js'
  */
 export const options = Type.Object(
   {
-    ajv: Type.Optional(Type.Any()),
+    ajv: Type.Optional(ajv),
 
     delete: deleteContentOrMedia,
 
