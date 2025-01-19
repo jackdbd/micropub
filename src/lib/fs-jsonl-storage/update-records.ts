@@ -34,33 +34,32 @@ export const defUpdateRecords = <R extends JSONLRecord = JSONLRecord>(
       return { error: parse_error }
     }
 
-    const condition = query.condition || 'AND'
-    const predicates = query.where.map((test) => defPredicate(test))
+    let records = parsed
+    if (query.where) {
+      const condition = query.condition || 'AND'
+      const predicates = query.where.map((test) => defPredicate(test))
 
-    let predicate: Predicate<R>
-    if (condition === 'OR') {
-      predicate = composeOr(predicates)
-    } else {
-      predicate = composeAnd(predicates)
-    }
-
-    const records_selected = parsed.filter(predicate)
-
-    // logs.push(
-    //   `query affects ${records_selected.length} records: ${stringify(query)}`
-    // )
-
-    const records = records_selected.map((rec) => {
-      let record = newRecord(rec) as R
-
-      for (const [key, to] of Object.entries(query.set)) {
-        if (predicate(record)) {
-          ;(record as JSONLRecord)[key] = to
-        }
+      let predicate: Predicate<R>
+      if (condition === 'OR') {
+        predicate = composeOr(predicates)
+      } else {
+        predicate = composeAnd(predicates)
       }
 
-      return record
-    })
+      const records_selected = parsed.filter(predicate)
+
+      records = records_selected.map((rec) => {
+        let record = newRecord(rec) as R
+
+        for (const [key, to] of Object.entries(query.set)) {
+          if (predicate(record)) {
+            ;(record as JSONLRecord)[key] = to
+          }
+        }
+
+        return record
+      })
+    }
 
     const validationErrorsSeparator = ';'
     // ;(records as any)[0].foo = 123 // uncomment to see validation errors

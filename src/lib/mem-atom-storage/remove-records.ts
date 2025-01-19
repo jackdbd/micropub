@@ -25,17 +25,20 @@ export const defRemoveRecords = <R extends BaseRecord = BaseRecord>(
 
     const records = Object.values(atom.deref()) as R[]
 
-    const condition = query.condition || 'AND'
-    const predicates = query.where.map((test) => defPredicate(test))
+    let removed = records
+    if (query.where) {
+      const condition = query.condition || 'AND'
+      const predicates = query.where.map((test) => defPredicate(test))
 
-    let shouldRemove: Predicate<R>
-    if (condition === 'OR') {
-      shouldRemove = composeOr(predicates)
-    } else {
-      shouldRemove = composeAnd(predicates)
+      let shouldRemove: Predicate<R>
+      if (condition === 'OR') {
+        shouldRemove = composeOr(predicates)
+      } else {
+        shouldRemove = composeAnd(predicates)
+      }
+
+      removed = records.filter(shouldRemove)
     }
-
-    const removed = records.filter(shouldRemove)
 
     const keep = new Set(records)
     removed.forEach((rec) => {

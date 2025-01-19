@@ -113,13 +113,29 @@ export const selectQuery = (table: string, query?: SelectQuery) => {
 export const updateQuery = (table: string, query: UpdateQuery) => {
   const returning = query.returning || Object.keys(query.set).join(', ')
 
-  return `
+  let where: string | undefined
+  if (query.where && query.where.length > 0) {
+    where = whereClause({
+      condition: query.condition,
+      expressions: query.where
+    })
+  }
+
+  if (where) {
+    return `
   UPDATE \`${table}\` 
     SET ${setClause({ ...query.set, updated_at: unixTimestampInMs() })} 
   WHERE
-    ${whereClause({ condition: query.condition, expressions: query.where })} 
+    ${where} 
   RETURNING
     ${returning};`
+  } else {
+    return `
+  UPDATE \`${table}\` 
+    SET ${setClause({ ...query.set, updated_at: unixTimestampInMs() })} 
+  RETURNING
+    ${returning};`
+  }
 }
 
 export const insertQuery = (table: string, props: BaseProps) => {

@@ -41,7 +41,7 @@ export const defRetrieveRecords = <R extends JSONLRecord = JSONLRecord>(
 
     let records = parsed
 
-    if (query) {
+    if (query && query.where) {
       const condition = query.condition || 'AND'
       const predicates = query.where.map((test) => defPredicate(test))
 

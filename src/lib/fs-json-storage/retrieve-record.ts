@@ -35,20 +35,23 @@ export const defRetrieveRecord = <R extends JSONRecord = JSONRecord>(
       return { error: parse_error }
     }
 
-    const condition = query.condition || 'AND'
-    const predicates = query.where.map((test) => defPredicate(test))
-
     const records = Object.values(parsed) as R[]
 
-    let predicate: Predicate<R>
-    // let predicate: Predicate<JSONRecord>
-    if (condition === 'OR') {
-      predicate = composeOr(predicates)
-    } else {
-      predicate = composeAnd(predicates)
-    }
+    let filtered = records
+    if (query.where) {
+      const condition = query.condition || 'AND'
+      const predicates = query.where.map((test) => defPredicate(test))
 
-    const filtered = records.filter(predicate)
+      let predicate: Predicate<R>
+      // let predicate: Predicate<JSONRecord>
+      if (condition === 'OR') {
+        predicate = composeOr(predicates)
+      } else {
+        predicate = composeAnd(predicates)
+      }
+
+      filtered = records.filter(predicate)
+    }
 
     const str = stringify(query)
 

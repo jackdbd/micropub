@@ -25,17 +25,20 @@ export const defRetrieveRecord = <R extends BaseRecord = BaseRecord>(
   const retrieveRecord: RetrieveRecord = async (query) => {
     const records = Object.values(atom.deref()) as R[]
 
-    const condition = query.condition || 'AND'
-    const predicates = query.where.map((test) => defPredicate(test))
+    let filtered = records
+    if (query.where) {
+      const condition = query.condition || 'AND'
+      const predicates = query.where.map((test) => defPredicate(test))
 
-    let predicate: Predicate<R>
-    if (condition === 'OR') {
-      predicate = composeOr(predicates)
-    } else {
-      predicate = composeAnd(predicates)
+      let predicate: Predicate<R>
+      if (condition === 'OR') {
+        predicate = composeOr(predicates)
+      } else {
+        predicate = composeAnd(predicates)
+      }
+
+      filtered = records.filter(predicate)
     }
-
-    const filtered = records.filter(predicate)
 
     const str = stringify(query)
 

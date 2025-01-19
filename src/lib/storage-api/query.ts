@@ -16,7 +16,7 @@ export interface SelectQuery {
 export interface UpdateQuery {
   returning?: string[]
   set: { [key: string]: any }
-  where: TestExpression[]
+  where?: TestExpression[]
   condition?: Condition
 }
 

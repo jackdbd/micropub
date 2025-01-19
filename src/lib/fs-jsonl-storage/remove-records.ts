@@ -33,18 +33,21 @@ export const defRemoveRecords = <R extends JSONLRecord = JSONLRecord>(
       return { error: parse_error }
     }
 
-    const condition = query.condition || 'AND'
+    let removed = records
+    if (query.where) {
+      const condition = query.condition || 'AND'
 
-    const predicates = query.where.map((test) => defPredicate(test))
+      const predicates = query.where.map((test) => defPredicate(test))
 
-    let shouldRemove: Predicate<R>
-    if (condition === 'OR') {
-      shouldRemove = composeOr(predicates)
-    } else {
-      shouldRemove = composeAnd(predicates)
+      let shouldRemove: Predicate<R>
+      if (condition === 'OR') {
+        shouldRemove = composeOr(predicates)
+      } else {
+        shouldRemove = composeAnd(predicates)
+      }
+
+      removed = records.filter(shouldRemove)
     }
-
-    const removed = records.filter(shouldRemove)
 
     // const removed_ids = records_to_remove.map((rec) => rec.id as string | number)
 

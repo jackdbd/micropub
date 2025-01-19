@@ -27,32 +27,35 @@ export const defUpdateRecords = <R extends BaseRecord = BaseRecord>(
   const updateRecords: UpdateRecords = async (query) => {
     const records_all = Object.values(atom.deref()) as R[]
 
-    const condition = query.condition || 'AND'
-    const predicates = query.where.map((test) => defPredicate(test))
+    let records = records_all
+    if (query.where) {
+      const condition = query.condition || 'AND'
+      const predicates = query.where.map((test) => defPredicate(test))
 
-    let predicate: Predicate<R>
-    if (condition === 'OR') {
-      predicate = composeOr(predicates)
-    } else {
-      predicate = composeAnd(predicates)
-    }
-
-    const records_selected = records_all.filter(predicate)
-
-    const patches: { key: string; from: any; to: any }[] = []
-    const records = records_selected.map((rec) => {
-      let record = updatedRecord(rec) as R
-
-      for (const [key, to] of Object.entries(query.set)) {
-        if (predicate(record)) {
-          const from = record[key]
-          ;(record as any)[key] = to
-          patches.push({ key, from, to })
-        }
+      let predicate: Predicate<R>
+      if (condition === 'OR') {
+        predicate = composeOr(predicates)
+      } else {
+        predicate = composeAnd(predicates)
       }
 
-      return record
-    })
+      const records_selected = records_all.filter(predicate)
+
+      const patches: { key: string; from: any; to: any }[] = []
+      records = records_selected.map((rec) => {
+        let record = updatedRecord(rec) as R
+
+        for (const [key, to] of Object.entries(query.set)) {
+          if (predicate(record)) {
+            const from = record[key]
+            ;(record as any)[key] = to
+            patches.push({ key, from, to })
+          }
+        }
+
+        return record
+      })
+    }
 
     const validationErrorsSeparator = ';'
     // ;(records as any)[0].foo = 123 // uncomment to see validation errors
