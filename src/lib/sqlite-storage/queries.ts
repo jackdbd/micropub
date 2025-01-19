@@ -4,6 +4,7 @@ import type {
   DeleteQuery,
   Query,
   SelectQuery,
+  TestExpression,
   UpdateQuery
 } from '../storage-api/index.js'
 import { jsValueToSQlite } from './type-mapping.js'
@@ -11,6 +12,10 @@ import { jsValueToSQlite } from './type-mapping.js'
 export interface Config {
   query: Query
   table: string
+}
+
+export const unsupportedOperation = ({ key, op, value }: TestExpression) => {
+  return new Error(`${key} ${op} ${value} is not supported`)
 }
 
 export const setClause = (set: { [key: string]: any }) => {
@@ -21,16 +26,21 @@ export const setClause = (set: { [key: string]: any }) => {
   return expressions.join(', ')
 }
 
+interface WhereConfig {
+  condition?: 'AND' | 'OR'
+  expressions: TestExpression[]
+}
+
 // Remember that WHERE can be composed by multiple expressions.
 // SELECT *
 // FROM suppliers
 // WHERE
 //   (state = 'California' AND supplier_id <> 900) OR
 //   (supplier_id = 100);
-export const whereClause = (query: SelectQuery | UpdateQuery | DeleteQuery) => {
-  const condition = query.condition || 'AND'
+export const whereClause = (config: WhereConfig) => {
+  const condition = config.condition || 'AND'
 
-  const expressions = query.where.map(({ key, op, value }) => {
+  const expressions = config.expressions.map(({ key, op, value }) => {
     const val = jsValueToSQlite(value)
 
     switch (op) {
@@ -40,8 +50,36 @@ export const whereClause = (query: SelectQuery | UpdateQuery | DeleteQuery) => {
       case '!=': {
         return `\`${key}\` != '${val}'`
       }
+      case '<': {
+        if (isFinite(val as any)) {
+          return `\`${key}\` < '${val}'`
+        } else {
+          throw unsupportedOperation({ key, op, value })
+        }
+      }
+      case '<=': {
+        if (isFinite(val as any)) {
+          return `\`${key}\` <= '${val}'`
+        } else {
+          throw unsupportedOperation({ key, op, value })
+        }
+      }
+      case '>': {
+        if (isFinite(val as any)) {
+          return `\`${key}\` > '${val}'`
+        } else {
+          throw unsupportedOperation({ key, op, value })
+        }
+      }
+      case '>=': {
+        if (isFinite(val as any)) {
+          return `\`${key}\` >= '${val}'`
+        } else {
+          throw unsupportedOperation({ key, op, value })
+        }
+      }
       default: {
-        throw new Error(`unsupported operator: ${op}`)
+        throw unsupportedOperation({ key, op, value })
       }
     }
   })
@@ -58,8 +96,11 @@ export const selectQuery = (table: string, query?: SelectQuery) => {
   }
 
   let where: string | undefined
-  if (query) {
-    where = whereClause(query)
+  if (query && query.where && query.where.length > 0) {
+    where = whereClause({
+      condition: query.condition,
+      expressions: query.where
+    })
   }
 
   if (where) {
@@ -76,7 +117,7 @@ export const updateQuery = (table: string, query: UpdateQuery) => {
   UPDATE \`${table}\` 
     SET ${setClause({ ...query.set, updated_at: unixTimestampInMs() })} 
   WHERE
-    ${whereClause(query)} 
+    ${whereClause({ condition: query.condition, expressions: query.where })} 
   RETURNING
     ${returning};`
 }
@@ -119,11 +160,18 @@ export const deleteQuery = (table: string, query?: DeleteQuery) => {
   //   values: { ...props, deleted_at: now }
   // }
 
-  if (query) {
-    const where = whereClause(query)
-    const returning = query.where.map(({ key }) => key).join(', ')
-    return `DELETE FROM \`${table}\` WHERE ${where} RETURNING ${returning};`
-  } else {
-    return `DELETE FROM \`${table}\` RETURNING *;`
+  let where: string | undefined
+  if (query && query.where && query.where.length > 0) {
+    where = whereClause({
+      condition: query.condition,
+      expressions: query.where
+    })
   }
+
+  if (query && where) {
+    const returning = query.where!.map(({ key }) => key).join(', ')
+    return `DELETE FROM \`${table}\` WHERE ${where} RETURNING ${returning};`
+  }
+
+  return `DELETE FROM \`${table}\` RETURNING *;`
 }

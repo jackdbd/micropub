@@ -3,13 +3,13 @@ import type { TestExpression } from './test-expression.js'
 export type Condition = 'AND' | 'OR'
 
 export interface DeleteQuery {
-  where: TestExpression[]
+  where?: TestExpression[]
   condition?: Condition
 }
 
 export interface SelectQuery {
   select?: string[]
-  where: TestExpression[]
+  where?: TestExpression[]
   condition?: Condition
 }
 

@@ -27,16 +27,6 @@ Seed the production database.
 npx tsm ./scripts/seed.ts -b sqlite -e prod
 ```
 
-## Token revocation
-
-Revoke all access tokens and all refresh tokens that are currently stored in the SQLite database used in development. Add also an optional reason for their revocation.
-
-```sh
-npx tsm ./scripts/revoke-tokens.ts -b sqlite -e dev \
-  --revoke-all \
-  --revocation-reason "security breach"
-```
-
 ## CRUD
 
 Small CRUD scripts. Useful when developing / testing / troubleshooting a storage backend.
@@ -54,6 +44,28 @@ npx tsm ./scripts/crud-authorization-code.ts -b fs-jsonl --reset
 npx tsm ./scripts/crud-client.ts --b fs-jsonl --reset
 npx tsm ./scripts/crud-refresh-token.ts -b fs-jsonl --reset
 npx tsm ./scripts/crud-user-profile.ts -b fs-jsonl --reset
+```
+
+## Token revocation
+
+Revoke all access tokens and all refresh tokens that are currently stored in the SQLite database used in development. Add also an optional reason for their revocation.
+
+```sh
+npx tsm ./scripts/revoke-tokens.ts -b sqlite -e dev \
+  --revoke-all \
+  --revocation-reason "security breach"
+```
+
+## Cleanup expired authorization codes and tokens
+
+Remove expired authorization codes, access tokens, and refresh tokens from the SQLite database used in development.
+
+```sh
+npx tsm ./scripts/remove-expired.ts -b sqlite -e dev \
+  --authorization-codes \
+  --access-tokens \
+  --refresh-tokens
+
 ```
 
 ## JSON Schemas

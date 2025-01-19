@@ -51,7 +51,7 @@ export type {
   UserProfileMutableRecord
 } from './schemas.js'
 
-export { test_expression } from './test-expression.js'
-export type { TestExpression } from './test-expression.js'
+export { operation, test_expression } from './test-expression.js'
+export type { Operation, TestExpression } from './test-expression.js'
 
 export type { JSValue, BaseProps, BaseRecord } from './types.js'

@@ -42,10 +42,8 @@ export const check = (what: string, value: any, validate: ValidateFunction) => {
   }
 }
 
-export const exp = (expiration: string) => {
-  return Math.floor(
-    (unixTimestampInMs() + ms(expiration as StringValue)) / 1000
-  )
+export const exp = (expiration: string, t0 = unixTimestampInMs()) => {
+  return Math.floor((t0 + ms(expiration as StringValue)) / 1000)
 }
 
 export const exitOne = (message: string) => {

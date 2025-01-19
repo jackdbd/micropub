@@ -113,6 +113,10 @@ export const defOnIssuedTokens = (config: OnIssuedTokensConfig) => {
     throw new Error(`set at least one of 'batchTransaction' and 'storage'`)
   }
 
+  if (batchTransaction) {
+    log.debug(`storage backend supports batch transactions`)
+  }
+
   const onIssuedTokens: OnIssuedTokens = async (issued_info) => {
     const {
       client_id,
