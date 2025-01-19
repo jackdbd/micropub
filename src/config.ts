@@ -13,10 +13,18 @@ const REQUIRED_ENV_VARS = [
   'GITHUB_REPO',
   'GITHUB_TOKEN',
   'JWKS',
+  'NODE_ENV',
   'SECURE_SESSION_KEY_ONE',
   'SECURE_SESSION_KEY_TWO',
   'TELEGRAM_CHAT_ID',
   'TELEGRAM_TOKEN'
+]
+
+const REQUIRED_ENV_VARS_IN_DEVELOPMENT = ['DEBUG', 'PINO_LOG_LEVEL']
+
+const REQUIRED_ENV_VARS_IN_PRODUCTION = [
+  'TURSO_DATABASE_URL',
+  'TURSO_DATABASE_TOKEN'
 ]
 
 // TODO: read syndication_to from a JSON file?
@@ -169,6 +177,22 @@ export const defConfig = async (): Promise<Config> => {
       throw new Error(`key ${key} not set in process.env`)
     }
   })
+
+  if (process.env.NODE_ENV === 'development') {
+    REQUIRED_ENV_VARS_IN_DEVELOPMENT.forEach((key) => {
+      if (process.env[key] === undefined) {
+        throw new Error(`key ${key} not set in process.env`)
+      }
+    })
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    REQUIRED_ENV_VARS_IN_PRODUCTION.forEach((key) => {
+      if (process.env[key] === undefined) {
+        throw new Error(`key ${key} not set in process.env`)
+      }
+    })
+  }
 
   // const secure_session_key_one_buf = DEFAULT.SECURE_SESSION_KEY_ONE
   // if (!secure_session_key_one_buf) {

@@ -104,7 +104,7 @@ in {
         --env GITHUB_TOKEN=${config.env.GITHUB_TOKEN} \
         --env JWKS=${config.env.JWKS} \
         --env LOG_LEVEL=debug \
-        --env NODE_ENV=development \
+        --env NODE_ENV=production \
         --env PORT=${config.env.PORT} \
         --env SECURE_SESSION_KEY_ONE=${micropub.session_key_one} \
         --env SECURE_SESSION_KEY_TWO=${micropub.session_key_two} \
@@ -150,7 +150,7 @@ in {
       fly secrets set TELEGRAM_TOKEN="${telegram.token}"
     '';
     fly-secrets-set-turso.exec = ''
-      fly secrets set TURSO_DATABASE_TOKEN="${turso.database_token}"
+      fly secrets set TURSO_DATABASE_TOKEN="${config.env.TURSO_DATABASE_TOKEN}"
     '';
     prod.exec = ''
       npm run build && npm run start

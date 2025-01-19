@@ -58,7 +58,7 @@ export const defStoreRecord = (config: Config) => {
         details: [ex.message],
         suggestions: [
           `ensure the query is correct: ${sql}`,
-          `ensure the database credentials are correct`,
+          `ensure the database credentials are correct (maybe you forgot to set an environment variable or to update a secret?)`,
           `ensure the database was migrated so it matches the schema you provided`,
           `ensure the data has all the required properties`
         ]

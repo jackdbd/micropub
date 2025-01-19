@@ -76,6 +76,7 @@ export const JSON_LINES_FILEPATH: Record<keyof HashMapSchemas, string> = {
   user_profile: path.join(assets_dir, 'profiles.jsonl')
 }
 
+// https://github.com/tursodatabase/libsql-client-ts?tab=readme-ov-file#examples
 export const SQLITE_DATABASE: Record<Environment, LibSqlClientConfig> = {
   dev: { url: 'file:micropub-dev.db' } as LibSqlClientConfig,
   prod: {
