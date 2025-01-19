@@ -59,23 +59,27 @@ export const queryTable = (
       data.push([`${key}: ${value}`])
     })
 
-    data.push([`WHERE`])
-    query.where.forEach(({ key, op, value }) => {
-      data.push([`${key} ${op} ${value}`])
-    })
+    if (query.where) {
+      data.push([`WHERE`])
+      query.where.forEach(({ key, op, value }) => {
+        data.push([`${key} ${op} ${value}`])
+      })
 
-    data.push(['CONDITION'])
-    data.push([condition])
+      data.push(['CONDITION'])
+      data.push([condition])
+    }
   } else if (isSelectQuery(query)) {
     header_lines.push(`Select Query`)
 
-    data.push(['WHERE'])
-    query.where.forEach(({ key, op, value }) => {
-      data.push([`${key} ${op} ${value}`])
-    })
+    if (query.where) {
+      data.push(['WHERE'])
+      query.where.forEach(({ key, op, value }) => {
+        data.push([`${key} ${op} ${value}`])
+      })
 
-    data.push(['CONDITION'])
-    data.push([condition])
+      data.push(['CONDITION'])
+      data.push([condition])
+    }
   } else {
     throw new Error(`this query is not supported: ${stringify(query)}`)
   }
