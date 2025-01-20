@@ -35,6 +35,7 @@
     "nuke": "rm -rf node_modules/ package-lock.json",
     "readme": "run-s readme:* --print-label",
     "readme:authorization-endpoint": "npx tsm ./src/plugins/authorization-endpoint/readme.ts --package-root './src/plugins/authorization-endpoint/'",
+    "readme:introspection-endpoint": "npx tsm ./src/plugins/introspection-endpoint/readme.ts --package-root './src/plugins/introspection-endpoint/'",
     "readme:revocation-endpoint": "npx tsm ./src/plugins/revocation-endpoint/readme.ts --package-root './src/plugins/revocation-endpoint/'",
     "readme:token-endpoint": "npx tsm ./src/plugins/token-endpoint/readme.ts --package-root './src/plugins/token-endpoint/'",
     "script:mf2": "tsm ./scripts/microformats/mf2.ts",

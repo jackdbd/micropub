@@ -1,0 +1,113 @@
+{
+  "$id": "fastify-introspection-endpoint-options",
+  "description": "Options for the Fastify introspection-endpoint plugin",
+  "title": "Fastify plugin introspection-endpoint options",
+  "type": "object",
+  "properties": {
+    "ajv": {
+      "description": "Instance of Ajv"
+    },
+    "includeErrorDescription": {
+      "default": false,
+      "type": "boolean"
+    },
+    "isAccessTokenRevoked": {
+      "description": "Predicate function that returns true if a jti (JSON Web Token ID) is revoked.",
+      "title": "isAccessTokenRevoked",
+      "type": "Function",
+      "parameters": [
+        {
+          "description": "Unique identifier for the JWT",
+          "minLength": 1,
+          "title": "\"jti\" (JWT ID) Claim",
+          "type": "string"
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "type": "boolean"
+        }
+      }
+    },
+    "issuer": {
+      "description": "The authorization server's issuer identifier. It's a URL that uses the \"https\" scheme and has no query or fragment components. It MUST also be a prefix of the indieauth-metadata URL.",
+      "format": "uri",
+      "title": "Issuer",
+      "type": "string"
+    },
+    "jwksUrl": {
+      "additionalProperties": true,
+      "description": "URL where the public JSON Web Key Set is hosted.",
+      "title": "JWKS public URL",
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "pathname": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "search": {
+          "type": "string"
+        },
+        "searchParams": {},
+        "username": {
+          "type": "string"
+        },
+        "toJSON": {}
+      },
+      "required": [
+        "hash",
+        "host",
+        "href",
+        "hostname",
+        "origin",
+        "password",
+        "pathname",
+        "port",
+        "protocol",
+        "search",
+        "searchParams",
+        "username",
+        "toJSON"
+      ]
+    },
+    "logPrefix": {
+      "default": "introspection-endpoint ",
+      "type": "string"
+    },
+    "reportAllAjvErrors": {
+      "description": "Whether to report all AJV validation errors.",
+      "title": "report all AJV errors",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "isAccessTokenRevoked",
+    "issuer",
+    "jwksUrl"
+  ]
+}
