@@ -1,3 +1,4 @@
+import responseValidation from '@fastify/response-validation'
 import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
@@ -42,6 +43,10 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
   throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
 
   // === PLUGINS ============================================================ //
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(responseValidation)
+    fastify.log.debug(`${log_prefix}registered plugin: response-validation`)
+  }
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {

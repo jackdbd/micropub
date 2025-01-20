@@ -1,4 +1,5 @@
 import formbody from '@fastify/formbody'
+import responseValidation from '@fastify/response-validation'
 import { applyToDefaults } from '@hapi/hoek'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
@@ -68,6 +69,11 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(
     `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(responseValidation)
+    fastify.log.debug(`${log_prefix}registered plugin: response-validation`)
+  }
 
   // === DECORATORS ========================================================= //
 

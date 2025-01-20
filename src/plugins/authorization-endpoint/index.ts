@@ -1,4 +1,5 @@
 import formbody from '@fastify/formbody'
+import responseValidation from '@fastify/response-validation'
 // import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { applyToDefaults } from '@hapi/hoek'
 import { Type } from '@sinclair/typebox'
@@ -79,6 +80,11 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
   // Parse application/x-www-form-urlencoded requests
   fastify.register(formbody)
   fastify.log.debug(`${log_prefix}registered plugin: formbody`)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(responseValidation)
+    fastify.log.debug(`${log_prefix}registered plugin: response-validation`)
+  }
 
   // === DECORATORS ========================================================= //
 

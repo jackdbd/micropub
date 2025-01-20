@@ -3,6 +3,7 @@ import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import formbody from '@fastify/formbody'
+import responseValidation from '@fastify/response-validation'
 import { applyToDefaults } from '@hapi/hoek'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
@@ -61,6 +62,11 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
   fastify.log.debug(
     `${log_prefix}registered plugin: formbody (for parsing application/x-www-form-urlencoded)`
   )
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(responseValidation)
+    fastify.log.debug(`${log_prefix}registered plugin: response-validation`)
+  }
 
   // === DECORATORS ========================================================= //
 
