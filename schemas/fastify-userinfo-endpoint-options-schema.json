@@ -1,0 +1,51 @@
+{
+  "$id": "fastify-userinfo-endpoint-options",
+  "description": "Options for the Fastify userinfo-endpoint plugin",
+  "title": "Userinfo Endpoint Options",
+  "type": "object",
+  "properties": {
+    "ajv": {
+      "description": "Instance of Ajv"
+    },
+    "isAccessTokenRevoked": {
+      "description": "Predicate function that returns true if a jti (JSON Web Token ID) is revoked.",
+      "title": "isAccessTokenRevoked",
+      "type": "Function",
+      "parameters": [
+        {
+          "description": "Unique identifier for the JWT",
+          "minLength": 1,
+          "title": "\"jti\" (JWT ID) Claim",
+          "type": "string"
+        }
+      ],
+      "returns": {
+        "type": "Promise",
+        "item": {
+          "type": "boolean"
+        }
+      }
+    },
+    "includeErrorDescription": {
+      "default": false,
+      "type": "boolean"
+    },
+    "logPrefix": {
+      "default": "userinfo-endpoint ",
+      "type": "string"
+    },
+    "reportAllAjvErrors": {
+      "description": "Whether to report all AJV validation errors.",
+      "title": "report all AJV errors",
+      "type": "boolean",
+      "default": false
+    },
+    "retrieveProfile": {
+      "description": "Function that retrieves a user's profile from some storage."
+    }
+  },
+  "required": [
+    "isAccessTokenRevoked",
+    "retrieveProfile"
+  ]
+}

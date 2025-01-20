@@ -38,6 +38,7 @@
     "readme:introspection-endpoint": "npx tsm ./src/plugins/introspection-endpoint/readme.ts --package-root './src/plugins/introspection-endpoint/'",
     "readme:revocation-endpoint": "npx tsm ./src/plugins/revocation-endpoint/readme.ts --package-root './src/plugins/revocation-endpoint/'",
     "readme:token-endpoint": "npx tsm ./src/plugins/token-endpoint/readme.ts --package-root './src/plugins/token-endpoint/'",
+    "readme:userinfo-endpoint": "npx tsm ./src/plugins/userinfo-endpoint/readme.ts --package-root './src/plugins/userinfo-endpoint/'",
     "script:mf2": "tsm ./scripts/microformats/mf2.ts",
     "secure-session-keys": "node scripts/secure-session-keys.js",
     "start": "NODE_ENV=production node ./dist/server.js",

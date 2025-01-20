@@ -9,7 +9,7 @@ import { error_response } from '../../lib/oauth2/index.js'
 import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defUserinfoGet } from './routes/userinfo-get.js'
-import { options as options_schema, type Options } from './schemas.js'
+import { options as options_schema, type Options } from './schemas/index.js'
 
 const defaults: Partial<Options> = {
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
