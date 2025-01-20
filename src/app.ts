@@ -35,6 +35,7 @@ import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
 import token from './plugins/token-endpoint/index.js'
+import fastifyWebC from './plugins/webc/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -83,6 +84,8 @@ declare module 'fastify' {
     ): void
 
     micropubResponse(jf2: Jf2, config: ResponseConfig): Promise<void>
+
+    render(template: string, data: Record<string, any>): Promise<void>
   }
 }
 
@@ -557,7 +560,15 @@ export async function defFastify(config: Config) {
     ]
   })
 
+  fastify.register(fastifyWebC, {
+    components: ['src/components/**/*.webc'],
+    templates: [path.join(__dirname, 'templates')]
+  })
+
   // TODO: register this plugin in micropub-client, not here.
+  // https://github.com/fastify/point-of-view?tab=readme-ov-file#using-fastifyview-as-a-dependency-in-a-fastify-plugin
+  // Also, should I use viewAsync?
+  // https://github.com/fastify/point-of-view?tab=readme-ov-file#migrating-from-view-to-viewasync
   fastify.register(view, {
     engine: { nunjucks },
     templates: [path.join(__dirname, 'templates')],
@@ -588,6 +599,16 @@ export async function defFastify(config: Config) {
   // === HOOKS ============================================================== //
 
   // === ROUTES ============================================================= //
+  fastify.get('/demo-webc', function (_request, reply) {
+    // see authorize-page.ts
+    const data = {
+      description:
+        'Page where the user can approve or deny the authorization request',
+      redirect_path_on_submit: '/consent',
+      title: 'Authorize'
+    }
+    return reply.render('authorize.webc', data)
+  })
 
   return fastify
 }

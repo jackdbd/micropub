@@ -1,0 +1,6 @@
+<form id="consent-form" :action="action" method="get">
+  <p>implement form here</p>
+  
+  <button class="deny" type="submit" name="action" value="deny">Deny</button>
+  <button class="approve" type="submit" name="action" value="approve">Approve</button>
+</form>

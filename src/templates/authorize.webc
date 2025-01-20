@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" :content="description">
+	<title @text="tap(title)"></title>
+	<style>body{--color-alabaster: #F2F0E6;}</style>
+	<!-- <script defer src="{{ base_url }}/scripts/authorize.js"></script> -->
+	<script defer src="/scripts/authorize.js"></script>
+  </head>
+
+  <body>
+	<h1 @text="title"></h1>
+	<consent-form :@action="{{ redirect_path_on_submit }}"></consent-form>
+	<my-counter @name="first" @value="3"></my-counter>
+	<script>console.log("hello")</script>
+  </body>
+</html>

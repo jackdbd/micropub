@@ -171,6 +171,7 @@ export const defAuthorizePage = (config: Config) => {
     }
 
     return reply.view('authorize.njk', data)
+    // return reply.render('authorize.webc', data)
   }
 
   return authorizePage
