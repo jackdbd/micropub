@@ -10,15 +10,15 @@ import {
   me_after_url_canonicalization,
   redirect_uris,
   userinfo_endpoint
-} from '../../lib/indieauth/index.js'
+} from '@jackdbd/indieauth'
 import { micropub_endpoint } from '../../lib/micropub/index.js'
-import { code_verifier_length } from '../../lib/pkce/index.js'
+import { code_verifier_length } from '@jackdbd/pkce'
 import {
   authorization_endpoint,
   introspection_endpoint,
   revocation_endpoint,
   token_endpoint
-} from '../../lib/oauth2/index.js'
+} from '@jackdbd/oauth2'
 import { ajv, report_all_ajv_errors } from '../../lib/schemas/index.js'
 import {
   isAccessTokenRevoked,

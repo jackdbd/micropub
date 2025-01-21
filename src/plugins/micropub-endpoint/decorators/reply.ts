@@ -1,7 +1,7 @@
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import type { ValidateFunction } from 'ajv'
 import type { FastifyReply } from 'fastify'
-import { InvalidRequestError } from '../../../lib/fastify-error-response/index.js'
+import { InvalidRequestError } from '@jackdbd/oauth2-error-responses'
 import type { Create } from '../../../lib/schemas/index.js'
 import {
   storeErrorToMicropubError,

@@ -1,10 +1,10 @@
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
-import type { RouteHandler } from 'fastify'
-import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
 import {
   InvalidRequestError,
   ServerError
-} from '../../../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
+import type { RouteHandler } from 'fastify'
+import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
 import type { Action } from '../../../lib/micropub/index.js'
 import type {
   DeleteContentOrMedia,

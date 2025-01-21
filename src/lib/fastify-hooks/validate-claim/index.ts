@@ -7,8 +7,8 @@ import {
   ForbiddenError,
   InvalidRequestError,
   UnauthorizedError
-} from '../../fastify-error-response/index.js'
-import { throwIfDoesNotConform } from '../../validators.js'
+} from '@jackdbd/oauth2-error-responses'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { DEFAULT } from './constants.js'
 import {
   options as options_schema,
@@ -43,7 +43,10 @@ export const defValidateClaim = (assertion: Assertion, options?: Options) => {
     ajv = new Ajv({ allErrors })
   }
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'validate-claim-options' }
+  )
 
   const validateClaim: onRequestHookHandler = (request, _reply, done) => {
     const session = (request as any)[session_key] as Session<SessionData>

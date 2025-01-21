@@ -1,8 +1,8 @@
 import { Static, Type } from '@sinclair/typebox'
-import { client_id, me_after_url_canonicalization } from '../indieauth/index.js'
+import { client_id, me_after_url_canonicalization } from '@jackdbd/indieauth'
 import { exp, iss } from '../jwt/index.js'
-import { redirect_uri, scope } from '../oauth2/index.js'
-import { code_challenge, code_challenge_method } from '../pkce/index.js'
+import { redirect_uri, scope } from '@jackdbd/oauth2'
+import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 
 /**
  * Authorization code issued by the authorization endpoint.

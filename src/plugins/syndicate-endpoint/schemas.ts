@@ -3,7 +3,7 @@ import type Ajv from 'ajv'
 import {
   me_before_url_canonicalization,
   me_after_url_canonicalization
-} from '../../lib/indieauth/index.js'
+} from '@jackdbd/indieauth'
 import {
   ajv,
   get,

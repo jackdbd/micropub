@@ -1,4 +1,4 @@
-import type { Profile } from '../indieauth/index.js'
+import type { Profile } from '@jackdbd/indieauth'
 
 export type ProfileURL = string
 

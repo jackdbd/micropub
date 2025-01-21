@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { issuer } from '../../../lib/indieauth/index.js'
+import { issuer } from '@jackdbd/indieauth'
 import { jwks_url } from '../../../lib/jwks/index.js'
 import { ajv, report_all_ajv_errors } from '../../../lib/schemas/index.js'
 import {

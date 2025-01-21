@@ -6,7 +6,7 @@ import {
   InvalidTokenError,
   ServerError,
   UnauthorizedError
-} from '../../../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../../lib/token/index.js'
 // import { githubUser } from './github.js'

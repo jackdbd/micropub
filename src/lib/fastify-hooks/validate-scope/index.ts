@@ -1,8 +1,8 @@
 import { applyToDefaults } from '@hapi/hoek'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
 import { defErrorIfActionNotAllowed } from '../../error-if-action-not-allowed.js'
-import { throwIfDoesNotConform } from '../../validators.js'
 import { DEFAULT } from './constants.js'
 import { options as options_schema, type Options } from './schemas.js'
 
@@ -20,7 +20,7 @@ const defaults: Partial<Options> = {
 export const defValidateScope = (options?: Options) => {
   const config = applyToDefaults(defaults, options ?? {}) as Required<Options>
 
-  const { logPrefix: prefix, reportAllAjvErrors: allErrors, scope } = config
+  const { reportAllAjvErrors: allErrors, scope } = config
 
   let ajv: Ajv
   if (config.ajv) {
@@ -29,7 +29,10 @@ export const defValidateScope = (options?: Options) => {
     ajv = new Ajv({ allErrors })
   }
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'validate-scope-options' }
+  )
 
   const errorIfActionNotAllowed = defErrorIfActionNotAllowed()
 

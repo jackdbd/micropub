@@ -1,6 +1,7 @@
 import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import { applyToDefaults } from '@hapi/hoek'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
@@ -13,7 +14,6 @@ import {
   defValidateScope,
   defValidateAccessTokenNotRevoked
 } from '../../lib/fastify-hooks/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defMediaGet } from './routes/media-get.js'
 import { defMediaPost } from './routes/media-post.js'
@@ -51,7 +51,10 @@ const mediaEndpoint: FastifyPluginCallback<Options> = (
     ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'media-endpoint-options' }
+  )
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)

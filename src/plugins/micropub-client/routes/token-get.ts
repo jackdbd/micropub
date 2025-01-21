@@ -1,6 +1,6 @@
 import type { RouteHandler } from 'fastify'
-import { UnauthorizedError } from '../../../lib/fastify-error-response/index.js'
-import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
+import { UnauthorizedError } from '@jackdbd/oauth2-error-responses'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 import type { IntrospectionResponseBodySuccess } from '../../introspection-endpoint/index.js'
 
 export interface TokenGetConfig {

@@ -1,5 +1,6 @@
 import type { Ajv, Schema } from 'ajv'
 import stringify from 'fast-safe-stringify'
+import { conformResult } from '@jackdbd/schema-validators'
 import {
   composeAnd,
   composeOr,
@@ -9,7 +10,6 @@ import {
 import { errorMessage } from '../rich-error-message/index.js'
 import { updatedRecord } from '../storage-implementations/record.js'
 import type { UpdateRecords } from '../storage-api/index.js'
-import { conformResult } from '../validators.js'
 import {
   parse,
   write,

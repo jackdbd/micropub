@@ -30,6 +30,7 @@ Options for the Fastify authorization-endpoint plugin
 |----|----|-----------|--------|
 |**ajv**||Instance of Ajv<br/>|no|
 |**authorizationCodeExpiration**|`string`|Default: `"5 minutes"`<br/>Minimal Length: `1`<br/>|yes|
+|**redirectPathOnSubmit**|`string`|Default: `"/consent"`<br/>Minimal Length: `1`<br/>|no|
 |**includeErrorDescription**|`boolean`|Whether to include an<br/>`error_description` property in all error responses.<br/>This is meant to assist the client developer in understanding the error.<br/>This is NOT meant to be shown to the end user.<br/>Default: `false`<br/>|no|
 |**issuer**|`string`|The authorization server's issuer identifier. It's a URL that uses the "https" scheme and has no query or fragment components. It MUST also be a prefix of the indieauth-metadata URL.<br/>Format: `"uri"`<br/>|no|
 |**logPrefix**|`string`|Default: `"authorization-endpoint "`<br/>|no|
@@ -43,6 +44,7 @@ Options for the Fastify authorization-endpoint plugin
 ```json
 {
     "authorizationCodeExpiration": "5 minutes",
+    "redirectPathOnSubmit": "/consent",
     "includeErrorDescription": false,
     "logPrefix": "authorization-endpoint ",
     "reportAllAjvErrors": false

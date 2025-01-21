@@ -3,8 +3,8 @@ import {
   InvalidRequestError,
   ServerError,
   UnauthorizedError
-} from '../../../lib/fastify-error-response/index.js'
-import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
+} from '@jackdbd/oauth2-error-responses'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 
 interface RouteGeneric extends RouteGenericInterface {
   Querystring: {

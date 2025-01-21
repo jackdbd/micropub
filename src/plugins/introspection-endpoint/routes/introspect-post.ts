@@ -4,13 +4,10 @@ import {
   InvalidRequestError,
   InvalidTokenError,
   ServerError
-} from '../../../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
 import { isExpired } from '../../../lib/predicates.js'
 import { safeDecode, verify } from '../../../lib/token/index.js'
-import {
-  conformResult,
-  throwIfDoesNotConform
-} from '../../../lib/validators.js'
+import { conformResult, throwWhenNotConform } from '@jackdbd/schema-validators'
 import {
   config as config_schema,
   type Config,
@@ -34,11 +31,9 @@ interface RouteGeneric extends RouteGenericInterface {
 export const defIntrospectPost = (config: Config) => {
   const ajv = config.ajv
 
-  throwIfDoesNotConform(
-    { prefix: 'revocation-endpoint post method config ' },
-    ajv,
-    config_schema,
-    config
+  throwWhenNotConform(
+    { ajv, schema: config_schema, data: config },
+    { basePath: 'revocation-endpoint post method config ' }
   )
 
   const {

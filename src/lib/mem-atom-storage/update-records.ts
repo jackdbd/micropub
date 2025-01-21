@@ -10,7 +10,7 @@ import {
   Predicate
 } from '../storage-implementations/predicate.js'
 import { updatedRecord } from '../storage-implementations/record.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 
 interface Config<R extends BaseRecord = BaseRecord> {
   ajv: Ajv

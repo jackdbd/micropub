@@ -7,7 +7,7 @@ import {
 } from '../storage-implementations/predicate.js'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { RetrieveRecords } from '../storage-api/index.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 import { init, parse, type JSONRecord } from './json.js'
 
 interface Config {

@@ -1,6 +1,6 @@
-import { ServerError } from './fastify-error-response/index.js'
-import { Profile } from '../lib/indieauth/index.js'
-import { errorResponseFromJSONResponse } from '../lib/oauth2/index.js'
+import { Profile } from '@jackdbd/indieauth'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
+import { ServerError } from '@jackdbd/oauth2-error-responses'
 
 export interface Config {
   access_token: string

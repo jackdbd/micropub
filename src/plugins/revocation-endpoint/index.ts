@@ -11,8 +11,8 @@ import {
   defValidateAccessTokenNotRevoked,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
-import { error_response } from '../../lib/oauth2/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
+import { error_response } from '@jackdbd/oauth2'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { DEFAULT, NAME } from './constants.js'
 import { defRevocationPost } from './routes/revocation-post.js'
 import {
@@ -62,7 +62,10 @@ const revocationEndpoint: FastifyPluginCallback<Options> = (
     ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'revocation-endpoint-options' }
+  )
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)

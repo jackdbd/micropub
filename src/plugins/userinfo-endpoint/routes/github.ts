@@ -1,7 +1,4 @@
-import {
-  ServerError,
-  UnauthorizedError
-} from '../../../lib/fastify-error-response/index.js'
+import { ServerError, UnauthorizedError } from '@jackdbd/oauth2-error-responses'
 
 export interface GitHubUser {
   login: string

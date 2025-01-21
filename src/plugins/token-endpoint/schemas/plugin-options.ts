@@ -5,17 +5,14 @@ import {
   include_error_description,
   report_all_ajv_errors
 } from '../../../lib/schemas/index.js'
-import { issuer, userinfo_endpoint } from '../../../lib/indieauth/index.js'
+import { issuer, userinfo_endpoint } from '@jackdbd/indieauth'
 import {
   expiration,
   onIssuedTokens,
   type OnIssuedTokens
 } from '../../../lib/issue-tokens/index.js'
 import { jwks_private } from '../../../lib/jwks/index.js'
-import {
-  authorization_endpoint,
-  revocation_endpoint
-} from '../../../lib/oauth2/index.js'
+import { authorization_endpoint, revocation_endpoint } from '@jackdbd/oauth2'
 import {
   isAccessTokenRevoked,
   retrieveRefreshToken,

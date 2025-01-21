@@ -1,6 +1,6 @@
 import type { RouteHandler } from 'fastify'
 // import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
-import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 import type { IntrospectionResponseBodySuccess } from '../../introspection-endpoint/index.js'
 
 export interface Config {

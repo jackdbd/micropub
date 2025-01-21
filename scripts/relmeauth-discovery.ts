@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { relMeHrefs } from '../src/lib/relmeauth/index.js'
-import { canonicalUrl } from '../src/lib/url-canonicalization.js'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { relMeHrefs } from '@jackdbd/relmeauth'
 import { DEFAULT } from './constants.js'
 import { exitOne } from './utils.js'
 

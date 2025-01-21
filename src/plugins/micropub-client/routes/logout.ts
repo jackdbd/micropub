@@ -1,7 +1,7 @@
 // import { OAuth2Namespace } from '@fastify/oauth2'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 // import { InvalidRequestError } from '../../../lib/fastify-errors/index.js'
-import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 
 export interface Config {
   include_error_description: boolean

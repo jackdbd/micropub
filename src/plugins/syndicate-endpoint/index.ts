@@ -1,5 +1,6 @@
 import formbody from '@fastify/formbody'
 import { applyToDefaults } from '@hapi/hoek'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
@@ -11,7 +12,6 @@ import {
   defValidateAccessTokenNotRevoked,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defSyndicatePost } from './routes/syndicate-post.js'
 import { options as options_schema, type Options } from './schemas.js'
@@ -42,7 +42,10 @@ const fastifySyndicator: FastifyPluginCallback<Options> = (
     ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'syndicator-options' }
+  )
 
   const {
     get,

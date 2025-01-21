@@ -12,6 +12,11 @@
       "minLength": 1,
       "type": "string"
     },
+    "redirectPathOnSubmit": {
+      "minLength": 1,
+      "default": "/consent",
+      "type": "string"
+    },
     "includeErrorDescription": {
       "description": "Whether to include an\n`error_description` property in all error responses.\nThis is meant to assist the client developer in understanding the error.\nThis is NOT meant to be shown to the end user.",
       "type": "boolean",

@@ -2,7 +2,7 @@ import type { Ajv, Schema } from 'ajv'
 import { errorMessage } from '../rich-error-message/index.js'
 import { createdRecord } from '../storage-implementations/index.js'
 import type { BaseProps, StoreRecord } from '../storage-api/index.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 import { init, JSONRecord, parse, write } from './json.js'
 
 interface Config {

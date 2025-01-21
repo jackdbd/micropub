@@ -4,9 +4,9 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { profile } from '../../lib/indieauth/index.js'
-import { error_response } from '../../lib/oauth2/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
+import { profile } from '@jackdbd/indieauth'
+import { error_response } from '@jackdbd/oauth2'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { DEFAULT, NAME } from './constants.js'
 import { defUserinfoGet } from './routes/userinfo-get.js'
 import { options as options_schema, type Options } from './schemas/index.js'
@@ -40,7 +40,10 @@ const userinfoEndpoint: FastifyPluginCallback<Options> = (
     ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'userinfo-endpoint-options' }
+  )
 
   // === PLUGINS ============================================================ //
   if (process.env.NODE_ENV === 'development') {

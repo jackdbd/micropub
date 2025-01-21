@@ -6,5 +6,6 @@ export const DEFAULT = {
   AUTHORIZATION_CODE_EXPIRATION: '5 minutes',
   INCLUDE_ERROR_DESCRIPTION: false,
   LOG_PREFIX: 'authorization-endpoint ',
+  REDIRECT_PATH_ON_SUBMIT: '/consent',
   REPORT_ALL_AJV_ERRORS: false
 }

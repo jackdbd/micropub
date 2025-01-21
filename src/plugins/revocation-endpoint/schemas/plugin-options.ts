@@ -9,7 +9,7 @@ import {
   issuer,
   me_after_url_canonicalization,
   me_before_url_canonicalization
-} from '../../../lib/indieauth/index.js'
+} from '@jackdbd/indieauth'
 import { jwks_url } from '../../../lib/jwks/index.js'
 import {
   isAccessTokenRevoked,

@@ -4,7 +4,7 @@ import {
   client_id,
   issuer,
   me_after_url_canonicalization
-} from '../indieauth/index.js'
+} from '@jackdbd/indieauth'
 import { exp, jti } from '../jwt/index.js'
 import { jwks_private } from '../jwks/index.js'
 import {
@@ -13,9 +13,9 @@ import {
   redirect_uri,
   refresh_token,
   scope
-} from '../oauth2/index.js'
+} from '@jackdbd/oauth2'
 import { safeDecode, type AccessTokenClaims } from '../token/index.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 import { accessToken } from './access-token.js'
 import { DEFAULT } from './defaults.js'
 import { refreshToken } from './refresh-token.js'

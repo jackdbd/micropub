@@ -8,7 +8,7 @@ import {
   defPredicate,
   type Predicate
 } from '../storage-implementations/predicate.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 import { appendMany, parse, type JSONLRecord } from './jsonl.js'
 import { newRecord } from './record.js'
 

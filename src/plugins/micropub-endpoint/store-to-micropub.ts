@@ -2,7 +2,7 @@ import {
   ForbiddenError,
   InvalidRequestError,
   UnauthorizedError
-} from '../../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
 
 const DEFAULT_STATUS_CODE_ERROR = 400
 const DEFAULT_STATUS_CODE_SUCCESS = 200

@@ -1,16 +1,9 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import {
-  issuer,
-  me_after_url_canonicalization
-} from '../../../lib/indieauth/index.js'
+import { issuer, me_after_url_canonicalization } from '@jackdbd/indieauth'
 import { exp, iat, iss, jti } from '../../../lib/jwt/index.js'
 import { jwks_url } from '../../../lib/jwks/index.js'
-import {
-  access_token,
-  refresh_token,
-  scope
-} from '../../../lib/oauth2/index.js'
+import { access_token, refresh_token, scope } from '@jackdbd/oauth2'
 import { ajv, include_error_description } from '../../../lib/schemas/index.js'
 import {
   isAccessTokenRevoked,

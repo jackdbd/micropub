@@ -1,8 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import {
-  issuer,
-  me_after_url_canonicalization
-} from '../../../lib/indieauth/index.js'
+import { issuer, me_after_url_canonicalization } from '@jackdbd/indieauth'
 import { jwks_url } from '../../../lib/jwks/index.js'
 import { ajv, include_error_description } from '../../../lib/schemas/index.js'
 import {

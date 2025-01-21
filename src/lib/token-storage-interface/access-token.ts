@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
-import { client_id } from '../indieauth/index.js'
+import { client_id } from '@jackdbd/indieauth'
 import { jti } from '../jwt/index.js'
-import { redirect_uri } from '../oauth2/index.js'
+import { redirect_uri } from '@jackdbd/oauth2'
 import { revoked, revocation_reason } from './revocation.js'
 
 export const access_token_props = Type.Object(

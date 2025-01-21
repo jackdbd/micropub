@@ -1,10 +1,10 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import { InvalidRequestError } from '../../../lib/fastify-error-response/index.js'
+import { InvalidRequestError } from '@jackdbd/oauth2-error-responses'
 // import {
 //   metadataEndpoint,
 //   serverMetadata
-// } from '../../../lib/indieauth/index.js'
-import { relMeHrefs } from '../../../lib/relmeauth/index.js'
+// } from '@jackdbd/indieauth'
+import { relMeHrefs } from '@jackdbd/relmeauth'
 
 interface Provider {
   href: string

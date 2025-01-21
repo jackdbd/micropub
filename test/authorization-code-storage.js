@@ -1,8 +1,8 @@
 import assert from 'node:assert'
 import { describe, it, beforeEach } from 'node:test'
+import { codeChallenge, codeVerifier } from '@jackdbd/pkce'
 import { nanoid } from 'nanoid'
 import { unixTimestampInSeconds } from '../dist/lib/date.js'
-import { codeChallenge, codeVerifier } from '../dist/lib/pkce/index.js'
 import {
   authorizationCodeAPI,
   AUTHORIZATION_CODE_EXPIRATION_IN_SECONDS,

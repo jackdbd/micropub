@@ -1,9 +1,9 @@
 import { parseArgs } from 'node:util'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { unwrapP } from '@jackdbd/unwrap'
 import { nanoid } from 'nanoid'
 import type { SelectQuery, UpdateQuery } from '../src/lib/storage-api/index.js'
 import { defStorage } from '../src/lib/storage-implementations/index.js'
-import { unwrapP } from '../src/lib/unwrap/index.js'
-import { canonicalUrl } from '../src/lib/url-canonicalization.js'
 import { defAjv } from '../src/ajv.js'
 import {
   Environment,

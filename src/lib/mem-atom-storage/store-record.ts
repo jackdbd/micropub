@@ -7,7 +7,7 @@ import type {
   StoreRecord
 } from '../storage-api/index.js'
 import { createdRecord } from '../storage-implementations/index.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 
 interface Config<R extends BaseRecord = BaseRecord> {
   ajv: Ajv

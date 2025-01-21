@@ -1,3 +1,5 @@
+import canonicalUrl from '@jackdbd/canonical-url'
+import { unwrapP } from '@jackdbd/unwrap'
 import yargs from 'yargs/yargs'
 import { defAjv } from '../src/ajv.js'
 import { accessToken, refreshToken } from '../src/lib/issue-tokens/index.js'
@@ -7,8 +9,6 @@ import type {
   AccessTokenProps,
   RefreshTokenProps
 } from '../src/lib/token-storage-interface/index.js'
-import { unwrapP } from '../src/lib/unwrap/index.js'
-import { canonicalUrl } from '../src/lib/url-canonicalization.js'
 import {
   Environment,
   SQLITE_DATABASE_TABLE,

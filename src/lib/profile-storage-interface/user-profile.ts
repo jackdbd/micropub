@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { me_after_url_canonicalization, profile } from '../indieauth/index.js'
+import { me_after_url_canonicalization, profile } from '@jackdbd/indieauth'
 
 export const user_profile_props = Type.Object(
   {

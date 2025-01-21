@@ -1,7 +1,7 @@
+import { me_after_url_canonicalization } from '@jackdbd/indieauth'
+import { errorResponseFromJSONResponse, scope } from '@jackdbd/oauth2'
+import { ServerError } from '@jackdbd/oauth2-error-responses'
 import { Static, Type } from '@sinclair/typebox'
-import { ServerError } from './fastify-error-response/index.js'
-import { me_after_url_canonicalization } from '../lib/indieauth/index.js'
-import { errorResponseFromJSONResponse, scope } from '../lib/oauth2/index.js'
 
 /**
  * Response body to a successful Authorization Request.

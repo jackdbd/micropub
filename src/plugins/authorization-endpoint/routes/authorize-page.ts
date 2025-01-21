@@ -1,10 +1,10 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import { clientMetadata } from '../../../lib/indieauth/index.js'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { clientMetadata } from '@jackdbd/indieauth'
 import {
   InvalidClientError,
   InvalidRequestError
-} from '../../../lib/fastify-error-response/index.js'
-import { canonicalUrl } from '../../../lib/url-canonicalization.js'
+} from '@jackdbd/oauth2-error-responses'
 import type { AuthorizationRequestQuerystring } from '../schemas.js'
 
 export interface Config {

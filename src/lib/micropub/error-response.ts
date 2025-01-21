@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
-import { error_type as indieauth_error_type } from '../indieauth/index.js'
-import { error_description, error_uri, state } from '../oauth2/index.js'
+import { error_type as indieauth_error_type } from '@jackdbd/indieauth'
+import { error_description, error_uri, state } from '@jackdbd/oauth2'
 
 // export const error_type = Type.Union(
 //   [

@@ -1,4 +1,7 @@
 import { faker } from '@faker-js/faker'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { codeChallenge, codeVerifier } from '@jackdbd/pkce'
+import { unwrapP } from '@jackdbd/unwrap'
 import c from 'ansi-colors'
 import { nanoid } from 'nanoid'
 import yargs from 'yargs/yargs'
@@ -6,7 +9,6 @@ import { defAjv } from '../src/ajv.js'
 import { Environment, StorageBackend } from '../src/constants.js'
 import type { AuthorizationCodeProps } from '../src/lib/authorization-code-storage-interface/index.js'
 import type { ClientApplicationProps } from '../src/lib/clients-storage-interface/index.js'
-import { codeChallenge, codeVerifier } from '../src/lib/pkce/index.js'
 import type { UserProfileProps } from '../src/lib/profile-storage-interface/index.js'
 import type { StoreRecord } from '../src/lib/storage-api/index.js'
 import { defStorage } from '../src/lib/storage-implementations/index.js'
@@ -14,8 +16,6 @@ import type {
   AccessTokenProps,
   RefreshTokenProps
 } from '../src/lib/token-storage-interface/index.js'
-import { unwrapP } from '../src/lib/unwrap/index.js'
-import { canonicalUrl } from '../src/lib/url-canonicalization.js'
 import {
   DEFAULT,
   INDIEAUTH_SCOPES,

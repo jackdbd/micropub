@@ -2,7 +2,7 @@ import type { Client } from '@libsql/client'
 import type { Ajv, Schema } from 'ajv'
 import { errorMessage } from '../rich-error-message/index.js'
 import type { StoreRecord } from '../storage-api/index.js'
-import { conformResult } from '../validators.js'
+import { conformResult } from '@jackdbd/schema-validators'
 import { insertQuery } from './queries.js'
 import {
   jsPropsToSQLite,

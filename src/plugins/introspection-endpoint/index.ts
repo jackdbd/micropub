@@ -5,13 +5,13 @@ import fp from 'fastify-plugin'
 import formbody from '@fastify/formbody'
 import responseValidation from '@fastify/response-validation'
 import { applyToDefaults } from '@hapi/hoek'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
   defValidateAccessTokenNotRevoked,
   defValidateClaim
 } from '../../lib/fastify-hooks/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defIntrospectPost } from './routes/introspect-post.js'
 import { options as options_schema, type Options } from './schemas/index.js'
@@ -53,7 +53,10 @@ const introspectionEndpoint: FastifyPluginCallback<Options> = (
     ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'introspection-endpoint-options' }
+  )
 
   const { isAccessTokenRevoked, issuer, jwksUrl: jwks_url } = config
 

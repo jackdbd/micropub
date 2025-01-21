@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { refresh_token } from '../oauth2/index.js'
+import { refresh_token } from '@jackdbd/oauth2'
 import {
   refresh_token_props,
   revocation_reason

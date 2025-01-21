@@ -1,6 +1,6 @@
 import type { RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
-import { UnauthorizedError } from '../../../lib/fastify-error-response/index.js'
+import { UnauthorizedError } from '@jackdbd/oauth2-error-responses'
 
 export interface Config {
   include_error_description: boolean

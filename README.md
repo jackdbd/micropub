@@ -10,19 +10,15 @@ Packages for implementing an authorization server that supports the [IndieAuth p
 
 | Library | Description |
 | :--- | :--- |
-| [fastify-error-response](./src/lib/fastify-error-response/README.md) | Error responses for OAuth 2.0 / IndieAuth / Micropub servers |
 | [fastify-hooks](./src/lib/fastify-hooks/README.md) | Hooks shared by several Fastify plugins |
 | [fastify-utils](./src/lib/fastify-utils/README.md) | Miscellaneous utilities for Fastify servers |
 | [fs-jsonl-storage](./src/lib/fs-jsonl-storage/README.md) | Storage implementation (filesystem, JSON Lines) |
 | [fs-json-storage](./src/lib/fs-json-storage/README.md) | Storage implementation (filesystem, JSON) |
 | [github-storage](./src/lib/github-storage/README.md) | Storage implementation (GitHub repository) |
-| [indieauth](./src/lib/indieauth/README.md) | Schemas and functions for working with IndieAuth |
 | [mem-atom-storage](./src/lib/mem-atom-storage/README.md) | Storage implementation (in-memory) |
 | [microformats2](./src/lib/microformats2/README.md) | Schemas for microformats2 |
 | [micropub](./src/lib/micropub/README.md) | Schemas and functions for implementing Micropub |
-| [pkce](./src/lib/pkce/README.md) | Schemas and functions for implementing Authorization Code Flow with Proof Key for Code Exchange (PKCE) |
 | [r2-storage](./src/lib/r2-storage/README.md) | Storage implementation (Cloudflare R2) |
-| [relmeauth](./src/lib/relmeauth/README.md) | Schemas and functions for working with RelMeAuth |
 | [schemas](./src/lib/schemas/README.md) | Miscellaneous schemas |
 | [sqlite-storage](./src/lib/sqlite-storage/README.md) | Storage implementation (SQlite/LibSQL/Turso) |
 | [storage-api](./src/lib/storage-api/README.md) | Storage API definition |

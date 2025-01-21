@@ -1,9 +1,9 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import ms, { StringValue } from 'ms'
 import { unixTimestampInMs } from '../../../lib/date.js'
-import { ServerError } from '../../../lib/fastify-error-response/index.js'
-import { authorizationResponseUrl } from '../../../lib/indieauth/index.js'
-import { canonicalUrl } from '../../../lib/url-canonicalization.js'
+import { ServerError } from '@jackdbd/oauth2-error-responses'
+import { authorizationResponseUrl } from '@jackdbd/indieauth'
+import canonicalUrl from '@jackdbd/canonical-url'
 import type {
   HandleActionQuerystring,
   OnUserApprovedRequest

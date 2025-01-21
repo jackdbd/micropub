@@ -7,8 +7,8 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { error_response } from '../../lib/oauth2/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
+import { error_response } from '@jackdbd/oauth2'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { DEFAULT, NAME } from './constants.js'
 import { defAuthorizePage } from './routes/authorize-page.js'
 import { defAuthorizePost } from './routes/authorize-post.js'
@@ -41,6 +41,7 @@ const defaults: Partial<Options> = {
   authorizationCodeExpiration: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
+  redirectPathOnSubmit: DEFAULT.REDIRECT_PATH_ON_SUBMIT,
   reportAllAjvErrors: DEFAULT.REPORT_ALL_AJV_ERRORS
 }
 
@@ -58,6 +59,7 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     logPrefix: log_prefix,
     onAuthorizationCodeVerified,
     onUserApprovedRequest,
+    redirectPathOnSubmit: redirect_path_on_submit,
     reportAllAjvErrors: report_all_ajv_errors,
     retrieveAuthorizationCode
   } = config
@@ -72,7 +74,10 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
     ])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'authorization-endpoint options' }
+  )
 
   // const typedFastify = fastify.withTypeProvider<TypeBoxTypeProvider>()
 
@@ -96,9 +101,6 @@ const authorizationEndpoint: FastifyPluginCallback<Options> = (
   })
 
   // === ROUTES ============================================================= //
-
-  const redirect_path_on_submit = '/consent'
-
   fastify.get(
     '/auth',
     {

@@ -3,13 +3,13 @@ import fastifyCsrf from '@fastify/csrf-protection'
 import formbody from '@fastify/formbody'
 import oauth2 from '@fastify/oauth2'
 import { applyToDefaults } from '@hapi/hoek'
+import { client_metadata } from '@jackdbd/indieauth'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import { defRedirectWhenNotAuthenticated } from '../../lib/fastify-hooks/index.js'
-import { client_metadata } from '../../lib/indieauth/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { errorResponse, successResponse } from './decorators/index.js'
 import { defAuthenticate } from './routes/authenticate-start.js'
@@ -110,7 +110,10 @@ const micropubClient: FastifyPluginCallback<Options> = (
     ajv = addFormats(new Ajv({ allErrors: report_all_ajv_errors }), ['uri'])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'micropub-client-options' }
+  )
 
   // === PLUGINS ============================================================ //
   fastify.register(formbody)

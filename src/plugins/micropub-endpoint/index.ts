@@ -1,11 +1,12 @@
 import formbody from '@fastify/formbody'
 import multipart from '@fastify/multipart'
 import { applyToDefaults } from '@hapi/hoek'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
-import { canonicalUrl } from '../../lib/url-canonicalization.js'
 import { unixTimestampInSeconds } from '../../lib/date.js'
 import {
   defDecodeJwtAndSetClaims,
@@ -14,7 +15,6 @@ import {
   defValidateAccessTokenNotRevoked
 } from '../../lib/fastify-hooks/index.js'
 import type { SyndicateToItem } from '../../lib/micropub/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
 import { DEFAULT, NAME } from './constants.js'
 import { defMicropubResponse } from './decorators/reply.js'
 import { defValidateGetRequest } from './hooks.js'
@@ -69,7 +69,10 @@ const micropubEndpoint: FastifyPluginCallback<Options> = (
     ])
   }
 
-  throwIfDoesNotConform({ prefix: log_prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'micropub-endpoint-options' }
+  )
 
   // === PLUGINS ============================================================ //
   // Parse application/x-www-form-urlencoded requests

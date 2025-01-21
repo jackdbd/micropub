@@ -13,7 +13,7 @@ import type {
 } from '../lib/storage-api/index.js'
 import { AccessTokenProps } from '../lib/token-storage-interface/access-token.js'
 import { RefreshTokenProps } from '../lib/token-storage-interface/refresh-token.js'
-import { unwrapP } from '../lib/unwrap/index.js'
+import { unwrapP } from '@jackdbd/unwrap'
 import { SQLITE_DATABASE_TABLE } from '../constants.js'
 import type { BatchTransaction } from '../sqlite-utils.js'
 import { default_log, type Log } from './logger.js'

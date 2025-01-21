@@ -1,11 +1,11 @@
 import type { Session, SessionData } from '@fastify/secure-session'
 import { applyToDefaults } from '@hapi/hoek'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
 import { msToUTCString } from '../../date.js'
 import { isExpired } from '../../predicates.js'
 import { AccessTokenClaims } from '../../token/index.js'
-import { throwIfDoesNotConform } from '../../validators.js'
 import { DEFAULT } from './constants.js'
 import { options as options_schema, type Options } from './schemas.js'
 
@@ -33,7 +33,10 @@ export const defLogIatAndExpClaims = (options?: Options) => {
     ajv = new Ajv({ allErrors })
   }
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'log-iat-and-exp-claims-options' }
+  )
 
   const logIatAndExpClaims: onRequestHookHandler = (request, _reply, done) => {
     const session = (request as any)[session_key] as Session<SessionData>

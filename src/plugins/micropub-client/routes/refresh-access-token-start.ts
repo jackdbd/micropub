@@ -3,9 +3,9 @@ import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import {
   InvalidRequestError,
   InvalidTokenError
-} from '../../../lib/fastify-error-response/index.js'
-import { authorizationRequestUrl } from '../../../lib/indieauth/index.js'
-import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
+} from '@jackdbd/oauth2-error-responses'
+import { authorizationRequestUrl } from '@jackdbd/indieauth'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 import type { AccessTokenResponseBodySuccess } from '../../token-endpoint/index.js'
 import { safeDecode } from '../../../lib/token/decode.js'
 import { AccessTokenClaims } from '../../../lib/token/claims.js'

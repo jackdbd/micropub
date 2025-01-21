@@ -1,6 +1,6 @@
 import { Static, Type } from '@sinclair/typebox'
-import { client_id, me_after_url_canonicalization } from '../indieauth/index.js'
-import { redirect_uri } from '../oauth2/index.js'
+import { client_id, me_after_url_canonicalization } from '@jackdbd/indieauth'
+import { redirect_uri } from '@jackdbd/oauth2'
 
 export const client_application_props = Type.Object(
   {

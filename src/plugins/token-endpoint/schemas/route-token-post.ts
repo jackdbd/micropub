@@ -1,19 +1,12 @@
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { ajv, include_error_description } from '../../../lib/schemas/index.js'
 import {
   client_id,
   issuer,
   me_after_url_canonicalization,
   profile,
   userinfo_endpoint
-} from '../../../lib/indieauth/index.js'
-import {
-  expiration,
-  onIssuedTokens,
-  type OnIssuedTokens
-} from '../../../lib/issue-tokens/index.js'
-import { jwks_private } from '../../../lib/jwks/index.js'
+} from '@jackdbd/indieauth'
 import {
   access_token,
   authorization_code,
@@ -23,8 +16,15 @@ import {
   refresh_token,
   revocation_endpoint,
   scope
-} from '../../../lib/oauth2/index.js'
-import { code_verifier } from '../../../lib/pkce/index.js'
+} from '@jackdbd/oauth2'
+import { code_verifier } from '@jackdbd/pkce'
+import { ajv, include_error_description } from '../../../lib/schemas/index.js'
+import {
+  expiration,
+  onIssuedTokens,
+  type OnIssuedTokens
+} from '../../../lib/issue-tokens/index.js'
+import { jwks_private } from '../../../lib/jwks/index.js'
 import {
   retrieveRefreshToken,
   type RetrieveRefreshToken

@@ -1,5 +1,6 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
-import type { Profile } from '../../../lib/indieauth/index.js'
+import type { Profile } from '@jackdbd/indieauth'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { unixTimestampInSeconds } from '../../../lib/date.js'
 import {
   InvalidRequestError,
@@ -7,7 +8,7 @@ import {
   UnauthorizedError,
   UnsupportedGrantTypeError,
   ServerError
-} from '../../../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
 import { accessTokenFromRequestHeader } from '../../../lib/fastify-utils/index.js'
 import { issuedInfo, type IssuedInfo } from '../../../lib/issue-tokens/index.js'
 import { retrieveProfile } from '../../../lib/retrieve-profile.js'
@@ -16,7 +17,6 @@ import type {
   RefreshTokenImmutableRecord,
   RefreshTokenMutableRecord
 } from '../../../lib/storage-api/index.js'
-import { throwIfDoesNotConform } from '../../../lib/validators.js'
 import { verifyAuthorizationCode } from '../../../lib/verify-authorization-code.js'
 import { token_post_config } from '../schemas/index.js'
 import type {
@@ -81,7 +81,10 @@ export const defTokenPost = (config: TokenPostConfig) => {
     userinfoEndpoint: userinfo_endpoint
   } = config
 
-  throwIfDoesNotConform({ prefix }, ajv, token_post_config, config)
+  throwWhenNotConform(
+    { ajv, schema: token_post_config, data: config },
+    { basePath: 'token-endpoint-post-method-config' }
+  )
 
   const tokenPost: RouteHandler<RouteGeneric> = async (request, reply) => {
     const { grant_type } = request.body

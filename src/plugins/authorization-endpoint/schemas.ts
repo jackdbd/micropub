@@ -15,19 +15,19 @@ import {
   issuer,
   me_before_url_canonicalization,
   me_after_url_canonicalization
-} from '../../lib/indieauth/index.js'
+} from '@jackdbd/indieauth'
 import {
   authorization_code,
   redirect_uri,
   response_type,
   scope,
   state
-} from '../../lib/oauth2/index.js'
+} from '@jackdbd/oauth2'
 import {
   code_challenge,
   code_challenge_method,
   code_verifier
-} from '../../lib/pkce/index.js'
+} from '@jackdbd/pkce'
 import {
   ajv,
   include_error_description,
@@ -120,6 +120,10 @@ export const options = Type.Object(
       default: DEFAULT.AUTHORIZATION_CODE_EXPIRATION,
       minLength: 1
     }),
+
+    redirectPathOnSubmit: Type.Optional(
+      Type.String({ minLength: 1, default: DEFAULT.REDIRECT_PATH_ON_SUBMIT })
+    ),
 
     /**
      * Whether to include an `error_description` property in all error responses.

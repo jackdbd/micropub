@@ -5,10 +5,10 @@ import type { onRequestAsyncHookHandler } from 'fastify'
 import {
   InvalidTokenError,
   UnauthorizedError
-} from '../../fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { accessTokenFromRequestHeader } from '../../fastify-utils/index.js'
 import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
-import { throwIfDoesNotConform } from '../../validators.js'
 import { DEFAULT } from './constants.js'
 import { options as options_schema, Options } from './schemas.js'
 
@@ -41,7 +41,10 @@ export const defValidateAccessTokenNotRevoked = (options?: Options) => {
     ajv = new Ajv({ allErrors })
   }
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'validate-access-token-not-revoked-options' }
+  )
 
   const hkey = header.toLowerCase()
 

@@ -1,14 +1,13 @@
 import formbody from '@fastify/formbody'
 import responseValidation from '@fastify/response-validation'
-import { applyToDefaults } from '@hapi/hoek'
 import { Type } from '@sinclair/typebox'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import type { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 // import { defRedirectWhenNotAuthenticated } from '../../lib/fastify-hooks/index.js'
-import { error_response } from '../../lib/oauth2/index.js'
-import { throwIfDoesNotConform } from '../../lib/validators.js'
+import { error_response } from '@jackdbd/oauth2'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { access_token_request_body } from '../authorization-endpoint/index.js'
 import { defTokenPost } from './routes/token-post.js'
 import { DEFAULT, NAME } from './constants.js'
@@ -26,7 +25,7 @@ export type {
   RefreshRequestBody
 } from './schemas/index.js'
 
-const defaults: Partial<Options> = {
+const defaults = {
   accessTokenExpiration: DEFAULT.ACCESS_TOKEN_EXPIRATION,
   includeErrorDescription: DEFAULT.INCLUDE_ERROR_DESCRIPTION,
   logPrefix: DEFAULT.LOG_PREFIX,
@@ -42,7 +41,7 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
   options,
   done
 ) => {
-  const config = applyToDefaults(defaults, options) as Required<Options>
+  const config = Object.assign(defaults, options)
 
   const {
     accessTokenExpiration,
@@ -70,7 +69,10 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
     ])
   }
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'token-endpoint-options' }
+  )
 
   fastify.log.debug(
     `${prefix}access token expiration: ${accessTokenExpiration}`
@@ -98,12 +100,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
     )
   })
 
-  // const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
-  //   isAccessTokenRevoked,
-  //   logPrefix: `${prefix}[hook] `,
-  //   redirectPath: '/login'
-  // })
-
   // === ROUTES ============================================================= //
   fastify.post(
     '/token',
@@ -119,7 +115,6 @@ const tokenEndpoint: FastifyPluginCallback<Options> = (
         // )
         // TODO: do NOT redirect here. This is an API endpoint! A redirect
         // might be ok for browser clients, but not for API clients (e.g. Bruno).
-        // await redirectWhenNotAuthenticated(request, reply)
         // }
         done()
       },

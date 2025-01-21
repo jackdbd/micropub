@@ -1,5 +1,6 @@
 import { applyToDefaults } from '@hapi/hoek'
 import { send } from '@jackdbd/notifications/telegram'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { errorText } from '@jackdbd/telegram-text-messages/error'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
@@ -16,9 +17,8 @@ import {
   InvalidScopeError,
   ServerError,
   UnauthorizedError
-} from '../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
 import { clientAcceptsHtml } from '../lib/fastify-request-predicates/index.js'
-import { throwIfDoesNotConform } from '../lib/validators.js'
 import { DEFAULT } from './constants-prod.js'
 import { options as options_schema, type Options } from './schemas-prod.js'
 import { statusCode } from './utils.js'
@@ -46,7 +46,10 @@ export const defErrorHandler = (options?: Options) => {
     redirectUrl
   } = config
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'error-handler-options' }
+  )
 
   return async function errorHandler(
     this: FastifyInstance,

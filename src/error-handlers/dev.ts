@@ -1,12 +1,8 @@
 import { applyToDefaults } from '@hapi/hoek'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import type {
-  // FastifyError,
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest
-} from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import Youch from 'youch'
 import { APPLICATION_JSON, TEXT_HTML } from '../lib/content-type.js'
 import {
@@ -16,9 +12,8 @@ import {
   InvalidScopeError,
   ServerError,
   UnauthorizedError
-} from '../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
 import { clientAcceptsHtml } from '../lib/fastify-request-predicates/index.js'
-import { throwIfDoesNotConform } from '../lib/validators.js'
 import { DEFAULT } from './constants-dev.js'
 import {
   options as options_schema,
@@ -84,7 +79,10 @@ export const defErrorHandler = (options?: Options) => {
     toggleShowAllFrames
   } = config
 
-  throwIfDoesNotConform({ prefix }, ajv, options_schema, config)
+  throwWhenNotConform(
+    { ajv, schema: options_schema, data: config },
+    { basePath: 'error-handler-options' }
+  )
 
   return async function errorHandler(
     this: FastifyInstance,

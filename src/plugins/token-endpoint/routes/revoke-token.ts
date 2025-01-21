@@ -1,5 +1,5 @@
-import { ServerError } from '../../../lib/fastify-error-response/index.js'
-import { errorResponseFromJSONResponse } from '../../../lib/oauth2/index.js'
+import { ServerError } from '@jackdbd/oauth2-error-responses'
+import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
 
 export interface Config {

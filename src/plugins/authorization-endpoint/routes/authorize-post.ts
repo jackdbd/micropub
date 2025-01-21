@@ -3,11 +3,8 @@ import type {
   AuthorizationCodeImmutableRecord,
   AuthorizationCodeMutableRecord
 } from '../../../lib/storage-api/index.js'
-import {
-  InvalidGrantError,
-  ServerError
-} from '../../../lib/fastify-error-response/index.js'
-import { codeChallenge } from '../../../lib/pkce/index.js'
+import { InvalidGrantError, ServerError } from '@jackdbd/oauth2-error-responses'
+import { codeChallenge } from '@jackdbd/pkce'
 import { isExpired } from '../../../lib/predicates.js'
 import type {
   AccessTokenRequestBody,

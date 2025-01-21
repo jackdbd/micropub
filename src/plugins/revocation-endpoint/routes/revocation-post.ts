@@ -6,7 +6,8 @@ import {
 import {
   InvalidRequestError,
   ServerError
-} from '../../../lib/fastify-error-response/index.js'
+} from '@jackdbd/oauth2-error-responses'
+import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import type { JWKSPublicURL } from '../../../lib/jwks/index.js'
 import type {
   AccessTokenImmutableRecord,
@@ -16,7 +17,6 @@ import type {
   RetrieveAccessToken
 } from '../../../lib/storage-api/index.js'
 import { type AccessTokenClaims, verify } from '../../../lib/token/index.js'
-import { throwIfDoesNotConform } from '../../../lib/validators.js'
 import {
   config as config_schema,
   type Config
@@ -107,11 +107,9 @@ const accessTokenResult = async (config: AccessTokenConfig) => {
 export const defRevocationPost = (config: Config) => {
   const ajv = config.ajv
 
-  throwIfDoesNotConform(
-    { prefix: 'revocation-endpoint post method config ' },
-    ajv,
-    config_schema,
-    config
+  throwWhenNotConform(
+    { ajv, schema: config_schema, data: config },
+    { basePath: 'revocation-endpoint-post-method-config' }
   )
 
   const {

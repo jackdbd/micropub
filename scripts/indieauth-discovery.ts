@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { metadataEndpoint, serverMetadata } from '../src/lib/indieauth/index.js'
-import { canonicalUrl } from '../src/lib/url-canonicalization.js'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { metadataEndpoint, serverMetadata } from '@jackdbd/indieauth'
 import { DEFAULT } from './constants.js'
 import { exitOne } from './utils.js'
 

@@ -1,12 +1,12 @@
 import assert from 'node:assert'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 // import { type RegisterClient } from '../../../lib/clients-storage-interface/index.js'
-import { InvalidRequestError } from '../../../lib/fastify-error-response/index.js'
+import { InvalidRequestError } from '@jackdbd/oauth2-error-responses'
 import {
   authorizationRequestUrl,
   metadataEndpoint,
   serverMetadata
-} from '../../../lib/indieauth/index.js'
+} from '@jackdbd/indieauth'
 import type { AuthStartGetRequestQuerystring } from '../schemas.js'
 
 export interface Config {

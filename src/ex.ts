@@ -1,8 +1,22 @@
 import type { Ajv, Schema, ValidateFunction } from 'ajv'
 import stringify from 'fast-safe-stringify'
 import { nanoid } from 'nanoid'
-import { validationErrors } from './lib/validators.js'
 import { defAjv } from './ajv.js'
+
+export const validationErrors = <V>(ajv: Ajv, schema: Schema, value: V) => {
+  const validate = ajv.compile(schema)
+
+  validate(value)
+
+  if (validate.errors) {
+    const errors = validate.errors.map((err) => {
+      return `${err.instancePath.slice(1)} ${err.message}`
+    })
+    return errors
+  } else {
+    return [] as string[]
+  }
+}
 
 export interface Options {
   separator?: string
