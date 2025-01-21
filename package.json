@@ -67,6 +67,7 @@
     "@fastify/type-provider-typebox": "^5.1.0",
     "@fastify/view": "^10.0.1",
     "@hapi/hoek": "^11.0.4",
+    "@jackdbd/fastify-webc": "1.0.0-canary.2",
     "@jackdbd/notifications": "^1.0.3",
     "@jackdbd/telegram-text-messages": "^1.2.0",
     "@libsql/client": "^0.14.0",

@@ -35,7 +35,7 @@ import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
 import token from './plugins/token-endpoint/index.js'
-import fastifyWebC from './plugins/webc/index.js'
+import webc from '@jackdbd/fastify-webc'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -560,7 +560,7 @@ export async function defFastify(config: Config) {
     ]
   })
 
-  fastify.register(fastifyWebC, {
+  fastify.register(webc, {
     components: ['src/components/**/*.webc'],
     templates: [path.join(__dirname, 'templates')]
   })
