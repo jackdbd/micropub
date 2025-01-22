@@ -7,6 +7,11 @@ import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
 import sensible from '@fastify/sensible'
+import auth from '@jackdbd/fastify-authorization-endpoint'
+import type {
+  OnUserApprovedRequest,
+  PluginOptions
+} from '@jackdbd/fastify-authorization-endpoint'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
@@ -21,7 +26,6 @@ import { defStorage } from './lib/storage-implementations/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 import type { AccessTokenClaims } from './lib/token/index.js'
 
-import auth from './plugins/authorization-endpoint/index.js'
 import media from './plugins/media-endpoint/index.js'
 import micropubClient, {
   type BaseErrorResponseBody,
@@ -35,7 +39,6 @@ import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
 import token from './plugins/token-endpoint/index.js'
-import webc from '@jackdbd/fastify-webc'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -61,6 +64,8 @@ import {
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const webc_components = path.join(__dirname, 'components')
+console.log('🚀 ~ webc_components:', webc_components)
 
 const NAME = 'app'
 const LOG_PREFIX = `${NAME} `
@@ -230,9 +235,11 @@ export async function defFastify(config: Config) {
     storage: storage.authorization_code
   })
 
-  const onUserApprovedRequest = defOnUserApprovedRequest({
-    storage: storage.authorization_code
-  })
+  const onUserApprovedRequest: OnUserApprovedRequest = defOnUserApprovedRequest(
+    {
+      storage: storage.authorization_code
+    }
+  )
 
   const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
     storage: storage.authorization_code
@@ -321,9 +328,13 @@ export async function defFastify(config: Config) {
     )
   }
 
-  const authOptions = {
+  const authOptions: PluginOptions = {
     ajv,
     authorizationCodeExpiration,
+    components: {
+      'the-footer': path.join(webc_components, 'custom-footer.webc'),
+      'the-header': path.join(webc_components, 'custom-header.webc')
+    },
     includeErrorDescription,
     issuer,
     reportAllAjvErrors,
@@ -560,10 +571,10 @@ export async function defFastify(config: Config) {
     ]
   })
 
-  fastify.register(webc, {
-    components: ['src/components/**/*.webc'],
-    templates: [path.join(__dirname, 'templates')]
-  })
+  // fastify.register(webc, {
+  //   components: ['src/components/**/*.webc'],
+  //   templates: [path.join(__dirname, 'templates')]
+  // })
 
   // TODO: register this plugin in micropub-client, not here.
   // https://github.com/fastify/point-of-view?tab=readme-ov-file#using-fastifyview-as-a-dependency-in-a-fastify-plugin
@@ -599,16 +610,16 @@ export async function defFastify(config: Config) {
   // === HOOKS ============================================================== //
 
   // === ROUTES ============================================================= //
-  fastify.get('/demo-webc', function (_request, reply) {
-    // see authorize-page.ts
-    const data = {
-      description:
-        'Page where the user can approve or deny the authorization request',
-      redirect_path_on_submit: '/consent',
-      title: 'Authorize'
-    }
-    return reply.render('authorize.webc', data)
-  })
+  // fastify.get('/demo-webc', function (_request, reply) {
+  //   // see authorize-page.ts
+  //   const data = {
+  //     description:
+  //       'Page where the user can approve or deny the authorization request',
+  //     redirect_path_on_submit: '/consent',
+  //     title: 'Authorize'
+  //   }
+  //   return reply.render('authorize.webc', data)
+  // })
 
   return fastify
 }

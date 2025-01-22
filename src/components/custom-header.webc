@@ -1,0 +1,15 @@
+<header>
+  <ul class="cluster list-style:none" data-align="start">
+    <li><a href="/">Home</a></li>
+    <li><a href="/config">Config</a></li>
+    <li><a href="/editor">Editor</a></li>
+    <li><a href="/id">Id</a></li>
+    <li><a href="/login">Login</a></li>
+    <li><a href="/logout">Logout</a></li>
+    <li><a href="/token">Token</a></li>
+    <li><a href="/refresh-access-token">Refresh Access Token</a></li>
+    <li><a href="/user?provider=github">GitHub profile</a></li>
+    <li><a href="/user?provider=indieauth">IndieAuth profile</a></li>
+  </ul>
+</header>
+  

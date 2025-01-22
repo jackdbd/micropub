@@ -1,0 +1,8 @@
+<footer>
+  <div class="flow wrapper region">
+    <div class="flex-end">
+      <p>custom footer</p>
+    </div>
+  </div>
+</footer>
+    

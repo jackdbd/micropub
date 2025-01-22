@@ -1,8 +1,17 @@
-<input type="number" :id="uid" :name="name" :value="value">
+<div>
+  <input type="number" :id="uid" :name="name" :value="value">
+
+  <code>this.webc</code>
+	<pre @text="JSON.stringify(this.webc, null, 2)"></pre>
+	
+	<code>this.$data</code>
+	<pre @text="JSON.stringify(this.$data, null, 2)"></pre>
+</div>
 
 <template>
   <button type="button">Add</button>
   <output :for="uid" @html="value"></output>
+
   <code>this.webc</code>
 	<pre @text="JSON.stringify(this.webc, null, 2)"></pre>
 	

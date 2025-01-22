@@ -8,7 +8,7 @@ import fp from 'fastify-plugin'
 // import { defRedirectWhenNotAuthenticated } from '../../lib/fastify-hooks/index.js'
 import { error_response } from '@jackdbd/oauth2'
 import { throwWhenNotConform } from '@jackdbd/schema-validators'
-import { access_token_request_body } from '../authorization-endpoint/index.js'
+import { access_token_request_body } from '@jackdbd/fastify-authorization-endpoint'
 import { defTokenPost } from './routes/token-post.js'
 import { DEFAULT, NAME } from './constants.js'
 import {

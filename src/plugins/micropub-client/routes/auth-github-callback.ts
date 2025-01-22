@@ -5,7 +5,7 @@ import type {
   RouteGenericInterface
 } from 'fastify'
 import { ServerError } from '@jackdbd/oauth2-error-responses'
-import type { AuthorizationResponseQuerystring } from '../../authorization-endpoint/index.js'
+import type { AuthorizationResponseQuerystring } from '@jackdbd/fastify-authorization-endpoint'
 
 interface RouteGeneric extends RouteGenericInterface {
   Querystring: AuthorizationResponseQuerystring

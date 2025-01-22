@@ -29,7 +29,6 @@ Packages for implementing an authorization server that supports the [IndieAuth p
 
 | Plugin | Description |
 | :--- | :--- |
-| [authorization-endpoint](./src/plugins/authorization-endpoint/README.md) | IndieAuth authorization endpoint |
 | [indieauth-client](./src/plugins/indieauth-client/README.md) | IndieAuth client |
 | [introspection-endpoint](./src/plugins/introspection-endpoint/README.md) | IndieAuth token introspection endpoint |
 | [media-endpoint](./src/plugins/media-endpoint/README.md) | media endpoint |

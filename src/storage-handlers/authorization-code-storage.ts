@@ -1,4 +1,4 @@
-import type { AuthorizationCodeProps } from '../lib/authorization-code-storage-interface/authorization-code.js'
+import type { AuthorizationCodeProps } from '@jackdbd/fastify-authorization-endpoint'
 import type {
   StorageApi,
   AuthorizationCodeImmutableRecord,
@@ -30,7 +30,8 @@ export const defOnUserApprovedRequest = (config: Config) => {
   const { storage } = config
 
   const onUserApprovedRequest = async (props: AuthorizationCodeProps) => {
-    const { error } = await storage.storeOne(props)
+    // TODO: fix the type of code_challend and code_challenge_method in @jackdbd/fastify-authorization-endpoint
+    const { error } = await storage.storeOne(props as any)
 
     if (error) {
       throw error

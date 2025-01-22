@@ -8,7 +8,7 @@ import {
 import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 import { safeDecode } from '../../../lib/token/decode.js'
 import { AccessTokenClaims } from '../../../lib/token/claims.js'
-import type { AuthorizationResponseQuerystring } from '../../authorization-endpoint/index.js'
+import type { AuthorizationResponseQuerystring } from '@jackdbd/fastify-authorization-endpoint'
 // import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
 import type { AccessTokenResponseBodySuccess } from '../../token-endpoint/index.js'
 
