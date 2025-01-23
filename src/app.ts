@@ -12,6 +12,8 @@ import type {
   OnUserApprovedRequest,
   PluginOptions as AuthorizationEndpointPluginOptions
 } from '@jackdbd/fastify-authorization-endpoint'
+import introspection from '@jackdbd/fastify-introspection-endpoint'
+import revocation from '@jackdbd/fastify-revocation-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
 import {
   OnIssuedTokens,
@@ -37,9 +39,7 @@ import micropubClient, {
 } from './plugins/micropub-client/index.js'
 import micropub from './plugins/micropub-endpoint/index.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
-import introspection from './plugins/introspection-endpoint/index.js'
 import renderConfig from './plugins/render-config/index.js'
-import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
