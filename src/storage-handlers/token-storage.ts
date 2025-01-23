@@ -1,4 +1,4 @@
-import type { OnIssuedTokens } from '../lib/issue-tokens/index.js'
+import { OnIssuedTokens } from '@jackdbd/fastify-token-endpoint'
 import type {
   StorageApi,
   AccessTokenImmutableRecord,

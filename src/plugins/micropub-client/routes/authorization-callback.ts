@@ -1,4 +1,5 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
+import { AccessTokenResponseBodySuccess } from '@jackdbd/fastify-token-endpoint'
 import {
   InvalidRequestError,
   InvalidTokenError,
@@ -10,7 +11,6 @@ import { safeDecode } from '../../../lib/token/decode.js'
 import { AccessTokenClaims } from '../../../lib/token/claims.js'
 import type { AuthorizationResponseQuerystring } from '@jackdbd/fastify-authorization-endpoint'
 // import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
-import type { AccessTokenResponseBodySuccess } from '../../token-endpoint/index.js'
 
 export interface Config {
   client_id: string

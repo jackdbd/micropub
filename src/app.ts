@@ -10,8 +10,13 @@ import sensible from '@fastify/sensible'
 import auth from '@jackdbd/fastify-authorization-endpoint'
 import type {
   OnUserApprovedRequest,
-  PluginOptions
+  PluginOptions as AuthorizationEndpointPluginOptions
 } from '@jackdbd/fastify-authorization-endpoint'
+import token from '@jackdbd/fastify-token-endpoint'
+import {
+  OnIssuedTokens,
+  PluginOptions as TokenEndpointPluginOptions
+} from '@jackdbd/fastify-token-endpoint'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
@@ -19,7 +24,6 @@ import type { Environment } from 'nunjucks'
 import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
-import { OnIssuedTokens } from './lib/issue-tokens/on-issued-tokens.js'
 import { defR2 } from './lib/r2-storage/client.js'
 import type { SelectQuery } from './lib/storage-api/index.js'
 import { defStorage } from './lib/storage-implementations/index.js'
@@ -38,7 +42,6 @@ import renderConfig from './plugins/render-config/index.js'
 import revocation from './plugins/revocation-endpoint/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import userinfo from './plugins/userinfo-endpoint/index.js'
-import token from './plugins/token-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -65,7 +68,6 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const webc_components = path.join(__dirname, 'components')
-console.log('🚀 ~ webc_components:', webc_components)
 
 const NAME = 'app'
 const LOG_PREFIX = `${NAME} `
@@ -328,7 +330,7 @@ export async function defFastify(config: Config) {
     )
   }
 
-  const authOptions: PluginOptions = {
+  const authOptions: AuthorizationEndpointPluginOptions = {
     ajv,
     authorizationCodeExpiration,
     components: {
@@ -426,7 +428,7 @@ export async function defFastify(config: Config) {
     })
   }
 
-  const tokenOptions = {
+  const tokenOptions: TokenEndpointPluginOptions = {
     accessTokenExpiration: access_token_expiration,
     ajv,
     authorizationEndpoint,
