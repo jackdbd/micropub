@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import { client_id, me_after_url_canonicalization } from '@jackdbd/indieauth'
-import { exp, iss } from '../jwt/index.js'
 import { redirect_uri, scope } from '@jackdbd/oauth2'
+import { exp, iss } from '@jackdbd/oauth2-tokens'
 import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 
 /**

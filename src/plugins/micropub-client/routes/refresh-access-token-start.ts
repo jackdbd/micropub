@@ -1,14 +1,14 @@
 import assert from 'node:assert'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { AccessTokenResponseBodySuccess } from '@jackdbd/fastify-token-endpoint'
+import { authorizationRequestUrl } from '@jackdbd/indieauth'
 import {
   InvalidRequestError,
   InvalidTokenError
 } from '@jackdbd/oauth2-error-responses'
-import { authorizationRequestUrl } from '@jackdbd/indieauth'
 import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
-import { safeDecode } from '../../../lib/token/decode.js'
-import { AccessTokenClaims } from '../../../lib/token/claims.js'
+import { safeDecode } from '@jackdbd/oauth2-tokens'
+import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 
 export interface Config {
   code_verifier_length: number

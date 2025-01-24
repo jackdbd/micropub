@@ -19,8 +19,12 @@
     // https://www.typescriptlang.org/tsconfig#module
     // https://www.typescriptlang.org/tsconfig#moduleResolution
     // https://www.typescriptlang.org/docs/handbook/module-resolution.html
-    "module": "es2022",
+    "module": "ES2022",
     "moduleResolution": "node",
+
+    // I get a lot of compilation errors with this combination of module and moduleResolution.
+    // "module": "NodeNext",
+    // "moduleResolution": "nodenext",
 
     // https://www.typescriptlang.org/tsconfig#noImplicitAny
     "noImplicitAny": true,

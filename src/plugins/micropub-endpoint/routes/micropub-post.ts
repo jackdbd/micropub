@@ -1,6 +1,6 @@
 import { requestContext } from '@fastify/request-context'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
-import Ajv from 'ajv'
+import type { Ajv } from 'ajv'
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 
 import { rfc3339 } from '../../../lib/date.js'

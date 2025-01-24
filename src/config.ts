@@ -1,4 +1,4 @@
-import type { JWKSPrivate, JWKSPublicURL } from './lib/jwks/index.js'
+import type { JWKSPrivate, JWKSPublicURL } from '@jackdbd/oauth2-tokens'
 import type { SyndicateToItem } from './lib/micropub/index.js'
 import * as DEFAULT from './defaults.js'
 

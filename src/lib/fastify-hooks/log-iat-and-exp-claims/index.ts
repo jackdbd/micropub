@@ -1,11 +1,11 @@
 import type { Session, SessionData } from '@fastify/secure-session'
 import { applyToDefaults } from '@hapi/hoek'
+import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import type { onRequestHookHandler } from 'fastify'
 import { msToUTCString } from '../../date.js'
 import { isExpired } from '../../predicates.js'
-import { AccessTokenClaims } from '../../token/index.js'
 import { DEFAULT } from './constants.js'
 import { options as options_schema, type Options } from './schemas.js'
 

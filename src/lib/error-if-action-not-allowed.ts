@@ -1,11 +1,11 @@
 import type { Session, SessionData } from '@fastify/secure-session'
 import { FastifyRequest } from 'fastify'
 // import type { JWTPayload } from 'jose'
-import type { AccessTokenClaims } from './token/index.js'
 import {
   InsufficientScopeError,
   UnauthorizedError
 } from '@jackdbd/oauth2-error-responses'
+import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 
 export interface Options {
   // logPrefix?: string

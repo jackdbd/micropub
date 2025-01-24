@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox'
 import { client_id, me_after_url_canonicalization } from '@jackdbd/indieauth'
-import { exp, iss, jti } from '../jwt/index.js'
 import { redirect_uri, refresh_token, scope } from '@jackdbd/oauth2'
+import { exp, iss, jti } from '@jackdbd/oauth2-tokens'
 import { revoked, revocation_reason } from './revocation.js'
 
 export const refresh_token_props = Type.Object(

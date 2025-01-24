@@ -6,9 +6,9 @@ import {
   InvalidTokenError,
   UnauthorizedError
 } from '@jackdbd/oauth2-error-responses'
+import { safeDecode, type AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import { accessTokenFromRequestHeader } from '../../fastify-utils/index.js'
-import { safeDecode, type AccessTokenClaims } from '../../token/index.js'
 import { DEFAULT } from './constants.js'
 import { options as options_schema, type Options } from './schemas.js'
 

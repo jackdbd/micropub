@@ -9,16 +9,41 @@ import view from '@fastify/view'
 import sensible from '@fastify/sensible'
 import auth from '@jackdbd/fastify-authorization-endpoint'
 import type {
+  AuthorizationCodeImmutableRecord,
+  AuthorizationCodeMutableRecord
+} from '@jackdbd/fastify-authorization-endpoint/schemas/authorization-code'
+import type {
   OnUserApprovedRequest,
-  PluginOptions as AuthorizationEndpointPluginOptions
+  PluginOptions as AuthorizationEndpointPluginOptions,
+  RetrieveAuthorizationCode
 } from '@jackdbd/fastify-authorization-endpoint'
 import introspection from '@jackdbd/fastify-introspection-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
+import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint/schemas/index'
 import token from '@jackdbd/fastify-token-endpoint'
-import {
+import type {
   OnIssuedTokens,
-  PluginOptions as TokenEndpointPluginOptions
+  PluginOptions as TokenEndpointPluginOptions,
+  RetrieveRefreshToken
 } from '@jackdbd/fastify-token-endpoint'
+import type {
+  AccessTokenImmutableRecord,
+  AccessTokenMutableRecord,
+  RefreshTokenImmutableRecord,
+  RefreshTokenMutableRecord
+} from '@jackdbd/fastify-token-endpoint/schemas/index'
+import userinfo from '@jackdbd/fastify-userinfo-endpoint'
+import type {
+  // RetrieveUserProfile,
+  PluginOptions as UserinfoEndpointPluginOptions
+  //  UserProfileMutableRecord
+} from '@jackdbd/fastify-userinfo-endpoint'
+import type {
+  RetrieveUserProfile,
+  UserProfileMutableRecord
+} from '@jackdbd/fastify-userinfo-endpoint/schemas/index'
+import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
+import { unwrapP } from '@jackdbd/unwrap'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
@@ -27,10 +52,8 @@ import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
 import { defR2 } from './lib/r2-storage/client.js'
-import type { SelectQuery } from './lib/storage-api/index.js'
 import { defStorage } from './lib/storage-implementations/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
-import type { AccessTokenClaims } from './lib/token/index.js'
 
 import media from './plugins/media-endpoint/index.js'
 import micropubClient, {
@@ -41,7 +64,6 @@ import micropub from './plugins/micropub-endpoint/index.js'
 import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
 import renderConfig from './plugins/render-config/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
-import userinfo from './plugins/userinfo-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -58,9 +80,9 @@ import {
   defOnAuthorizationCodeVerified,
   defOnIssuedTokens,
   defOnUserApprovedRequest,
-  defRetrieveAccessToken,
-  defRetrieveAuthorizationCode,
-  defRetrieveRefreshToken,
+  // defRetrieveAccessToken,
+  // defRetrieveAuthorizationCode,
+  // defRetrieveRefreshToken,
   defRevokeAccessToken,
   defRevokeRefreshToken
 } from './storage-handlers/index.js'
@@ -229,8 +251,13 @@ export async function defFastify(config: Config) {
     onIssuedTokens = defOnIssuedTokens({ log: token_log, storage })
   }
 
-  const retrieveProfile = async (query: SelectQuery) => {
-    return storage.user_profile.retrieveOne(query)
+  const retrieveUserProfile: RetrieveUserProfile = async (me) => {
+    const record = await unwrapP(
+      storage.user_profile.retrieveOne({
+        where: [{ key: 'me', op: '==', value: me }]
+      })
+    )
+    return record as UserProfileMutableRecord
   }
 
   const onAuthorizationCodeVerified = defOnAuthorizationCodeVerified({
@@ -243,25 +270,50 @@ export async function defFastify(config: Config) {
     }
   )
 
-  const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
-    storage: storage.authorization_code
-  })
+  const retrieveAuthorizationCode: RetrieveAuthorizationCode = async (code) => {
+    const record = await unwrapP(
+      storage.authorization_code.retrieveOne({
+        where: [{ key: 'code', op: '==', value: code }]
+      })
+    )
 
-  // TODO: rename to isAccessTokenRevoked when all plugins are updated
+    return record as
+      | AuthorizationCodeImmutableRecord
+      | AuthorizationCodeMutableRecord
+  }
+
   const isAccessTokenRevoked = defIsAccessTokenRevoked({
     log: token_log,
     storage: storage.access_token
   })
 
-  const retrieveAccessToken = defRetrieveAccessToken({
-    log: token_log,
-    storage: storage.access_token
-  })
+  // const retrieveAccessToken = defRetrieveAccessToken({
+  //   log: token_log,
+  //   storage: storage.access_token
+  // })
 
-  const retrieveRefreshToken = defRetrieveRefreshToken({
-    log: token_log,
-    storage: storage.refresh_token
-  })
+  const retrieveAccessToken: RetrieveAccessToken = async (jti) => {
+    const record = await unwrapP(
+      storage.authorization_code.retrieveOne({
+        where: [{ key: 'jti', op: '==', value: jti }]
+      })
+    )
+    return record as AccessTokenImmutableRecord | AccessTokenMutableRecord
+  }
+
+  // const retrieveRefreshToken = defRetrieveRefreshToken({
+  //   log: token_log,
+  //   storage: storage.refresh_token
+  // })
+
+  const retrieveRefreshToken: RetrieveRefreshToken = async (refresh_token) => {
+    const record = await unwrapP(
+      storage.authorization_code.retrieveOne({
+        where: [{ key: 'refresh_token', op: '==', value: refresh_token }]
+      })
+    )
+    return record as RefreshTokenImmutableRecord | RefreshTokenMutableRecord
+  }
 
   const revokeAccessToken = defRevokeAccessToken({
     log: token_log,
@@ -454,14 +506,23 @@ export async function defFastify(config: Config) {
     })
   }
 
-  fastify.register(userinfo, {
+  const userinfoOptions: UserinfoEndpointPluginOptions = {
     ajv,
     includeErrorDescription,
     isAccessTokenRevoked,
-    // me,
     reportAllAjvErrors,
-    retrieveProfile
-  })
+    retrieveUserProfile
+  }
+
+  fastify.register(userinfo, userinfoOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/userinfo/config',
+      pluginOptions: userinfoOptions,
+      exclude: ['ajv']
+    })
+  }
 
   const domain = me.split('https://').at(-1)?.replace('/', '') as string
 

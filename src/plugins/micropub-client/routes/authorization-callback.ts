@@ -7,8 +7,7 @@ import {
   UnauthorizedError
 } from '@jackdbd/oauth2-error-responses'
 import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
-import { safeDecode } from '../../../lib/token/decode.js'
-import { AccessTokenClaims } from '../../../lib/token/claims.js'
+import { safeDecode, type AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 import type { AuthorizationResponseQuerystring } from '@jackdbd/fastify-authorization-endpoint'
 // import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
 

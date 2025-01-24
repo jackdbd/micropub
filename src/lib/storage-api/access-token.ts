@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { jti } from '../jwt/index.js'
+import { jti } from '@jackdbd/oauth2-tokens'
 import {
   access_token_props,
   revocation_reason

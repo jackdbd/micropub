@@ -1,4 +1,8 @@
-import { OnIssuedTokens } from '@jackdbd/fastify-token-endpoint'
+import type { OnIssuedTokens } from '@jackdbd/fastify-token-endpoint'
+import type {
+  RevokeAccessToken,
+  RevokeRefreshToken
+} from '@jackdbd/fastify-revocation-endpoint/schemas/index'
 import type {
   StorageApi,
   AccessTokenImmutableRecord,
@@ -7,9 +11,9 @@ import type {
   RetrieveAccessToken,
   RetrieveRefreshToken,
   RefreshTokenImmutableRecord,
-  RefreshTokenMutableRecord,
-  RevokeAccessToken,
-  RevokeRefreshToken
+  RefreshTokenMutableRecord
+  // RevokeAccessToken,
+  // RevokeRefreshToken
 } from '../lib/storage-api/index.js'
 import { AccessTokenProps } from '../lib/token-storage-interface/access-token.js'
 import { RefreshTokenProps } from '../lib/token-storage-interface/refresh-token.js'
