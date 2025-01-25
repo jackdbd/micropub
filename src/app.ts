@@ -10,45 +10,38 @@ import sensible from '@fastify/sensible'
 import auth from '@jackdbd/fastify-authorization-endpoint'
 import type {
   AuthorizationCodeImmutableRecord,
-  AuthorizationCodeMutableRecord
-} from '@jackdbd/fastify-authorization-endpoint/schemas/authorization-code'
-import type {
+  AuthorizationCodeMutableRecord,
   OnUserApprovedRequest,
-  PluginOptions as AuthorizationEndpointPluginOptions,
-  RetrieveAuthorizationCode
+  RetrieveAuthorizationCode,
+  PluginOptions as AuthorizationEndpointPluginOptions
 } from '@jackdbd/fastify-authorization-endpoint'
 import introspection from '@jackdbd/fastify-introspection-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
-import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint/schemas/index'
+import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
 import type {
   OnIssuedTokens,
-  PluginOptions as TokenEndpointPluginOptions,
-  RetrieveRefreshToken
-} from '@jackdbd/fastify-token-endpoint'
-import type {
   AccessTokenImmutableRecord,
   AccessTokenMutableRecord,
   RefreshTokenImmutableRecord,
-  RefreshTokenMutableRecord
-} from '@jackdbd/fastify-token-endpoint/schemas/index'
+  RefreshTokenMutableRecord,
+  RetrieveRefreshToken,
+  PluginOptions as TokenEndpointPluginOptions
+} from '@jackdbd/fastify-token-endpoint'
 import userinfo from '@jackdbd/fastify-userinfo-endpoint'
 import type {
-  // RetrieveUserProfile,
-  PluginOptions as UserinfoEndpointPluginOptions
-  //  UserProfileMutableRecord
-} from '@jackdbd/fastify-userinfo-endpoint'
-import type {
   RetrieveUserProfile,
-  UserProfileMutableRecord
-} from '@jackdbd/fastify-userinfo-endpoint/schemas/index'
+  UserProfileMutableRecord,
+  PluginOptions as UserinfoEndpointPluginOptions
+} from '@jackdbd/fastify-userinfo-endpoint'
+import { secondsToUTCString } from '@jackdbd/oauth2-tokens'
 import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
+import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 import { unwrapP } from '@jackdbd/unwrap'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
-import { secondsToUTCString } from './lib/date.js'
 import { defDefaultPublication } from './lib/github-storage/publication.js'
 import { defGitHub } from './lib/github-storage/client.js'
 import { defR2 } from './lib/r2-storage/client.js'
@@ -79,7 +72,7 @@ import {
   defIsAccessTokenRevoked,
   defOnAuthorizationCodeVerified,
   defOnIssuedTokens,
-  defOnUserApprovedRequest,
+  // defOnUserApprovedRequest,
   // defRetrieveAccessToken,
   // defRetrieveAuthorizationCode,
   // defRetrieveRefreshToken,
@@ -215,7 +208,18 @@ export async function defFastify(config: Config) {
     }
   })
 
-  const ajv = defAjv({ allErrors: reportAllAjvErrors })
+  // The function conformResult in @jackdbd/schema-validators cannot deal with
+  // schemas that have one or more $ref (or probably it cannot deal only with
+  // filesystem $refs). So we need to dereference those $refs by compiling the
+  // schemas. We can do it now, when we instantiate Ajv, or later (but before
+  // calling conformResult), using ajv.addSchema.
+  // Probably I could use a library like this one to dereference all $ref in one
+  // go: https://github.com/APIDevTools/json-schema-ref-parser
+  const ajv = defAjv({
+    allErrors: reportAllAjvErrors,
+    schemas: [code_challenge]
+  })
+  ajv.addSchema(code_challenge_method)
 
   const backend = 'sqlite'
   const environment = NODE_ENV === 'production' ? 'prod' : 'dev'
@@ -264,11 +268,11 @@ export async function defFastify(config: Config) {
     storage: storage.authorization_code
   })
 
-  const onUserApprovedRequest: OnUserApprovedRequest = defOnUserApprovedRequest(
-    {
-      storage: storage.authorization_code
-    }
-  )
+  const onUserApprovedRequest: OnUserApprovedRequest = async (props) => {
+    console.log('=== OnUserApprovedRequest= ~ props ===', props)
+    // TODO: fix the type of code_challend and code_challenge_method in @jackdbd/fastify-authorization-endpoint
+    await unwrapP(storage.authorization_code.storeOne(props as any))
+  }
 
   const retrieveAuthorizationCode: RetrieveAuthorizationCode = async (code) => {
     const record = await unwrapP(
@@ -287,28 +291,18 @@ export async function defFastify(config: Config) {
     storage: storage.access_token
   })
 
-  // const retrieveAccessToken = defRetrieveAccessToken({
-  //   log: token_log,
-  //   storage: storage.access_token
-  // })
-
   const retrieveAccessToken: RetrieveAccessToken = async (jti) => {
     const record = await unwrapP(
-      storage.authorization_code.retrieveOne({
+      storage.access_token.retrieveOne({
         where: [{ key: 'jti', op: '==', value: jti }]
       })
     )
     return record as AccessTokenImmutableRecord | AccessTokenMutableRecord
   }
 
-  // const retrieveRefreshToken = defRetrieveRefreshToken({
-  //   log: token_log,
-  //   storage: storage.refresh_token
-  // })
-
   const retrieveRefreshToken: RetrieveRefreshToken = async (refresh_token) => {
     const record = await unwrapP(
-      storage.authorization_code.retrieveOne({
+      storage.refresh_token.retrieveOne({
         where: [{ key: 'refresh_token', op: '==', value: refresh_token }]
       })
     )

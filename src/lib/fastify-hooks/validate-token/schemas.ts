@@ -1,10 +1,10 @@
-import type Ajv from 'ajv'
-import { Static, Type } from '@sinclair/typebox'
-import { ajv, report_all_ajv_errors } from '../../schemas/index.js'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '../../storage-api/index.js'
+} from '@jackdbd/fastify-token-endpoint'
+import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
+import { ajv, report_all_ajv_errors } from '../../schemas/index.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object({

@@ -1,9 +1,9 @@
-import type { AuthorizationCodeProps } from '@jackdbd/fastify-authorization-endpoint'
 import type {
-  StorageApi,
+  AuthorizationCodeProps,
   AuthorizationCodeImmutableRecord,
   AuthorizationCodeMutableRecord
-} from '../lib/storage-api/index.js'
+} from '@jackdbd/fastify-authorization-endpoint'
+import type { StorageApi } from '../lib/storage-api/index.js'
 
 export interface Config {
   storage: StorageApi

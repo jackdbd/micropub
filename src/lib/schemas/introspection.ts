@@ -1,8 +1,8 @@
-import { Static, Type } from '@sinclair/typebox'
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '../storage-api/index.js'
+} from '@jackdbd/fastify-token-endpoint'
+import { Static, Type } from '@sinclair/typebox'
 import { info } from './info.js'
 
 export const storage = Type.Object({

@@ -4,6 +4,8 @@ import {
   me_before_url_canonicalization,
   me_after_url_canonicalization
 } from '@jackdbd/indieauth'
+import { isAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
+import type { IsAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
 import {
   ajv,
   get,
@@ -14,10 +16,6 @@ import {
   update,
   type Update
 } from '../../lib/schemas/index.js'
-import {
-  isAccessTokenRevoked,
-  type IsAccessTokenRevoked
-} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
 
 // import type { Syndicator } from '../../lib/micropub/index.js'

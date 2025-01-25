@@ -1,15 +1,15 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { AuthorizationCodeMutableRecord } from '@jackdbd/fastify-authorization-endpoint'
+import type {
+  AccessTokenMutableRecord,
+  RefreshTokenMutableRecord
+} from '@jackdbd/fastify-token-endpoint'
+import type { UserProfileMutableRecord } from '@jackdbd/fastify-userinfo-endpoint'
 import type { Config as LibSqlClientConfig } from '@libsql/client'
 import type { TObject } from '@sinclair/typebox'
 import { Atom, defAtom } from '@thi.ng/atom'
-import type {
-  AccessTokenMutableRecord,
-  AuthorizationCodeMutableRecord,
-  ClientApplicationMutableRecord,
-  RefreshTokenMutableRecord,
-  UserProfileMutableRecord
-} from './lib/storage-api/index.js'
+import type { ClientApplicationMutableRecord } from './lib/storage-api/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

@@ -1,10 +1,10 @@
-import { authorization_code_props } from './lib/authorization-code-storage-interface/index.js'
-import { client_application_props } from './lib/clients-storage-interface/index.js'
-import { user_profile_props } from './lib/profile-storage-interface/index.js'
+import { authorization_code_props } from '@jackdbd/fastify-authorization-endpoint'
 import {
   access_token_props,
   refresh_token_props
-} from './lib/token-storage-interface/index.js'
+} from '@jackdbd/fastify-token-endpoint'
+import { user_profile_props } from '@jackdbd/fastify-userinfo-endpoint'
+import { client_application_props } from './lib/clients-storage-interface/index.js'
 import type { HashMapSchemas } from './constants.js'
 
 export const PROPS_SCHEMAS: HashMapSchemas = {

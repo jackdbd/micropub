@@ -1,9 +1,11 @@
-import { Static, Type } from '@sinclair/typebox'
-import type Ajv from 'ajv'
+import { isAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
+import type { IsAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
 import {
   me_before_url_canonicalization,
   me_after_url_canonicalization
 } from '@jackdbd/indieauth'
+import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import { media_endpoint, micropub_endpoint } from '../../lib/micropub/index.js'
 import {
   ajv,
@@ -20,10 +22,6 @@ import type {
   Undelete,
   Update
 } from '../../lib/schemas/index.js'
-import {
-  isAccessTokenRevoked,
-  type IsAccessTokenRevoked
-} from '../../lib/storage-api/index.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object(

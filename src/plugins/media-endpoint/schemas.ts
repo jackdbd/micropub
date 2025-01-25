@@ -1,20 +1,17 @@
-import { Static, Type } from '@sinclair/typebox'
-import type Ajv from 'ajv'
+import { isAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
+import type { IsAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
 import {
   me_before_url_canonicalization,
   me_after_url_canonicalization
 } from '@jackdbd/indieauth'
+import { Static, Type } from '@sinclair/typebox'
+import type Ajv from 'ajv'
 import {
   ajv,
   deleteContentOrMedia,
   report_all_ajv_errors,
   uploadMedia
 } from '../../lib/schemas/index.js'
-import {
-  isAccessTokenRevoked,
-  type IsAccessTokenRevoked
-} from '../../lib/storage-api/index.js'
-
 import { DEFAULT } from './constants.js'
 
 /**

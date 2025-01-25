@@ -1,6 +1,6 @@
+import type { IsAccessTokenRevoked } from '@jackdbd/fastify-token-endpoint'
 import type { FastifyRequest } from 'fastify'
 import { unixTimestampInSeconds } from '../date.js'
-import type { IsAccessTokenRevoked } from '../../lib/storage-api/index.js'
 
 export interface Config {
   isAccessTokenRevoked: IsAccessTokenRevoked

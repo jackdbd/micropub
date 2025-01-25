@@ -1,22 +1,20 @@
-import type { OnIssuedTokens } from '@jackdbd/fastify-token-endpoint'
 import type {
-  RevokeAccessToken,
-  RevokeRefreshToken
-} from '@jackdbd/fastify-revocation-endpoint/schemas/index'
-import type {
-  StorageApi,
+  AccessTokenProps,
   AccessTokenImmutableRecord,
   AccessTokenMutableRecord,
   IsAccessTokenRevoked,
-  RetrieveAccessToken,
-  RetrieveRefreshToken,
+  OnIssuedTokens,
+  RefreshTokenProps,
   RefreshTokenImmutableRecord,
   RefreshTokenMutableRecord
-  // RevokeAccessToken,
-  // RevokeRefreshToken
-} from '../lib/storage-api/index.js'
-import { AccessTokenProps } from '../lib/token-storage-interface/access-token.js'
-import { RefreshTokenProps } from '../lib/token-storage-interface/refresh-token.js'
+} from '@jackdbd/fastify-token-endpoint'
+import type {
+  RetrieveAccessToken,
+  RetrieveRefreshToken,
+  RevokeAccessToken,
+  RevokeRefreshToken
+} from '@jackdbd/fastify-revocation-endpoint'
+import type { StorageApi } from '../lib/storage-api/index.js'
 import { unwrapP } from '@jackdbd/unwrap'
 import { SQLITE_DATABASE_TABLE } from '../constants.js'
 import type { BatchTransaction } from '../sqlite-utils.js'
