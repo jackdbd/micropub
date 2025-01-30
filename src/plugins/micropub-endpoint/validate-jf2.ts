@@ -26,7 +26,7 @@ import {
   h_event,
   h_geo,
   h_item
-} from '../../lib/microformats2/index.js'
+} from '@jackdbd/microformats2'
 import {
   audio,
   date_time,

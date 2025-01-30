@@ -70,6 +70,7 @@
     "@jackdbd/fastify-webc": "0.0.0-canary.1",
     "@jackdbd/canonical-url": "0.0.0-canary.1",
     "@jackdbd/indieauth": "0.0.0-canary.1",
+    "@jackdbd/microformats2": "0.1.1-canary.0",
     "@jackdbd/notifications": "^1.0.3",
     "@jackdbd/oauth2": "0.0.0-canary.1",
     "@jackdbd/oauth2-error-responses": "0.0.0-canary.1",

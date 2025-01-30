@@ -1,5 +1,5 @@
+import { u_url } from '@jackdbd/microformats2'
 import { Static, Type } from '@sinclair/typebox'
-import { u_url } from '../../microformats2/index.js'
 
 // To upload one or more audio files, clients must make a multipart request.
 // https://micropub.spec.indieweb.org/#uploading-files

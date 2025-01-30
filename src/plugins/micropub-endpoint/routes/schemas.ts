@@ -1,10 +1,5 @@
+import { h_card, h_cite, h_entry, h_event } from '@jackdbd/microformats2'
 import { Static, Type } from '@sinclair/typebox'
-import {
-  h_card,
-  h_cite,
-  h_entry,
-  h_event
-} from '../../../lib/microformats2/index.js'
 
 export const micropub_get_request = Type.Object(
   { query: Type.Object({ q: Type.String() }) },

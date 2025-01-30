@@ -1,5 +1,5 @@
+import { u_photo } from '@jackdbd/microformats2'
 import { Static, Type } from '@sinclair/typebox'
-import { u_photo } from '../../microformats2/index.js'
 
 // To upload a photo with a caption, send a multipart request that contains
 // three parts, named: h, content and photo.

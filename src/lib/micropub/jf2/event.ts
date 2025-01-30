@@ -1,5 +1,5 @@
+import { h_event } from '@jackdbd/microformats2'
 import { type Static, Type } from '@sinclair/typebox'
-import { h_event } from '../../microformats2/index.js'
 import { mp_slug, mp_syndicate_to } from './micropub-reserved-properties.js'
 
 export const mp_event = Type.Object(

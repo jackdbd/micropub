@@ -1,5 +1,5 @@
+import { h_entry } from '@jackdbd/microformats2'
 import { type Static, Type } from '@sinclair/typebox'
-import { h_entry } from '../../microformats2/index.js'
 import { date_time } from './date-time.js'
 import {
   access_token,
@@ -18,7 +18,11 @@ export const mp_entry = Type.Object(
   {
     ...h_entry.properties,
 
-    access_token: Type.Optional(Type.Ref(access_token)),
+    // access_token: Type.Optional(Type.Ref(access_token)),
+    // access_token: Type.Optional(Type.Ref(access_token.$id!)),
+    access_token: Type.Optional(
+      Type.Unsafe<Static<typeof access_token>>(Type.Ref(access_token.$id!))
+    ),
 
     action: Type.Optional(Type.Ref(action, { default: 'create' })),
 
