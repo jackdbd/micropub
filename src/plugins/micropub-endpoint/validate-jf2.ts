@@ -28,6 +28,8 @@ import {
   h_item
 } from '@jackdbd/microformats2'
 import {
+  access_token,
+  action,
   audio,
   date_time,
   mp_card,
@@ -41,11 +43,7 @@ import {
   mp_visibility,
   photo,
   video
-} from '../../lib/micropub/index.js'
-import {
-  access_token,
-  action
-} from '../../lib/micropub/jf2/micropub-reserved-properties.js'
+} from '@jackdbd/micropub'
 
 /**
  * Compile all schemas and return validate functions.

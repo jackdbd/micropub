@@ -1,8 +1,13 @@
 import assert from 'node:assert'
+import {
+  randomKid,
+  safeDecode,
+  sign,
+  unixTimestampInSeconds
+} from '@jackdbd/oauth2-tokens'
+import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 import { unwrapP } from '@jackdbd/unwrap'
-import { unixTimestampInSeconds } from '../dist/lib/date.js'
 import { defStorage } from '../dist/lib/storage-implementations/index.js'
-import { randomKid, safeDecode, sign } from '../dist/lib/token/index.js'
 import { defAjv } from '../dist/ajv.js'
 import { defFastify } from '../dist/app.js'
 import { defConfig } from '../dist/config.js'
@@ -25,7 +30,7 @@ export const ACCESS_TOKEN_EXPIRATION = `${ACCESS_TOKEN_EXPIRATION_IN_SECONDS} se
 export const REFRESH_TOKEN_EXPIRATION_IN_SECONDS = 30
 export const REFRESH_TOKEN_EXPIRATION = `${REFRESH_TOKEN_EXPIRATION_IN_SECONDS} seconds`
 
-export const ajv = defAjv()
+export const ajv = defAjv({ schemas: [code_challenge, code_challenge_method] })
 const backend = 'mem-atom'
 // const backend = 'sqlite'
 const environment = 'dev'

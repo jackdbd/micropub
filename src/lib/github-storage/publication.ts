@@ -1,5 +1,5 @@
-import * as spred from '../jf2-predicates.js'
-import type { Publication } from '../micropub/index.js'
+import * as spred from '@jackdbd/micropub/jf2-predicates'
+import type { Publication } from '@jackdbd/micropub'
 import * as wpred from '../website-predicates.js'
 
 interface Config {

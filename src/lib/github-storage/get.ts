@@ -1,8 +1,12 @@
 import { applyToDefaults } from '@hapi/hoek'
 import type { Get } from '../../lib/schemas/index.js'
 import { base64ToUtf8 } from '../encoding.js'
-import { BASE_URL, GITHUB_TOKEN, REF } from '../github-contents-api/defaults.js'
-import * as api from '../github-contents-api/index.js'
+import {
+  BASE_URL,
+  GITHUB_TOKEN,
+  REF
+} from '@jackdbd/github-contents-api/defaults'
+import * as api from '@jackdbd/github-contents-api'
 import { markdownToJf2 } from '../markdown-to-jf2.js'
 
 export interface Options {

@@ -2,7 +2,6 @@ import assert from 'node:assert'
 import { FastifyRequest } from 'fastify'
 import formAutoContent from 'form-auto-content'
 import { areSameOrigin } from '../../../lib/fastify-request-predicates/index.js'
-// import { normalizeJf2 } from '../../../lib/micropub/index.js'
 import { isAudio, isVideo } from '../../../lib/mime-types.js'
 import type { PostRequestBody } from '../request.js'
 

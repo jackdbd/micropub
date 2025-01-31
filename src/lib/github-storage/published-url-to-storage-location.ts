@@ -1,4 +1,4 @@
-import type { Publication } from '../micropub/index.js'
+import type { Publication } from '@jackdbd/micropub'
 import type { Log } from './log.js'
 
 interface Config {

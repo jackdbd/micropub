@@ -1,10 +1,14 @@
 import { applyToDefaults } from '@hapi/hoek'
+import {
+  BASE_URL,
+  GITHUB_TOKEN,
+  REF
+} from '@jackdbd/github-contents-api/defaults'
+import type { AuthorOrCommitter } from '@jackdbd/github-contents-api'
+import * as api from '@jackdbd/github-contents-api'
+import type { Publication } from '@jackdbd/micropub'
 import type { Update } from '../../lib/schemas/index.js'
 import { rfc3339 } from '../date.js'
-import { BASE_URL, GITHUB_TOKEN, REF } from '../github-contents-api/defaults.js'
-import type { AuthorOrCommitter } from '../github-contents-api/index.js'
-import * as api from '../github-contents-api/index.js'
-import type { Publication } from '../micropub/index.js'
 import { defGet } from './get.js'
 import { jf2ToContent } from './jf2-to-content.js'
 import type { Log } from './log.js'

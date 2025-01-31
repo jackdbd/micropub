@@ -14,7 +14,7 @@ import {
   defValidateClaim,
   defValidateAccessTokenNotRevoked
 } from '../../lib/fastify-hooks/index.js'
-import type { SyndicateToItem } from '../../lib/micropub/index.js'
+import type { SyndicateToItem } from '@jackdbd/micropub/syndicate-to'
 import { DEFAULT, NAME } from './constants.js'
 import { defMicropubResponse } from './decorators/reply.js'
 import { defValidateGetRequest } from './hooks.js'

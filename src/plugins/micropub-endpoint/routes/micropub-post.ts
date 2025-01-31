@@ -10,7 +10,7 @@ import {
 } from '@jackdbd/oauth2-error-responses'
 import { hasScope } from '../../../lib/fastify-request-predicates/index.js'
 import { mf2tTojf2 } from '../../../lib/mf2-to-jf2.js'
-import { type Action, normalizeJf2 } from '../../../lib/micropub/index.js'
+import { type Action, normalizeJf2 } from '@jackdbd/micropub'
 import type {
   DeleteContentOrMedia,
   Undelete,

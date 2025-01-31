@@ -1,6 +1,6 @@
+import { Syndicator } from '@jackdbd/micropub/syndicator'
 import { send } from '@jackdbd/notifications/telegram'
 import { Jf2 } from '@paulrobertlloyd/mf2tojf2'
-import { Syndicator } from '../micropub/index.js'
 
 export const EMOJI = {
   AUDIO: '🎵',

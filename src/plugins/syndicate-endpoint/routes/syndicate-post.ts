@@ -4,7 +4,8 @@ import {
   InvalidRequestError,
   ServerError
 } from '@jackdbd/oauth2-error-responses'
-import { normalizeJf2, type Syndicator } from '../../../lib/micropub/index.js'
+import { normalizeJf2 } from '@jackdbd/micropub'
+import type { Syndicator } from '@jackdbd/micropub/syndicator'
 import type {
   Get,
   PublishedUrlToStorageLocation,

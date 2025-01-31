@@ -1,10 +1,10 @@
 import { applyToDefaults } from '@hapi/hoek'
 import type { DeleteContentOrMedia } from '../../lib/schemas/index.js'
-import type { AuthorOrCommitter } from '../github-contents-api/index.js'
-import { BASE_URL, GITHUB_TOKEN } from '../github-contents-api/defaults.js'
-import * as api from '../github-contents-api/index.js'
+import type { AuthorOrCommitter } from '@jackdbd/github-contents-api'
+import { BASE_URL, GITHUB_TOKEN } from '@jackdbd/github-contents-api/defaults'
+import * as api from '@jackdbd/github-contents-api'
+import type { Publication } from '@jackdbd/micropub'
 import type { Log } from './log.js'
-import type { Publication } from '../micropub/index.js'
 import { defPublishedUrlToStorageLocation } from './published-url-to-storage-location.js'
 
 export interface Options {

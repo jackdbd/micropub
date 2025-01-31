@@ -20,9 +20,13 @@ import {
 import { code_verifier_length } from '@jackdbd/pkce'
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { micropub_endpoint } from '../../lib/micropub/index.js'
 import { ajv, report_all_ajv_errors } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
+
+export const micropub_endpoint = Type.String({
+  format: 'uri',
+  title: 'Micropub endpoint'
+})
 
 export const options = Type.Object(
   {

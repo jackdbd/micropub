@@ -6,7 +6,6 @@ import {
 } from '@jackdbd/indieauth'
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
-import { media_endpoint, micropub_endpoint } from '../../lib/micropub/index.js'
 import {
   ajv,
   create,
@@ -22,6 +21,7 @@ import type {
   Undelete,
   Update
 } from '../../lib/schemas/index.js'
+import { media_endpoint, micropub_endpoint } from './common.js'
 import { DEFAULT } from './constants.js'
 
 export const options = Type.Object(

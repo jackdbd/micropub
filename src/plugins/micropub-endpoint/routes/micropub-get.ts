@@ -1,5 +1,5 @@
 import type { RouteHandler } from 'fastify'
-import type { SyndicateToItem } from '../../../lib/micropub/index.js'
+import type { SyndicateToItem } from '@jackdbd/micropub/syndicate-to'
 
 export interface Config {
   media_endpoint: string

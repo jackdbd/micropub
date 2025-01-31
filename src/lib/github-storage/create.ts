@@ -1,9 +1,13 @@
 import { applyToDefaults } from '@hapi/hoek'
 import type { Create } from '../../lib/schemas/index.js'
-import { BASE_URL, GITHUB_TOKEN, REF } from '../github-contents-api/defaults.js'
-import type { AuthorOrCommitter } from '../github-contents-api/index.js'
-import * as api from '../github-contents-api/index.js'
-import { jf2ToSlug, type Publication } from '../micropub/index.js'
+import {
+  BASE_URL,
+  GITHUB_TOKEN,
+  REF
+} from '@jackdbd/github-contents-api/defaults'
+import type { AuthorOrCommitter } from '@jackdbd/github-contents-api'
+import * as api from '@jackdbd/github-contents-api'
+import { jf2ToSlug, type Publication } from '@jackdbd/micropub'
 import { jf2ToContent } from './jf2-to-content.js'
 import type { Log } from './log.js'
 

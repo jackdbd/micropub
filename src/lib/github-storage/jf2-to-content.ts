@@ -1,6 +1,6 @@
+import { jf2ToContentWithFrontmatter } from '@jackdbd/micropub'
 import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import { utf8ToBase64 } from '../encoding.js'
-import { jf2ToContentWithFrontmatter } from '../micropub/index.js'
 
 /**
  * The GitHub Contents API requires content to be Base64-encoded.

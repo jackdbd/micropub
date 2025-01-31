@@ -1,10 +1,10 @@
 import { applyToDefaults } from '@hapi/hoek'
-import type { AuthorOrCommitter } from '../github-contents-api/index.js'
+import type { AuthorOrCommitter } from '@jackdbd/github-contents-api'
 import {
   BASE_URL as GITHUB_API_BASE_URL,
   REF
-} from '../github-contents-api/defaults.js'
-import { type Publication } from '../micropub/index.js'
+} from '@jackdbd/github-contents-api/defaults'
+import { type Publication } from '@jackdbd/micropub'
 import { defCreate } from './create.js'
 import { defGet } from './get.js'
 import { defHardDelete } from './hard-delete.js'
