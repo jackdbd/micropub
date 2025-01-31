@@ -1,6 +1,10 @@
 import { Static, Type } from '@sinclair/typebox'
 import { failure } from './failure.js'
-import { url } from './url.js'
+
+export const url = Type.String({
+  description: 'A URL',
+  format: 'uri'
+})
 
 const success = Type.Object({
   error: Type.Optional(Type.Undefined()),

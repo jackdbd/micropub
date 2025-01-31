@@ -1,4 +1,5 @@
 import type { MultipartFile, MultipartValue } from '@fastify/multipart'
+import type { DeleteContentOrMedia } from '@jackdbd/fastify-micropub-endpoint'
 import type { Action } from '@jackdbd/micropub'
 import {
   InvalidRequestError,
@@ -6,10 +7,7 @@ import {
 } from '@jackdbd/oauth2-error-responses'
 import type { RouteHandler } from 'fastify'
 import { defErrorIfActionNotAllowed } from '../../../lib/error-if-action-not-allowed.js'
-import type {
-  DeleteContentOrMedia,
-  UploadMedia
-} from '../../../lib/schemas/index.js'
+import type { UploadMedia } from '../../../lib/schemas/index.js'
 
 interface Config {
   delete: DeleteContentOrMedia

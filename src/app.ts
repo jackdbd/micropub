@@ -2,7 +2,6 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
 import type { OAuth2Namespace } from '@fastify/oauth2'
-import { fastifyRequestContext } from '@fastify/request-context'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
@@ -16,6 +15,7 @@ import type {
   PluginOptions as AuthorizationEndpointPluginOptions
 } from '@jackdbd/fastify-authorization-endpoint'
 import introspection from '@jackdbd/fastify-introspection-endpoint'
+import micropub from '@jackdbd/fastify-micropub-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
 import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
@@ -34,16 +34,14 @@ import type {
   UserProfileMutableRecord,
   PluginOptions as UserinfoEndpointPluginOptions
 } from '@jackdbd/fastify-userinfo-endpoint'
+import { defDefaultPublication, defGitHub } from '@jackdbd/github-content-store'
 import { secondsToUTCString } from '@jackdbd/oauth2-tokens'
 import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 import { unwrapP } from '@jackdbd/unwrap'
-import type { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
-import { defDefaultPublication } from './lib/github-storage/publication.js'
-import { defGitHub } from './lib/github-storage/client.js'
 import { defR2 } from './lib/r2-storage/client.js'
 import { defStorage } from './lib/storage-implementations/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
@@ -53,8 +51,6 @@ import micropubClient, {
   type BaseErrorResponseBody,
   type BaseSuccessResponseBody
 } from './plugins/micropub-client/index.js'
-import micropub from './plugins/micropub-endpoint/index.js'
-import type { ResponseConfig } from './plugins/micropub-endpoint/decorators/reply.js'
 import renderConfig from './plugins/render-config/index.js'
 import syndicate from './plugins/syndicate-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
@@ -105,15 +101,7 @@ declare module 'fastify' {
       body: B
     ): void
 
-    micropubResponse(jf2: Jf2, config: ResponseConfig): Promise<void>
-
     render(template: string, data: Record<string, any>): Promise<void>
-  }
-}
-
-declare module '@fastify/request-context' {
-  interface RequestContextData {
-    jf2?: Jf2
   }
 }
 
@@ -321,12 +309,6 @@ export async function defFastify(config: Config) {
 
   // === PLUGINS ============================================================ //
   fastify.register(sensible)
-
-  fastify.register(fastifyRequestContext, {
-    // defaultStoreValues: {
-    //   user: { id: 'system' }
-    // }
-  })
 
   const sessionName = 'session'
 
@@ -567,7 +549,6 @@ export async function defFastify(config: Config) {
   })
 
   fastify.register(micropub, {
-    ajv,
     create: github.create,
     delete: github.delete,
     includeErrorDescription,
@@ -578,6 +559,10 @@ export async function defFastify(config: Config) {
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
     syndicateTo: syndicate_to,
+    // undelete: async (url) => {
+    //   console.log(`[${LOG_PREFIX}undelete] url: ${url}`)
+    //   return { message: `undeleted post at url ${url} ` }
+    // },
     undelete: github.undelete,
     update: github.update
   })
@@ -592,17 +577,18 @@ export async function defFastify(config: Config) {
 
   const syndicateOptions = {
     ajv,
-    get: github.get,
+    get: github.retrieveContent,
     includeErrorDescription,
     isAccessTokenRevoked,
     me,
-    publishedUrlToStorageLocation: github.publishedUrlToStorageLocation,
+    publishedUrlToStorageLocation: github.websiteUrlToStoreLocation,
     syndicators: { [uid]: telegram_syndicator },
     reportAllAjvErrors,
     update: github.update
   }
 
-  fastify.register(syndicate, syndicateOptions)
+  // fastify.register(syndicate, syndicateOptions)
+  fastify.register(syndicate)
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {

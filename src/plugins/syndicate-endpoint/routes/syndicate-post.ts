@@ -1,23 +1,24 @@
 import type { RouteHandler } from 'fastify'
 import { XMLParser } from 'fast-xml-parser'
+import type {
+  RetrieveContent,
+  Update
+} from '@jackdbd/fastify-micropub-endpoint'
+import type { UpdatePatch } from '@jackdbd/fastify-micropub-endpoint/schemas/update-patch'
 import {
   InvalidRequestError,
   ServerError
 } from '@jackdbd/oauth2-error-responses'
 import { normalizeJf2 } from '@jackdbd/micropub'
 import type { Syndicator } from '@jackdbd/micropub/syndicator'
-import type {
-  Get,
-  PublishedUrlToStorageLocation,
-  Update,
-  UpdatePatch
-} from '../../../lib/schemas/index.js'
+import type { WebsiteUrlToStoreLocation } from '../../../lib/schemas/index.js'
+import { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 
 export interface Config {
-  get: Get
+  get: RetrieveContent
   include_error_description: boolean
   log_prefix: string
-  publishedUrlToStorageLocation: PublishedUrlToStorageLocation
+  publishedUrlToStorageLocation: WebsiteUrlToStoreLocation
   syndicators: { [uid: string]: Syndicator }
   update: Update
 }
@@ -73,9 +74,11 @@ export const defSyndicatePost = (config: Config) => {
     }
     // ====================================================================== //
 
-    const result = await get(loc)
-
-    if (result.error) {
+    let jf2: Jf2
+    try {
+      const value = await get(loc)
+      jf2 = value.jf2
+    } catch (ex: any) {
       const error_description = `The post published at ${loc.website} is not stored at ${loc.store}.`
       const err = new InvalidRequestError({ error_description })
       return reply
@@ -85,7 +88,6 @@ export const defSyndicatePost = (config: Config) => {
 
     // We assume all content retrieved from the store to be untrusted data, so
     // we normalize it and sanitize it.
-    let jf2 = result.value.jf2
     request.log.debug(jf2, '=== jf2 (pre normalization) ===')
     jf2 = normalizeJf2(jf2)
     request.log.debug(jf2, '=== jf2 (after normalization) ===')

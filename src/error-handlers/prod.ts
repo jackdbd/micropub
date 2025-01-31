@@ -81,7 +81,7 @@ export const defErrorHandler = (options?: Options) => {
     }
 
     const claims = request.session.get('claims')
-    const jf2 = request.requestContext.get('jf2')
+    // const jf2 = request.requestContext.get('jf2')
 
     const error_title = error.name || 'Error'
 
@@ -105,7 +105,7 @@ export const defErrorHandler = (options?: Options) => {
           access_token_claims: claims,
           error_validation: err.validation,
           error_validationContext: err.validationContext,
-          jf2,
+          // jf2,
           request_host: request.host,
           request_method: request.method,
           request_url: request.url

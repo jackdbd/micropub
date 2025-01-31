@@ -1,3 +1,4 @@
+import { deleteContentOrMedia } from '@jackdbd/fastify-micropub-endpoint'
 import { isAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
 import type { IsAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
 import {
@@ -8,7 +9,6 @@ import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import {
   ajv,
-  deleteContentOrMedia,
   report_all_ajv_errors,
   uploadMedia
 } from '../../lib/schemas/index.js'

@@ -1,5 +1,5 @@
+import type { DeleteContentOrMedia } from '@jackdbd/fastify-micropub-endpoint'
 import type { RouteHandler } from 'fastify'
-import { DeleteContentOrMedia } from '../../../lib/schemas/index.js'
 
 interface Config {
   delete?: DeleteContentOrMedia

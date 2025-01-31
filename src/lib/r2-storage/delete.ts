@@ -1,5 +1,5 @@
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import type { DeleteContentOrMedia } from '../../lib/schemas/index.js'
+import type { DeleteContentOrMedia } from '@jackdbd/fastify-micropub-endpoint'
 
 export interface Config {
   bucket_name: string

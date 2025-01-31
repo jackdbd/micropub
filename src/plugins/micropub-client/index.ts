@@ -11,7 +11,7 @@ import { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
 import { defRedirectWhenNotAuthenticated } from '../../lib/fastify-hooks/index.js'
 import { DEFAULT, NAME } from './constants.js'
-import { errorResponse, successResponse } from './decorators/index.js'
+// import { errorResponse, successResponse } from './decorators/index.js'
 import { defAuthenticate } from './routes/authenticate-start.js'
 import { defAuthorizationEmailStart } from './routes/auth-email-start.js'
 import { defAuthorizationCallback as defGitHubCallback } from './routes/auth-github-callback.js'
@@ -199,11 +199,11 @@ const micropubClient: FastifyPluginCallback<Options> = (
   // })
 
   // === DECORATORS ========================================================= //
-  fastify.decorateReply('errorResponse', errorResponse)
-  fastify.log.debug(`${log_prefix}decorated fastify.reply with errorResponse`)
+  // fastify.decorateReply('errorResponse', errorResponse)
+  // fastify.log.debug(`${log_prefix}decorated fastify.reply with errorResponse`)
 
-  fastify.decorateReply('successResponse', successResponse)
-  fastify.log.debug(`${log_prefix}decorated fastify.reply with successResponse`)
+  // fastify.decorateReply('successResponse', successResponse)
+  // fastify.log.debug(`${log_prefix}decorated fastify.reply with successResponse`)
 
   // === HOOKS ============================================================== //
   fastify.addHook('onRoute', (routeOptions) => {
