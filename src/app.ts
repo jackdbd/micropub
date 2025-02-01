@@ -15,7 +15,10 @@ import type {
   PluginOptions as AuthorizationEndpointPluginOptions
 } from '@jackdbd/fastify-authorization-endpoint'
 import introspection from '@jackdbd/fastify-introspection-endpoint'
+import media from '@jackdbd/fastify-media-endpoint'
+import type { PluginOptions as MediaEndpointPluginOptions } from '@jackdbd/fastify-media-endpoint'
 import micropub from '@jackdbd/fastify-micropub-endpoint'
+import type { PluginOptions as MicropubEndpointPluginOptions } from '@jackdbd/fastify-micropub-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
 import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
@@ -38,15 +41,14 @@ import { defDefaultPublication, defGitHub } from '@jackdbd/github-content-store'
 import { secondsToUTCString } from '@jackdbd/oauth2-tokens'
 import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
+import { defR2 } from '@jackdbd/r2-media-store'
 import { unwrapP } from '@jackdbd/unwrap'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
-import { defR2 } from './lib/r2-storage/client.js'
 import { defStorage } from './lib/storage-implementations/index.js'
 import { defSyndicator } from './lib/telegram-syndicator/index.js'
 
-import media from './plugins/media-endpoint/index.js'
 import micropubClient, {
   type BaseErrorResponseBody,
   type BaseSuccessResponseBody
@@ -537,7 +539,7 @@ export async function defFastify(config: Config) {
     public_base_url: media_public_base_url
   })
 
-  fastify.register(media, {
+  const mediaOptions: MediaEndpointPluginOptions = {
     ajv,
     delete: r2.delete,
     includeErrorDescription,
@@ -546,9 +548,19 @@ export async function defFastify(config: Config) {
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
     upload: r2.upload
-  })
+  }
 
-  fastify.register(micropub, {
+  fastify.register(media, mediaOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/media/config',
+      pluginOptions: mediaOptions,
+      exclude: ['ajv']
+    })
+  }
+
+  const micropubOptions: MicropubEndpointPluginOptions = {
     create: github.create,
     delete: github.delete,
     includeErrorDescription,
@@ -559,13 +571,23 @@ export async function defFastify(config: Config) {
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
     syndicateTo: syndicate_to,
-    // undelete: async (url) => {
-    //   console.log(`[${LOG_PREFIX}undelete] url: ${url}`)
-    //   return { message: `undeleted post at url ${url} ` }
-    // },
-    undelete: github.undelete,
+    undelete: async (url) => {
+      console.log(`[${LOG_PREFIX}undelete] url: ${url}`)
+      return { message: `undeleted post at url ${url} ` }
+    },
+    // undelete: github.undelete,
     update: github.update
-  })
+  }
+
+  fastify.register(micropub, micropubOptions)
+
+  if (process.env.NODE_ENV === 'development') {
+    fastify.register(renderConfig, {
+      route: '/micropub/config',
+      pluginOptions: micropubOptions,
+      exclude: ['ajv']
+    })
+  }
 
   const { uid } = syndicate_to.filter((d) => d.uid.includes('t.me'))[0]!
 
@@ -588,7 +610,8 @@ export async function defFastify(config: Config) {
   }
 
   // fastify.register(syndicate, syndicateOptions)
-  fastify.register(syndicate)
+  // fastify.register(syndicate)
+  console.log('=== TODO: re-add syndicate plugin ===', syndicate)
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {

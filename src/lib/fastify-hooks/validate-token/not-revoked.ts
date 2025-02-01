@@ -1,14 +1,14 @@
 import type { Session, SessionData } from '@fastify/secure-session'
 import { applyToDefaults } from '@hapi/hoek'
-import Ajv from 'ajv'
-import type { onRequestAsyncHookHandler } from 'fastify'
+import { accessTokenFromRequest } from '@jackdbd/fastify-utils'
 import {
   InvalidTokenError,
   UnauthorizedError
 } from '@jackdbd/oauth2-error-responses'
 import { safeDecode, type AccessTokenClaims } from '@jackdbd/oauth2-tokens'
 import { throwWhenNotConform } from '@jackdbd/schema-validators'
-import { accessTokenFromRequestHeader } from '../../fastify-utils/index.js'
+import Ajv from 'ajv'
+import type { onRequestAsyncHookHandler } from 'fastify'
 import { DEFAULT } from './constants.js'
 import { options as options_schema, Options } from './schemas.js'
 
@@ -61,7 +61,7 @@ export const defValidateAccessTokenNotRevoked = (options?: Options) => {
     let access_token: string | undefined = session.get(access_token_session_key)
 
     if (!access_token) {
-      const { value } = accessTokenFromRequestHeader(request, {
+      const { value } = accessTokenFromRequest(request, {
         header,
         header_key
       })

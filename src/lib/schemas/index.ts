@@ -18,10 +18,3 @@ export const message = Type.String({ minLength: 1 })
 
 export { websiteUrlToStoreLocation } from './syndication.js'
 export type { WebsiteUrlToStoreLocation } from './syndication.js'
-
-export {
-  upload_config,
-  uploadMedia,
-  type UploadConfig,
-  type UploadMedia
-} from './upload-media.js'
