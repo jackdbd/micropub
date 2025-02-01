@@ -23,6 +23,6 @@ export const DEFAULT = {
   // LINKEDIN_AUTH_REDIRECT_PATH: '/auth/linkedin/callback',
   // LINKEDIN_OAUTH_CLIENT_ID: process.env.LINKEDIN_OAUTH_CLIENT_ID!,
   // LINKEDIN_OAUTH_CLIENT_SECRET: process.env.LINKEDIN_OAUTH_CLIENT_SECRET!,
-  LOG_PREFIX: 'micropub-client ',
+  LOG_PREFIX: '[micropub-client] ',
   REPORT_ALL_AJV_ERRORS: false
 }

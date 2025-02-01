@@ -2,8 +2,6 @@ import { Type } from '@sinclair/typebox'
 
 export const ajv = Type.Any({ description: 'Instance of Ajv' })
 
-export { failure, type Failure } from './failure.js'
-
 export {
   include_error_description,
   include_error_details,

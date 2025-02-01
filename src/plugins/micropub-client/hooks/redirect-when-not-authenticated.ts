@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { IsAccessTokenRevoked } from '@jackdbd/fastify-token-endpoint'
-import { defIsAuthenticated } from '../../fastify-request-predicates/index.js'
+import { defIsAuthenticated } from '../../../lib/fastify-request-predicates/index.js'
 
 export interface Config {
   isAccessTokenRevoked: IsAccessTokenRevoked

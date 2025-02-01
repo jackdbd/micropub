@@ -21,6 +21,7 @@ import micropub from '@jackdbd/fastify-micropub-endpoint'
 import type { PluginOptions as MicropubEndpointPluginOptions } from '@jackdbd/fastify-micropub-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
 import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint'
+import syndicate from '@jackdbd/fastify-syndicate-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
 import type {
   OnIssuedTokens,
@@ -54,7 +55,6 @@ import micropubClient, {
   type BaseSuccessResponseBody
 } from './plugins/micropub-client/index.js'
 import renderConfig from './plugins/render-config/index.js'
-import syndicate from './plugins/syndicate-endpoint/index.js'
 import { successResponse } from './plugins/micropub-client/decorators/index.js'
 
 import { defAjv } from './ajv.js'
@@ -415,6 +415,7 @@ export async function defFastify(config: Config) {
     isAccessTokenRevoked,
     issuer,
     jwksUrl: jwks_url,
+    me,
     reportAllAjvErrors
   })
 
@@ -488,6 +489,7 @@ export async function defFastify(config: Config) {
     ajv,
     includeErrorDescription,
     isAccessTokenRevoked,
+    me,
     reportAllAjvErrors,
     retrieveUserProfile
   }
@@ -511,10 +513,10 @@ export async function defFastify(config: Config) {
     // log: { debug: fastify.log.debug, error: fastify.log.error },
     log: {
       debug: (message: string) => {
-        return fastify.log.debug(`@jackdbd/github-store ${message}`)
+        return fastify.log.debug(`[app/github-store] ${message}`)
       },
       error: (message: string) => {
-        return fastify.log.error(`@jackdbd/github-store ${message}`)
+        return fastify.log.error(`[app/github-store] ${message}`)
       }
     },
     owner: github_owner,
