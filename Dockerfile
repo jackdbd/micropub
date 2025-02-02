@@ -1,5 +1,5 @@
 # === STAGE 1 ================================================================ #
-FROM node:20.1-bullseye AS builder
+FROM node:22.13-bullseye AS builder
 
 LABEL maintainer="giacomo@giacomodebidda.com"
 
@@ -29,6 +29,7 @@ RUN npm install --location=global typescript@5.6.3 && \
 # not a great idea.
 # COPY assets/jwks-pub.json ./assets/jwks-pub.json
 COPY src/templates ./dist/templates
+COPY src/components ./dist/components
 COPY src/public ./dist/public
 COPY custom-types ./custom-types
 COPY src ./src
@@ -48,7 +49,7 @@ RUN tsc --project tsconfig.json \
 # RUN tree -I 'custom-types|node_modules' -a -L 3 ${APP_DIR}
 
 # === STAGE 2 ================================================================ #
-FROM node:20.1-bullseye-slim
+FROM node:22.13-bullseye-slim
 
 # Each ARG goes out of scope at the end of the build stage where it was
 # defined. That's why we have to repeat it here in this stage.
