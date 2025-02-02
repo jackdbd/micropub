@@ -1,8 +1,8 @@
 import assert from 'node:assert'
 import {
-  randomKid,
-  safeDecode,
-  sign,
+  // randomKid,
+  // safeDecode,
+  // sign,
   unixTimestampInSeconds
 } from '@jackdbd/oauth2-tokens'
 import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
@@ -11,7 +11,7 @@ import { defStorage } from '../dist/lib/storage-implementations/index.js'
 import { defAjv } from '../dist/ajv.js'
 import { defFastify } from '../dist/app.js'
 import { defConfig } from '../dist/config.js'
-import * as DEFAULT from '../dist/defaults.js'
+// import * as DEFAULT from '../dist/defaults.js'
 
 export const ISSUER = 'https://authorization-server.com/'
 export const ME = 'https://resource-owner.com/me'
@@ -32,19 +32,19 @@ export const REFRESH_TOKEN_EXPIRATION = `${REFRESH_TOKEN_EXPIRATION_IN_SECONDS} 
 
 export const ajv = defAjv({ schemas: [code_challenge, code_challenge_method] })
 const backend = 'mem-atom'
-// const backend = 'sqlite'
+// // const backend = 'sqlite'
 const environment = 'dev'
 
-// In some environments (e.g. Fly.io) we need to set JWKS as an escaped JSON
-// string (e.g. "{\"keys\":[]}"). So in those environments we need to call
-// JSON.parse twice to build the actual JS object.
-let jwks = JSON.parse(DEFAULT.JWKS)
-if (typeof jwks === 'string') {
-  jwks = JSON.parse(jwks)
-}
-export { jwks }
+// // In some environments (e.g. Fly.io) we need to set JWKS as an escaped JSON
+// // string (e.g. "{\"keys\":[]}"). So in those environments we need to call
+// // JSON.parse twice to build the actual JS object.
+// let jwks = JSON.parse(DEFAULT.JWKS)
+// if (typeof jwks === 'string') {
+//   jwks = JSON.parse(jwks)
+// }
+// export { jwks }
 
-export const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
+// export const jwks_url = new URL(DEFAULT.JWKS_PUBLIC_URL)
 
 export const accessTokenAPI = () => {
   const { value: storage } = defStorage({ ajv, backend, env: environment })
@@ -76,37 +76,37 @@ export const defTestApp = async () => {
   return await defFastify(config)
 }
 
-export const issueJWT = async (payload = {}) => {
-  const { error: kid_error, value: kid } = randomKid(jwks.keys)
-  assert.ok(!kid_error)
+// export const issueJWT = async (payload = {}) => {
+//   const { error: kid_error, value: kid } = randomKid(jwks.keys)
+//   assert.ok(!kid_error)
 
-  const expiration = ACCESS_TOKEN_EXPIRATION
-  const issuer = ISSUER
+//   const expiration = ACCESS_TOKEN_EXPIRATION
+//   const issuer = ISSUER
 
-  const { error, value: jwt } = await sign({
-    expiration,
-    issuer,
-    jwks,
-    kid,
-    payload
-  })
-  assert.ok(!error)
-  assert.ok(jwt)
+//   const { error, value: jwt } = await sign({
+//     expiration,
+//     issuer,
+//     jwks,
+//     kid,
+//     payload
+//   })
+//   assert.ok(!error)
+//   assert.ok(jwt)
 
-  return { expiration, issuer, jwt }
-}
+//   return { expiration, issuer, jwt }
+// }
 
-export const REQUIRED_CLAIMS = ['exp', 'iat', 'iss', 'jti']
+// export const REQUIRED_CLAIMS = ['exp', 'iat', 'iss', 'jti']
 
-export const assertTokenHasExpectedClaims = async ({ jwt, claims }) => {
-  const { error, value: actual_claims } = await safeDecode(jwt)
+// export const assertTokenHasExpectedClaims = async ({ jwt, claims }) => {
+//   const { error, value: actual_claims } = await safeDecode(jwt)
 
-  assert.ok(!error)
+//   assert.ok(!error)
 
-  claims.forEach((claim) => {
-    assert.ok(actual_claims[claim])
-  })
-}
+//   claims.forEach((claim) => {
+//     assert.ok(actual_claims[claim])
+//   })
+// }
 
 export const storeAccessTokens = async ({ storage, jtis }) => {
   await Promise.all(
@@ -174,12 +174,12 @@ export const revokeTokensByJTI = async ({
   )
 }
 
-export const waitMs = (ms) => {
-  let timeout
-  return new Promise((resolve) => {
-    timeout = setTimeout(() => {
-      resolve()
-      clearTimeout(timeout)
-    }, ms)
-  })
-}
+// export const waitMs = (ms) => {
+//   let timeout
+//   return new Promise((resolve) => {
+//     timeout = setTimeout(() => {
+//       resolve()
+//       clearTimeout(timeout)
+//     }, ms)
+//   })
+// }

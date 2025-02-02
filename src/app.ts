@@ -2,6 +2,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
 import type { OAuth2Namespace } from '@fastify/oauth2'
+import fastifyRequestContext from '@fastify/request-context'
 import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
@@ -310,7 +311,8 @@ export async function defFastify(config: Config) {
   })
 
   // === PLUGINS ============================================================ //
-  fastify.register(sensible)
+  fastify.register(fastifyRequestContext)
+  fastify.log.debug(`${LOG_PREFIX}registered plugin: @fastify/request-context`)
 
   const sessionName = 'session'
 
@@ -332,8 +334,11 @@ export async function defFastify(config: Config) {
       sessionName,
       expiry: secure_session_expiration
     },
-    `${LOG_PREFIX}secure session created`
+    `${LOG_PREFIX}registered plugin: @fastify/secure-session`
   )
+
+  fastify.register(sensible)
+  fastify.log.debug(`${LOG_PREFIX}registered plugin: @fastify/sensible`)
 
   // fastify.register(fastifyCsrf, {
   //   // In OAuth 2.0, the state parameter is used to prevent CSRF attacks when
@@ -346,6 +351,7 @@ export async function defFastify(config: Config) {
   fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'public')
   })
+  fastify.log.debug(`${LOG_PREFIX}registered plugin: @fastify/static`)
 
   fastify.setNotFoundHandler(defNotFoundHandler({ ajv, reportAllAjvErrors }))
 
@@ -376,6 +382,9 @@ export async function defFastify(config: Config) {
   }
 
   fastify.register(auth, authOptions)
+  // fastify.log.debug(
+  //   `${LOG_PREFIX}registered plugin: @jackdbd/fastify-authorization-endpoint`
+  // )
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {
@@ -416,7 +425,9 @@ export async function defFastify(config: Config) {
     issuer,
     jwksUrl: jwks_url,
     me,
-    reportAllAjvErrors
+    reportAllAjvErrors,
+    retrieveAccessToken,
+    retrieveRefreshToken
   })
 
   if (process.env.NODE_ENV === 'development') {
@@ -489,7 +500,6 @@ export async function defFastify(config: Config) {
     ajv,
     includeErrorDescription,
     isAccessTokenRevoked,
-    me,
     reportAllAjvErrors,
     retrieveUserProfile
   }
@@ -670,6 +680,7 @@ export async function defFastify(config: Config) {
       }
     }
   })
+  fastify.log.debug(`${LOG_PREFIX}registered plugin: @fastify/view`)
 
   // === DECORATORS ========================================================= //
   fastify.decorateReply('successResponse', successResponse)
