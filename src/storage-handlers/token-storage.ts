@@ -7,15 +7,15 @@ import type {
   RefreshTokenProps,
   RefreshTokenImmutableRecord,
   RefreshTokenMutableRecord
-} from '@jackdbd/fastify-token-endpoint'
+} from '@jackdbd/indieauth/schemas/index'
 import type {
   RetrieveAccessToken,
   RetrieveRefreshToken,
   RevokeAccessToken,
   RevokeRefreshToken
-} from '@jackdbd/fastify-revocation-endpoint'
-import type { StorageApi } from '../lib/storage-api/index.js'
+} from '@jackdbd/indieauth/schemas/user-provided-functions'
 import { unwrapP } from '@jackdbd/unwrap'
+import type { StorageApi } from '../lib/storage-api/index.js'
 import { SQLITE_DATABASE_TABLE } from '../constants.js'
 import type { BatchTransaction } from '../sqlite-utils.js'
 import { default_log, type Log } from './logger.js'

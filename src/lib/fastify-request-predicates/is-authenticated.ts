@@ -1,4 +1,4 @@
-import type { IsAccessTokenRevoked } from '@jackdbd/fastify-token-endpoint'
+import type { IsAccessTokenRevoked } from '@jackdbd/indieauth/schemas/user-provided-functions'
 import type { FastifyRequest } from 'fastify'
 import { unixTimestampInSeconds } from '../date.js'
 

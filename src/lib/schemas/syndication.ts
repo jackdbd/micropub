@@ -1,8 +1,11 @@
-import { retrieveContent, update } from '@jackdbd/fastify-micropub-endpoint'
+import {
+  retrievePost,
+  updatePost
+} from '@jackdbd/micropub/schemas/user-provided-functions'
 import type {
-  RetrieveContent,
-  Update
-} from '@jackdbd/fastify-micropub-endpoint'
+  RetrievePost,
+  UpdatePost
+} from '@jackdbd/micropub/schemas/user-provided-functions'
 import { Static, Type } from '@sinclair/typebox'
 import { info } from './info.js'
 
@@ -19,14 +22,14 @@ export const websiteUrlToStoreLocation = Type.Function(
 export type WebsiteUrlToStoreLocation = Static<typeof websiteUrlToStoreLocation>
 
 export const store = Type.Object({
-  get: retrieveContent,
+  get: retrievePost,
   info,
-  update,
+  update: updatePost,
   websiteUrlToStoreLocation
 })
 
 export interface Store extends Static<typeof store> {
-  get: RetrieveContent
-  update: Update
+  get: RetrievePost
+  update: UpdatePost
   websiteUrlToStoreLocation: WebsiteUrlToStoreLocation
 }

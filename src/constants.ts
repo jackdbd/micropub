@@ -1,11 +1,11 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { AuthorizationCodeMutableRecord } from '@jackdbd/fastify-authorization-endpoint'
 import type {
   AccessTokenMutableRecord,
-  RefreshTokenMutableRecord
-} from '@jackdbd/fastify-token-endpoint'
-import type { UserProfileMutableRecord } from '@jackdbd/fastify-userinfo-endpoint'
+  AuthorizationCodeMutableRecord,
+  RefreshTokenMutableRecord,
+  UserProfileMutableRecord
+} from '@jackdbd/indieauth/schemas/index'
 import type { Config as LibSqlClientConfig } from '@libsql/client'
 import type { TObject } from '@sinclair/typebox'
 import { Atom, defAtom } from '@thi.ng/atom'

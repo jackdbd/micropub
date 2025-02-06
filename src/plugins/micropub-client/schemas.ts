@@ -1,16 +1,17 @@
-import { isAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
-import type { IsAccessTokenRevoked } from '@jackdbd/fastify-revocation-endpoint'
 import {
   client_id,
   issuer,
   client_name,
   client_uri,
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked,
   logo_uri,
   me_before_url_canonicalization,
   me_after_url_canonicalization,
   redirect_uris,
   userinfo_endpoint
-} from '@jackdbd/indieauth'
+} from '@jackdbd/indieauth/schemas/index'
+import { micropub_endpoint } from '@jackdbd/micropub/schemas/index'
 import {
   authorization_endpoint,
   introspection_endpoint,
@@ -22,11 +23,6 @@ import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'
 import { ajv, report_all_ajv_errors } from '../../lib/schemas/index.js'
 import { DEFAULT } from './constants.js'
-
-export const micropub_endpoint = Type.String({
-  format: 'uri',
-  title: 'Micropub endpoint'
-})
 
 export const options = Type.Object(
   {

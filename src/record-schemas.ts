@@ -1,17 +1,13 @@
 import {
   access_token_immutable_record,
   access_token_mutable_record,
-  refresh_token_immutable_record,
-  refresh_token_mutable_record
-} from '@jackdbd/fastify-token-endpoint'
-import {
   authorization_code_immutable_record,
-  authorization_code_mutable_record
-} from '@jackdbd/fastify-authorization-endpoint'
-import {
+  authorization_code_mutable_record,
+  refresh_token_immutable_record,
+  refresh_token_mutable_record,
   user_profile_immutable_record,
   user_profile_mutable_record
-} from '@jackdbd/fastify-userinfo-endpoint'
+} from '@jackdbd/indieauth/schemas/index'
 import {
   client_application_immutable_record,
   client_application_mutable_record

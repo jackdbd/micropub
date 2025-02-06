@@ -2,7 +2,7 @@ import type {
   AuthorizationCodeProps,
   AuthorizationCodeImmutableRecord,
   AuthorizationCodeMutableRecord
-} from '@jackdbd/fastify-authorization-endpoint'
+} from '@jackdbd/indieauth/schemas/index'
 import type { StorageApi } from '../lib/storage-api/index.js'
 
 export interface Config {

@@ -7,38 +7,36 @@ import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
 import sensible from '@fastify/sensible'
-import auth from '@jackdbd/fastify-authorization-endpoint'
 import type {
+  AccessTokenImmutableRecord,
+  AccessTokenMutableRecord,
   AuthorizationCodeImmutableRecord,
   AuthorizationCodeMutableRecord,
+  RefreshTokenImmutableRecord,
+  RefreshTokenMutableRecord,
+  UserProfileMutableRecord
+} from '@jackdbd/indieauth/schemas/index'
+import type {
+  OnIssuedTokens,
   OnUserApprovedRequest,
+  RetrieveAccessToken,
   RetrieveAuthorizationCode,
-  PluginOptions as AuthorizationEndpointPluginOptions
-} from '@jackdbd/fastify-authorization-endpoint'
+  RetrieveRefreshToken,
+  RetrieveUserProfile
+} from '@jackdbd/indieauth/schemas/user-provided-functions'
+import auth from '@jackdbd/fastify-authorization-endpoint'
+import type { PluginOptions as AuthorizationEndpointPluginOptions } from '@jackdbd/fastify-authorization-endpoint'
 import introspection from '@jackdbd/fastify-introspection-endpoint'
 import media from '@jackdbd/fastify-media-endpoint'
 import type { PluginOptions as MediaEndpointPluginOptions } from '@jackdbd/fastify-media-endpoint'
 import micropub from '@jackdbd/fastify-micropub-endpoint'
 import type { PluginOptions as MicropubEndpointPluginOptions } from '@jackdbd/fastify-micropub-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
-import type { RetrieveAccessToken } from '@jackdbd/fastify-revocation-endpoint'
 import syndicate from '@jackdbd/fastify-syndicate-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
-import type {
-  OnIssuedTokens,
-  AccessTokenImmutableRecord,
-  AccessTokenMutableRecord,
-  RefreshTokenImmutableRecord,
-  RefreshTokenMutableRecord,
-  RetrieveRefreshToken,
-  PluginOptions as TokenEndpointPluginOptions
-} from '@jackdbd/fastify-token-endpoint'
+import type { PluginOptions as TokenEndpointPluginOptions } from '@jackdbd/fastify-token-endpoint'
 import userinfo from '@jackdbd/fastify-userinfo-endpoint'
-import type {
-  RetrieveUserProfile,
-  UserProfileMutableRecord,
-  PluginOptions as UserinfoEndpointPluginOptions
-} from '@jackdbd/fastify-userinfo-endpoint'
+import type { PluginOptions as UserinfoEndpointPluginOptions } from '@jackdbd/fastify-userinfo-endpoint'
 import { defDefaultPublication, defGitHub } from '@jackdbd/github-content-store'
 import { secondsToUTCString } from '@jackdbd/oauth2-tokens'
 import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'

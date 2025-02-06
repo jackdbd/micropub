@@ -1,7 +1,7 @@
 import {
   isAccessTokenRevoked,
   type IsAccessTokenRevoked
-} from '@jackdbd/fastify-token-endpoint'
+} from '@jackdbd/indieauth/schemas/user-provided-functions'
 import { Static, Type } from '@sinclair/typebox'
 import { info } from './info.js'
 
