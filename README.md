@@ -31,6 +31,7 @@ See also:
 - [Testing](./docs/testing.md)
 - [Deploy](./docs/deploy.md)
 - [Scripts](./scripts/README.md)
+- [SQLite storage](./src/lib/sqlite-storage/README.md)
 
 ## TODO
 

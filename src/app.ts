@@ -258,9 +258,14 @@ export async function defFastify(config: Config) {
   })
 
   const onUserApprovedRequest: OnUserApprovedRequest = async (props) => {
-    console.log('=== OnUserApprovedRequest= ~ props ===', props)
-    // TODO: fix the type of code_challend and code_challenge_method in @jackdbd/fastify-authorization-endpoint
-    await unwrapP(storage.authorization_code.storeOne(props as any))
+    // code_challenge and code_challenge_method are of type unknown because they
+    // are defined as Refs in the schema.
+    const props_ = {
+      ...props,
+      code_challenge: props.code_challenge as string,
+      code_challenge_method: props.code_challenge_method as string
+    }
+    await unwrapP(storage.authorization_code.storeOne(props_))
   }
 
   const retrieveAuthorizationCode: RetrieveAuthorizationCode = async (code) => {
@@ -269,7 +274,6 @@ export async function defFastify(config: Config) {
         where: [{ key: 'code', op: '==', value: code }]
       })
     )
-
     return record as
       | AuthorizationCodeImmutableRecord
       | AuthorizationCodeMutableRecord

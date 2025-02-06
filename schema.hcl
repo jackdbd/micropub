@@ -4,6 +4,12 @@ schema "main" {
 table "access_tokens" {
   schema = schema.main
 
+  column "id" {
+    null = false
+    type = integer
+    auto_increment = true
+  }
+
   column "jti" {
     type = text
   }
@@ -38,7 +44,7 @@ table "access_tokens" {
 
   primary_key {
     columns = [
-      column.jti
+      column.id
     ]
   }
 
@@ -51,6 +57,12 @@ table "access_tokens" {
 
 table "authorization_codes" {
   schema = schema.main
+
+  column "id" {
+    null = false
+    type = integer
+    auto_increment = true
+  }
 
   column "code" {
     type = text
@@ -106,7 +118,7 @@ table "authorization_codes" {
 
   primary_key {
     columns = [
-      column.code
+      column.id
     ]
   }
 
@@ -120,7 +132,7 @@ table "authorization_codes" {
 table "clients" {
   schema = schema.main
 
-  column "rowid" {
+  column "id" {
     null = false
     type = integer
     auto_increment = true
@@ -150,7 +162,7 @@ table "clients" {
 
   primary_key {
     columns = [
-      column.rowid
+      column.id
     ]
   }
 }
@@ -158,7 +170,7 @@ table "clients" {
 table "posts" {
   schema = schema.main
 
-  column "rowid" {
+  column "id" {
     null = false
     type = integer
     auto_increment = true
@@ -181,13 +193,19 @@ table "posts" {
 
   primary_key {
     columns = [
-      column.rowid
+      column.id
     ]
   }
 }
 
 table "profiles" {
   schema = schema.main
+
+  column "id" {
+    null = false
+    type = integer
+    auto_increment = true
+  }
 
   column "me" {
     type = text
@@ -221,13 +239,19 @@ table "profiles" {
 
   primary_key {
     columns = [
-      column.me
+      column.id
     ]
   }
 }
 
 table "refresh_tokens" {
   schema = schema.main
+
+  column "id" {
+    null = false
+    type = integer
+    auto_increment = true
+  }
 
   column "refresh_token" {
     type = text
@@ -283,7 +307,7 @@ table "refresh_tokens" {
 
   primary_key {
     columns = [
-      column.refresh_token
+      column.id
     ]
   }
 

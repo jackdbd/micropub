@@ -1,8 +1,9 @@
 import type {
-  AuthorizationCodeProps,
   AuthorizationCodeImmutableRecord,
-  AuthorizationCodeMutableRecord
+  AuthorizationCodeMutableRecord,
+  OnUserApprovedRequest
 } from '@jackdbd/indieauth/schemas/index'
+import { unwrapP } from '@jackdbd/unwrap'
 import type { StorageApi } from '../lib/storage-api/index.js'
 
 export interface Config {
@@ -13,14 +14,12 @@ export const defOnAuthorizationCodeVerified = (config: Config) => {
   const { storage } = config
 
   const onAuthorizationCodeVerified = async (code: string) => {
-    const { error } = await storage.updateMany({
-      where: [{ key: 'code', op: '==', value: code }],
-      set: { used: true }
-    })
-
-    if (error) {
-      throw error
-    }
+    await unwrapP(
+      storage.updateMany({
+        where: [{ key: 'code', op: '==', value: code }],
+        set: { used: true }
+      })
+    )
   }
 
   return onAuthorizationCodeVerified
@@ -29,13 +28,15 @@ export const defOnAuthorizationCodeVerified = (config: Config) => {
 export const defOnUserApprovedRequest = (config: Config) => {
   const { storage } = config
 
-  const onUserApprovedRequest = async (props: AuthorizationCodeProps) => {
-    // TODO: fix the type of code_challend and code_challenge_method in @jackdbd/fastify-authorization-endpoint
-    const { error } = await storage.storeOne(props as any)
-
-    if (error) {
-      throw error
+  const onUserApprovedRequest: OnUserApprovedRequest = async (props) => {
+    // code_challenge and code_challenge_method are of type unknown because they
+    // are defined as Refs in the schema.
+    const props_ = {
+      ...props,
+      code_challenge: props.code_challenge as string,
+      code_challenge_method: props.code_challenge_method as string
     }
+    await unwrapP(storage.storeOne(props_))
   }
 
   return onUserApprovedRequest
@@ -45,15 +46,12 @@ export const defRetrieveAuthorizationCode = (config: Config) => {
   const { storage } = config
 
   const retrieveAuthorizationCode = async (code: string) => {
-    const { error, value } = await storage.retrieveOne({
-      where: [{ key: 'code', op: '==', value: code }]
-    })
-
-    if (error) {
-      throw error
-    }
-
-    return value as
+    const record = await unwrapP(
+      storage.retrieveOne({
+        where: [{ key: 'code', op: '==', value: code }]
+      })
+    )
+    return record as
       | AuthorizationCodeImmutableRecord
       | AuthorizationCodeMutableRecord
   }

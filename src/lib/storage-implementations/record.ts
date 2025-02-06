@@ -1,10 +1,11 @@
+import { nanoid } from 'nanoid'
 import { unixTimestampInMs } from '../date.js'
 import type { BaseProps } from '../storage-api/index.js'
 
 export const createdRecord = <Props extends BaseProps = BaseProps>(
   props: Props
 ) => {
-  return { ...props, created_at: unixTimestampInMs() }
+  return { ...props, created_at: unixTimestampInMs(), id: nanoid() }
 }
 
 // for the "soft delete" pattern

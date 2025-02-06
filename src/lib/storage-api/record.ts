@@ -28,15 +28,10 @@ export type ImmutableRecord = Static<typeof immutable_record>
 const nullable = <S extends TSchema = TSchema>(schema: S) =>
   Type.Union([schema, Type.Null()])
 
-// export const sqlite_rowid = Type.Integer({ minimum: 1 })
-
-// export type SQLiteRowId = Static<typeof sqlite_rowid>
-
 export const mutable_record = Type.Object({
   created_at: Type.Union([timestamp_ms, Type.Null()]),
   deleted_at: Type.Optional(nullable(timestamp_ms)),
-  //   id: Type.Optional(record_id),
-  //   rowid: Type.Optional(sqlite_rowid),
+  id: record_id,
   undeleted_at: Type.Optional(nullable(timestamp_ms)),
   updated_at: Type.Optional(nullable(timestamp_ms))
 })

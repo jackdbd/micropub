@@ -147,7 +147,7 @@ export const insertQuery = (table: string, props: BaseProps) => {
 
   const columns: string[] = []
   const values: string[] = []
-  const returning: string[] = []
+  const returning = ['id']
   for (const [key, _value] of Object.entries(query.values)) {
     columns.push(key)
     values.push(`:${key}`)
