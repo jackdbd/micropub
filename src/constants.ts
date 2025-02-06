@@ -3,13 +3,13 @@ import { fileURLToPath } from 'node:url'
 import type {
   AccessTokenMutableRecord,
   AuthorizationCodeMutableRecord,
+  ClientApplicationMutableRecord,
   RefreshTokenMutableRecord,
   UserProfileMutableRecord
 } from '@jackdbd/indieauth/schemas/index'
 import type { Config as LibSqlClientConfig } from '@libsql/client'
 import type { TObject } from '@sinclair/typebox'
 import { Atom, defAtom } from '@thi.ng/atom'
-import type { ClientApplicationMutableRecord } from './lib/storage-api/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
