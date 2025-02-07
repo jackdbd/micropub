@@ -25,7 +25,6 @@ interface RouteGeneric extends RouteGenericInterface {
     me: string
     redirect_uri: string
     refresh_token: string
-    revocation_endpoint: string
     scope: string
     token_endpoint: string
   }
@@ -54,7 +53,6 @@ export const defRefreshAccessTokenStart = (config: Config) => {
       me,
       redirect_uri,
       refresh_token,
-      // revocation_endpoint,
       scope,
       token_endpoint
     } = request.query
@@ -136,7 +134,6 @@ export const defRefreshAccessTokenStart = (config: Config) => {
     const response = await fetch(token_endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${old_access_token}`,
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded'
       },

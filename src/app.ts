@@ -7,23 +7,7 @@ import secureSession from '@fastify/secure-session'
 import fastifyStatic from '@fastify/static'
 import view from '@fastify/view'
 import sensible from '@fastify/sensible'
-import type {
-  AccessTokenImmutableRecord,
-  AccessTokenMutableRecord,
-  AuthorizationCodeImmutableRecord,
-  AuthorizationCodeMutableRecord,
-  RefreshTokenImmutableRecord,
-  RefreshTokenMutableRecord,
-  UserProfileMutableRecord
-} from '@jackdbd/indieauth/schemas/index'
-import type {
-  OnIssuedTokens,
-  OnUserApprovedRequest,
-  RetrieveAccessToken,
-  RetrieveAuthorizationCode,
-  RetrieveRefreshToken,
-  RetrieveUserProfile
-} from '@jackdbd/indieauth/schemas/user-provided-functions'
+import type { OnIssuedTokens } from '@jackdbd/indieauth/schemas/user-provided-functions'
 import auth from '@jackdbd/fastify-authorization-endpoint'
 import type { PluginOptions as AuthorizationEndpointPluginOptions } from '@jackdbd/fastify-authorization-endpoint'
 import introspection from '@jackdbd/fastify-introspection-endpoint'
@@ -41,7 +25,6 @@ import { defDefaultPublication, defGitHub } from '@jackdbd/github-content-store'
 import { secondsToUTCString, type AccessTokenClaims } from '@jackdbd/indieauth'
 import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 import { defR2 } from '@jackdbd/r2-media-store'
-import { unwrapP } from '@jackdbd/unwrap'
 import nunjucks from 'nunjucks'
 import type { Environment } from 'nunjucks'
 
@@ -69,10 +52,11 @@ import {
   defIsAccessTokenRevoked,
   defOnAuthorizationCodeVerified,
   defOnIssuedTokens,
-  // defOnUserApprovedRequest,
-  // defRetrieveAccessToken,
-  // defRetrieveAuthorizationCode,
-  // defRetrieveRefreshToken,
+  defOnUserApprovedRequest,
+  defRetrieveAccessToken,
+  defRetrieveAuthorizationCode,
+  defRetrieveRefreshToken,
+  defRetrieveUserProfile,
   defRevokeAccessToken,
   defRevokeRefreshToken
 } from './storage-handlers/index.js'
@@ -81,8 +65,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const webc_components = path.join(__dirname, 'components')
 
-const NAME = 'app'
-const LOG_PREFIX = `${NAME} `
+const LOG_PREFIX = `[app] `
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -244,63 +227,34 @@ export async function defFastify(config: Config) {
     onIssuedTokens = defOnIssuedTokens({ log: token_log, storage })
   }
 
-  const retrieveUserProfile: RetrieveUserProfile = async (me) => {
-    const record = await unwrapP(
-      storage.user_profile.retrieveOne({
-        where: [{ key: 'me', op: '==', value: me }]
-      })
-    )
-    return record as UserProfileMutableRecord
-  }
+  const retrieveUserProfile = defRetrieveUserProfile({
+    storage: storage.user_profile
+  })
 
   const onAuthorizationCodeVerified = defOnAuthorizationCodeVerified({
     storage: storage.authorization_code
   })
 
-  const onUserApprovedRequest: OnUserApprovedRequest = async (props) => {
-    // code_challenge and code_challenge_method are of type unknown because they
-    // are defined as Refs in the schema.
-    const props_ = {
-      ...props,
-      code_challenge: props.code_challenge as string,
-      code_challenge_method: props.code_challenge_method as string
-    }
-    await unwrapP(storage.authorization_code.storeOne(props_))
-  }
+  const onUserApprovedRequest = defOnUserApprovedRequest({
+    storage: storage.authorization_code
+  })
 
-  const retrieveAuthorizationCode: RetrieveAuthorizationCode = async (code) => {
-    const record = await unwrapP(
-      storage.authorization_code.retrieveOne({
-        where: [{ key: 'code', op: '==', value: code }]
-      })
-    )
-    return record as
-      | AuthorizationCodeImmutableRecord
-      | AuthorizationCodeMutableRecord
-  }
+  const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
+    storage: storage.authorization_code
+  })
 
   const isAccessTokenRevoked = defIsAccessTokenRevoked({
     log: token_log,
     storage: storage.access_token
   })
 
-  const retrieveAccessToken: RetrieveAccessToken = async (jti) => {
-    const record = await unwrapP(
-      storage.access_token.retrieveOne({
-        where: [{ key: 'jti', op: '==', value: jti }]
-      })
-    )
-    return record as AccessTokenImmutableRecord | AccessTokenMutableRecord
-  }
+  const retrieveAccessToken = defRetrieveAccessToken({
+    storage: storage.access_token
+  })
 
-  const retrieveRefreshToken: RetrieveRefreshToken = async (refresh_token) => {
-    const record = await unwrapP(
-      storage.refresh_token.retrieveOne({
-        where: [{ key: 'refresh_token', op: '==', value: refresh_token }]
-      })
-    )
-    return record as RefreshTokenImmutableRecord | RefreshTokenMutableRecord
-  }
+  const retrieveRefreshToken = defRetrieveRefreshToken({
+    storage: storage.refresh_token
+  })
 
   const revokeAccessToken = defRevokeAccessToken({
     log: token_log,
@@ -384,9 +338,6 @@ export async function defFastify(config: Config) {
   }
 
   fastify.register(auth, authOptions)
-  // fastify.log.debug(
-  //   `${LOG_PREFIX}registered plugin: @jackdbd/fastify-authorization-endpoint`
-  // )
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {
@@ -586,11 +537,12 @@ export async function defFastify(config: Config) {
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
     syndicateTo: syndicate_to,
-    undelete: async (url) => {
-      console.log(`[${LOG_PREFIX}undelete] url: ${url}`)
-      return { message: `undeleted post at url ${url} ` }
-    },
-    // undelete: github.undelete,
+    // undelete: async (url) => {
+    //   const value = await github.undelete!(url)
+    //   console.log(`undeleted post at url ${url}`, value)
+    //   return value
+    // },
+    undelete: github.undelete,
     update: github.update
   }
 
@@ -624,9 +576,7 @@ export async function defFastify(config: Config) {
     update: github.update
   }
 
-  // fastify.register(syndicate, syndicateOptions)
-  // fastify.register(syndicate)
-  console.log('=== TODO: re-add syndicate plugin ===', syndicate)
+  fastify.register(syndicate, syndicateOptions)
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {

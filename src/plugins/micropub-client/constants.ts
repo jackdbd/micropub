@@ -1,4 +1,6 @@
-export const NAME = '@jackdbd/fastify-micropub-client'
+export const NAME = 'micropub-client'
+// export const NAME = 'fastify-micropub-client'
+// export const NAME = "@jackdbd/fastify-micropub-client";
 
 export const DEFAULT = {
   AUTHENTICATION_START_PATH: '/auth/start',
@@ -23,6 +25,6 @@ export const DEFAULT = {
   // LINKEDIN_AUTH_REDIRECT_PATH: '/auth/linkedin/callback',
   // LINKEDIN_OAUTH_CLIENT_ID: process.env.LINKEDIN_OAUTH_CLIENT_ID!,
   // LINKEDIN_OAUTH_CLIENT_SECRET: process.env.LINKEDIN_OAUTH_CLIENT_SECRET!,
-  LOG_PREFIX: '[micropub-client] ',
+  LOG_PREFIX: `[${NAME}] `,
   REPORT_ALL_AJV_ERRORS: false
 }

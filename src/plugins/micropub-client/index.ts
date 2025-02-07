@@ -4,7 +4,12 @@ import oauth2 from '@fastify/oauth2'
 import { applyToDefaults } from '@hapi/hoek'
 import canonicalUrl from '@jackdbd/canonical-url'
 import { defLogClaims } from '@jackdbd/fastify-hooks'
-import { client_metadata, unixTimestampInSeconds } from '@jackdbd/indieauth'
+import {
+  client_metadata,
+  isExpired,
+  msToUTCString,
+  unixTimestampInSeconds
+} from '@jackdbd/indieauth'
 import {
   InvalidRequestError,
   ServerError
@@ -17,7 +22,6 @@ import fp from 'fastify-plugin'
 
 import { DEFAULT, NAME } from './constants.js'
 import { errorResponse, successResponse } from './decorators/index.js'
-// import { defRedirectWhenNotAuthenticated } from './hooks/redirect-when-not-authenticated.js'
 import {
   defSetClaimsInRequestContext,
   defValidateClaim,
@@ -209,19 +213,20 @@ const micropubClient: FastifyPluginCallback<Options> = (
     )
   })
 
-  const setClaimsInRequestContext = defSetClaimsInRequestContext({
-    logPrefix: '[micropub-client/set-claims] ',
-    redirectPath: '/login'
-  })
-
+  // Probably I don't need this hook
   // const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
   //   isAccessTokenRevoked,
-  //   logPrefix: `${log_prefix}[hook] `,
+  //   logPrefix: `[${NAME}/redirect-not-authenticated] `,
   //   redirectPath: '/login'
   // })
 
+  const setClaimsInRequestContext = defSetClaimsInRequestContext({
+    logPrefix: `[${NAME}/set-claims] `,
+    redirectPath: '/login'
+  })
+
   const logClaims = defLogClaims({
-    logPrefix: '[micropub-client/log-claims] '
+    logPrefix: `[${NAME}/log-claims] `
   })
 
   const validateClaimExp = defValidateClaim(
@@ -230,7 +235,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
       op: '>',
       value: unixTimestampInSeconds
     },
-    { logPrefix: '[micropub-client/validate-claims] ' }
+    { logPrefix: `[${NAME}/validate-claim-exp] ` }
   )
 
   const validateClaimMe = defValidateClaim(
@@ -239,17 +244,17 @@ const micropubClient: FastifyPluginCallback<Options> = (
       op: '==',
       value: canonicalUrl(me)
     },
-    { logPrefix: '[micropub-client/validate-claims] ' }
+    { logPrefix: `[${NAME}/validate-claim-me] ` }
   )
 
   const validateScopeCreate = defValidateScope({
     scope: 'create',
-    logPrefix: '[micropub-client/validate-scope] '
+    logPrefix: `[${NAME}/validate-scope-create] `
   })
 
   const validateScopeProfile = defValidateScope({
     scope: 'profile',
-    logPrefix: '[micropub-client/validate-scope] '
+    logPrefix: `[${NAME}/validate-scope-profile] `
   })
 
   const validateAccessTokenNotRevoked = defValidateNotRevoked({
@@ -258,12 +263,32 @@ const micropubClient: FastifyPluginCallback<Options> = (
 
   // === ROUTES ============================================================= //
   fastify.get('/', async (request, reply) => {
-    request.log.warn(request.session.data(), `${log_prefix}session_data`)
+    // request.log.warn(request.session.data(), `${log_prefix}session_data`)
+    // const access_token = request.session.get('access_token')
+    // const refresh_token = request.session.get('refresh_token')
+    const claims = request.session.get('claims')
 
-    const access_token = request.session.get('access_token')
-    const refresh_token = request.session.get('refresh_token')
-    request.log.warn(`${log_prefix}access_token: ${access_token}`)
-    request.log.warn(`${log_prefix}refresh_token: ${refresh_token}`)
+    if (claims) {
+      const iat_utc = msToUTCString(claims.iat * 1000)
+      const exp_utc = msToUTCString(claims.exp * 1000)
+
+      request.log.debug(
+        `${log_prefix}access token issued by ${claims.iss} at UNIX timestamp ${claims.iat} (${iat_utc})`
+      )
+
+      const expired = isExpired(claims.exp)
+      if (expired) {
+        request.log.debug(
+          `${log_prefix}access token expired at UNIX timestamp ${claims.exp} (${exp_utc})`
+        )
+      } else {
+        request.log.debug(
+          `${log_prefix}access token will expire at UNIX timestamp ${claims.exp} (${exp_utc})`
+        )
+      }
+    } else {
+      request.log.debug(`${log_prefix}no access token claims found in session`)
+    }
 
     return reply.view('home.njk', {
       title: 'Home page',
@@ -390,15 +415,12 @@ const micropubClient: FastifyPluginCallback<Options> = (
 
   fastify.get(
     '/refresh-access-token',
-    // { onRequest: [] },
     defRefreshAccessToken({
       authorization_endpoint,
       client_id,
       client_logo_uri,
       client_name,
       client_uri,
-      include_error_description,
-      introspection_endpoint,
       log_prefix,
       redirect_path_on_error,
       redirect_path_on_submit: '/refresh-access-token/start',
@@ -409,14 +431,14 @@ const micropubClient: FastifyPluginCallback<Options> = (
     })
   )
 
-  // TODO: protect this route with authentication
+  // TODO: protect this route with authentication? Redirect to /auth/start?me={me}
+  // and authenticate the user using one of the supported providers? (e.g. /auth/github)
   // If the client type is confidential or the client was issued client
   // credentials (or assigned other authentication requirements), the client
   // MUST authenticate with the authorization server.
   // https://datatracker.ietf.org/doc/html/rfc6749#section-6
   fastify.get(
     '/refresh-access-token/start',
-    // { onRequest: [] },
     defRefreshAccessTokenStart({
       code_verifier_length,
       include_error_description,

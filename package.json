@@ -65,7 +65,7 @@
     "@jackdbd/fastify-micropub-endpoint": "0.2.0-canary.17",
     "@jackdbd/fastify-revocation-endpoint": "1.3.0-canary.15",
     "@jackdbd/fastify-syndicate-endpoint": "0.2.0-canary.13",
-    "@jackdbd/fastify-token-endpoint": "1.3.0-canary.15",
+    "@jackdbd/fastify-token-endpoint": "1.3.0-canary.17",
     "@jackdbd/fastify-userinfo-endpoint": "1.3.0-canary.16",
     "@jackdbd/fastify-webc": "0.2.0-canary.7",
     "@jackdbd/github-content-store": "0.2.0-canary.9",

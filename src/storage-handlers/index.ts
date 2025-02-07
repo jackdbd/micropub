@@ -12,3 +12,5 @@ export {
   defRevokeAccessToken,
   defRevokeRefreshToken
 } from './token-storage.js'
+
+export { defRetrieveUserProfile } from './user-profile-storage.js'

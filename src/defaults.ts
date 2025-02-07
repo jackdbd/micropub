@@ -55,7 +55,8 @@ export const SHOULD_MEDIA_ENDPOINT_IGNORE_FILENAME = false
 export const SHOULD_USE_SECURE_FLAG_FOR_SESSION_COOKIE =
   process.env.NODE_ENV === 'production' ? true : false
 
-export const SHOULD_USE_SOFT_DELETE = false
+// export const SHOULD_USE_SOFT_DELETE = false
+export const SHOULD_USE_SOFT_DELETE = true
 
 export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
 export const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN
