@@ -63,6 +63,7 @@ import {
 } from './error-handlers/index.js'
 import { defNotFoundHandler } from './not-found-handlers/index.js'
 import { tap } from './nunjucks/filters.js'
+import * as nunjucks_globals from './nunjucks/globals.js'
 import { defSQLiteUtils } from './sqlite-utils.js'
 import {
   defIsAccessTokenRevoked,
@@ -410,6 +411,7 @@ export async function defFastify(config: Config) {
     introspectionEndpoint,
     isAccessTokenRevoked,
     issuer,
+    me,
     micropubEndpoint,
     redirectUris: indieauth_client_redirect_uris,
     reportAllAjvErrors,
@@ -671,12 +673,16 @@ export async function defFastify(config: Config) {
         xs.forEach(({ name, fn }) => env.addFilter(name, fn))
         const filters = xs.map(({ name }) => name).join(', ')
 
-        // const gg = [{ name: 'foo', value: foo }]
-        // gg.forEach(({ name, value }) => env.addGlobal(name, value))
-        // const globals = gg.map(({ name }) => name).join(', ')
+        // const gg = [{ name: 'node_env', value: nunjucks_globals.node_env }]
+        const gg = Object.entries(nunjucks_globals).map(([name, value]) => {
+          return { name, value }
+        })
+        gg.forEach(({ name, value }) => env.addGlobal(name, value))
+        const globals = gg.map(({ name }) => name).join(', ')
 
         fastify.log.debug(
-          `${LOG_PREFIX}configured nunjucks environment. Filters: ${filters}`
+          { filters, globals },
+          `${LOG_PREFIX}configured nunjucks environment`
         )
       }
     }

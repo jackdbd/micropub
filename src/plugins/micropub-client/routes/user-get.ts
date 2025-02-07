@@ -1,10 +1,6 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
 import { errorResponseFromJSONResponse } from '@jackdbd/indieauth'
-import {
-  InvalidRequestError,
-  ServerError,
-  UnauthorizedError
-} from '@jackdbd/oauth2-error-responses'
+import { ServerError, UnauthorizedError } from '@jackdbd/oauth2-error-responses'
 
 interface RouteGeneric extends RouteGenericInterface {
   Querystring: {
@@ -27,17 +23,17 @@ export const defUserGet = (config: Config) => {
   const { include_error_description, log_prefix, userinfo_endpoint } = config
 
   const userGet: RouteHandler<RouteGeneric> = async (request, reply) => {
-    const { provider } = request.query
+    // const { provider } = request.query
 
-    if (!provider) {
-      const err = new InvalidRequestError({
-        error_description: 'Query parameter "provider" is required.'
-      })
-      return reply.errorResponse(
-        err.statusCode,
-        err.payload({ include_error_description })
-      )
-    }
+    // if (!provider) {
+    //   const err = new InvalidRequestError({
+    //     error_description: 'Query parameter "provider" is required.'
+    //   })
+    //   return reply.errorResponse(
+    //     err.statusCode,
+    //     err.payload({ include_error_description })
+    //   )
+    // }
 
     const access_token = request.session.get('access_token')
 
@@ -50,7 +46,8 @@ export const defUserGet = (config: Config) => {
       )
     }
 
-    const response = await fetch(`${userinfo_endpoint}?provider=${provider}`, {
+    // const response = await fetch(`${userinfo_endpoint}?provider=${provider}`, {
+    const response = await fetch(userinfo_endpoint, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -79,12 +76,14 @@ export const defUserGet = (config: Config) => {
       )
     }
 
-    request.log.debug(`${log_prefix}render ${provider} user profile`)
+    request.log.debug(`${log_prefix}render user profile`)
 
     return reply.successResponse(200, {
       title: 'User',
-      description: `Profile page for the user authenticated with ${provider}.`,
-      summary: `Info from your authentication provider (${provider}).`,
+      description: `User's profile page.`,
+      // description: `Profile page for the user authenticated with ${provider}.`,
+      // summary: `Info from your authentication provider (${provider}).`,
+      summary: `Info retrieved from the userinfo endpoint ${userinfo_endpoint}.`,
       payload
     })
   }

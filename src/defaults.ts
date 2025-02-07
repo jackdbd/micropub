@@ -1,5 +1,5 @@
-// export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
-export const ACCESS_TOKEN_EXPIRATION = '3600 seconds' // this is quite common
+export const ACCESS_TOKEN_EXPIRATION = '15 minutes'
+// export const ACCESS_TOKEN_EXPIRATION = '3600 seconds'
 // export const ACCESS_TOKEN_EXPIRATION = '72 hours'
 
 export const AUTHORIZATION_CODE_EXPIRATION = '60 seconds'
@@ -43,7 +43,7 @@ export const REFRESH_TOKEN_EXPIRATION = '30 days'
 export const REPORT_ALL_AJV_ERRORS =
   process.env.NODE_ENV === 'development' ? true : false
 
-export const SECURE_SESSION_EXPIRATION = 60 * 60 // in seconds
+export const SECURE_SESSION_EXPIRATION = 24 * 60 * 60 // in seconds
 export const SECURE_SESSION_KEY_ONE = process.env.SECURE_SESSION_KEY_ONE
 export const SECURE_SESSION_KEY_TWO = process.env.SECURE_SESSION_KEY_TWO
 

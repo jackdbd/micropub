@@ -156,6 +156,7 @@ export const defAuthenticate = (config: Config) => {
       // }
     })
 
+    request.log.debug(`render authenticate.njk`)
     return reply.view('authenticate.njk', {
       title: 'Authenticate',
       description: 'Choose an authentication provider',

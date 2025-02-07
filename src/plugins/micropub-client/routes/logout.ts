@@ -1,5 +1,6 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { errorResponseFromJSONResponse } from '@jackdbd/indieauth'
+import { ServerError } from '@jackdbd/oauth2-error-responses'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
 export interface Config {
   include_error_description: boolean
@@ -102,21 +103,31 @@ export const defLogout = (config: Config) => {
           })
         })
 
-        if (!response.ok) {
+        // If fetch returns HTTP 401, it's probably the access token was expired,
+        // has invalid claims, or was already revoked. So it counts as a
+        // successful revocation for us. Any other status code from the
+        // revocation endpoint should be treated as a revocation error.
+        if (response.status !== 200 && response.status !== 401) {
           const err = await errorResponseFromJSONResponse(response)
           return reply.errorResponse(
             err.statusCode,
             err.payload({ include_error_description })
           )
         }
-
-        request.log.info(`${log_prefix}access token revoked`)
       } catch (ex: any) {
-        request.log.error(
-          `${log_prefix}cannot revoke access token: ${ex.message}`
+        let error_description = `Failed to fetch revocation endpoint ${revocation_endpoint}`
+        if (ex && ex.message) {
+          error_description = `${error_description}: ${ex.message}`
+        }
+        const err = new ServerError({ error_description })
+        return reply.errorResponse(
+          err.statusCode,
+          err.payload({ include_error_description })
         )
       }
     }
+
+    request.log.info(`${log_prefix}access token revoked`)
 
     // There is no need to log that we are deleting the session, because
     // fastify-session already logs it for us.

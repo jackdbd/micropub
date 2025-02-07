@@ -1,4 +1,4 @@
-import { unixTimestampInMs } from '../date.js'
+import { unixTimestampInMs } from '@jackdbd/indieauth'
 import type {
   BaseProps,
   DeleteQuery,

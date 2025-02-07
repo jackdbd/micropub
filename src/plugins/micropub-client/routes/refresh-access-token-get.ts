@@ -189,6 +189,7 @@ export const defRefreshAccessToken = (config: Config) => {
       token_endpoint
     }
 
+    request.log.debug(`render refresh-access-token.njk`)
     return reply.view('refresh-access-token.njk', data)
   }
 

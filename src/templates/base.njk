@@ -22,7 +22,10 @@
   <div id="wrapper-for-sticky-footer">
 
     {% include "header.njk" %}
-    {% include "endpoint-config-routes.njk" %}
+
+    {% if node_env == 'development' %}
+      {% include "endpoint-config-routes.njk" %}
+    {% endif %}
 
     <main class="wrapper">
       <div class="flow region">

@@ -1,13 +1,6 @@
 import type { FastifyReply } from 'fastify'
 import { APPLICATION_JSON, TEXT_HTML } from '../../../lib/content-type.js'
 import { clientAcceptsHtml } from '../../../lib/fastify-request-predicates/index.js'
-import {
-  FORBIDDEN,
-  INSUFFICIENT_SCOPE,
-  INVALID_REQUEST,
-  INVALID_TOKEN,
-  UNAUTHORIZED
-} from '../../../lib/http-error.js'
 
 export interface BaseErrorResponseBody {
   description?: string
@@ -18,6 +11,34 @@ export interface BaseErrorResponseBody {
   title?: string
 }
 
+const INVALID_REQUEST = {
+  code: 400,
+  error: 'invalid_request'
+}
+
+const UNAUTHORIZED = {
+  code: 401,
+  error: 'unauthorized'
+}
+
+// https://indieauth.spec.indieweb.org/#error-responses
+const INVALID_TOKEN = {
+  code: 401,
+  error: 'invalid_token'
+}
+
+const FORBIDDEN = {
+  code: 403,
+  error: 'forbidden'
+}
+
+const INSUFFICIENT_SCOPE = {
+  code: 403,
+  error: 'insufficient_scope'
+}
+
+const LOG_PREFIX = '[micropub-client/error-response] '
+
 export function errorResponse<
   B extends BaseErrorResponseBody = BaseErrorResponseBody
 >(this: FastifyReply, code: number, body: B) {
@@ -26,6 +47,10 @@ export function errorResponse<
   const error_description = body.error_description
   const error_uri = body.error_uri
   const state = body.state
+
+  this.request.log.error(
+    `${LOG_PREFIX}${body.error}: ${body.error_description}`
+  )
 
   // TODO: handle i18n here?
   let error: string

@@ -1,1 +1,1 @@
-export const foo = 'bar'
+export const node_env = process.env.NODE_ENV

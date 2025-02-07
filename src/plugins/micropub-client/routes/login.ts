@@ -23,7 +23,7 @@ export const defLogin = (config: Config) => {
     // }
 
     request.log.debug(
-      `${log_prefix}web sign-in page. Upon form submission, you will be redirected to ${authentication_start_path}`
+      `${log_prefix}render web-sign-in.njk. Upon form submission, you will be redirected to ${authentication_start_path}`
     )
 
     return reply.view('web-sign-in.njk', {

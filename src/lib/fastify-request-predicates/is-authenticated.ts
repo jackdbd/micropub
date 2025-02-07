@@ -1,6 +1,6 @@
+import { unixTimestampInSeconds } from '@jackdbd/indieauth'
 import type { IsAccessTokenRevoked } from '@jackdbd/indieauth/schemas/user-provided-functions'
 import type { FastifyRequest } from 'fastify'
-import { unixTimestampInSeconds } from '../date.js'
 
 export interface Config {
   isAccessTokenRevoked: IsAccessTokenRevoked
@@ -13,29 +13,29 @@ export interface Config {
 
 export const defIsAuthenticated = (config: Config) => {
   const { isAccessTokenRevoked } = config
-  const log_refix = config.logPrefix ?? 'is-authenticated? '
+  const log_prefix = config.logPrefix ?? 'is-authenticated? '
 
   return async function (request: FastifyRequest) {
-    request.log.debug(`${log_refix}checking claims in session`)
+    request.log.debug(`${log_prefix}checking claims in session`)
     const claims = request.session.get('claims')
     if (!claims) {
       return false
     }
 
     const exp = claims.exp
-    request.log.debug(`${log_refix}checking if claim 'exp' exists`)
+    request.log.debug(`${log_prefix}checking if claim 'exp' exists`)
     if (!exp) {
       return false
     }
 
     const now = unixTimestampInSeconds()
-    request.log.debug(`${log_refix}checking if claim 'exp' is not expired`)
+    request.log.debug(`${log_prefix}checking if claim 'exp' is not expired`)
     if (exp < now) {
       return false
     }
 
     request.log.debug(
-      `${log_refix}checking if jti '${claims.jti}' is blacklisted`
+      `${log_prefix}checking if jti '${claims.jti}' is blacklisted`
     )
     let revoked = false
     try {
@@ -43,14 +43,14 @@ export const defIsAuthenticated = (config: Config) => {
     } catch (ex: any) {
       const error_description = ex.message
       // throw new ServerError({ error_description })
-      request.log.error(`${log_refix}${error_description}`)
+      request.log.error(`${log_prefix}${error_description}`)
       return false
     }
 
     if (revoked) {
       const error_description = `Token ${claims.jti} is revoked.`
       //   throw new InvalidTokenError({ error_description })
-      request.log.warn(`${log_refix}${error_description}`)
+      request.log.warn(`${log_prefix}${error_description}`)
       return false
     }
 

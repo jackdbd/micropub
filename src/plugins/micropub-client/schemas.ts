@@ -108,33 +108,33 @@ export const options = Type.Object(
       Type.String({ default: DEFAULT.GITHUB_OAUTH_CLIENT_SECRET, minLength: 1 })
     ),
 
-    googleAuthStartPath: Type.Optional(
-      Type.String({
-        default: DEFAULT.GOOGLE_AUTH_START_PATH,
-        minLength: 1
-      })
-    ),
+    // googleAuthStartPath: Type.Optional(
+    //   Type.String({
+    //     default: DEFAULT.GOOGLE_AUTH_START_PATH,
+    //     minLength: 1
+    //   })
+    // ),
 
-    googleAuthRedirectPath: Type.Optional(
-      Type.String({
-        default: DEFAULT.GOOGLE_AUTH_REDIRECT_PATH,
-        minLength: 1
-      })
-    ),
+    // googleAuthRedirectPath: Type.Optional(
+    //   Type.String({
+    //     default: DEFAULT.GOOGLE_AUTH_REDIRECT_PATH,
+    //     minLength: 1
+    //   })
+    // ),
 
-    googleOAuthClientId: Type.Optional(
-      Type.String({
-        default: DEFAULT.GOOGLE_OAUTH_CLIENT_ID,
-        minLength: 1
-      })
-    ),
+    // googleOAuthClientId: Type.Optional(
+    //   Type.String({
+    //     default: DEFAULT.GOOGLE_OAUTH_CLIENT_ID,
+    //     minLength: 1
+    //   })
+    // ),
 
-    googleOAuthClientSecret: Type.Optional(
-      Type.String({
-        default: DEFAULT.GOOGLE_OAUTH_CLIENT_SECRET,
-        minLength: 1
-      })
-    ),
+    // googleOAuthClientSecret: Type.Optional(
+    //   Type.String({
+    //     default: DEFAULT.GOOGLE_OAUTH_CLIENT_SECRET,
+    //     minLength: 1
+    //   })
+    // ),
 
     includeErrorDescription: Type.Optional(
       Type.Boolean({ default: DEFAULT.INCLUDE_ERROR_DESCRIPTION })
@@ -186,6 +186,11 @@ export const options = Type.Object(
     issuer: Type.Optional(issuer),
 
     logPrefix: Type.Optional(Type.String({ default: DEFAULT.LOG_PREFIX })),
+
+    me: Type.Union([
+      me_before_url_canonicalization,
+      me_after_url_canonicalization
+    ]),
 
     micropubEndpoint: micropub_endpoint,
 

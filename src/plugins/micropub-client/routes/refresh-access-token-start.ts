@@ -87,8 +87,8 @@ export const defRefreshAccessTokenStart = (config: Config) => {
       throw new InvalidRequestError({ error_description })
     }
 
-    const access_token = request.session.get('access_token')
-    if (!access_token) {
+    const old_access_token = request.session.get('access_token')
+    if (!old_access_token) {
       request.log.warn(
         `${log_prefix}no access token found in session; redirecting to ${redirect_path_on_error}`
       )
@@ -136,7 +136,7 @@ export const defRefreshAccessTokenStart = (config: Config) => {
     const response = await fetch(token_endpoint, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${old_access_token}`,
         Accept: 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded'
       },
@@ -161,17 +161,16 @@ export const defRefreshAccessTokenStart = (config: Config) => {
     }
 
     const res_body: AccessTokenResponseBodySuccess = await response.json()
+    const refreshed_access_token = res_body.access_token
 
-    request.session.set('access_token', res_body.access_token)
-    request.log.debug(`${log_prefix}set access token in session`)
+    request.session.set('access_token', refreshed_access_token)
+    request.log.debug(`${log_prefix}set refreshed access token in session`)
 
     const { error: decode_error, value: claims } =
-      await safeDecode<AccessTokenClaims>(access_token)
+      await safeDecode<AccessTokenClaims>(refreshed_access_token)
 
     if (decode_error) {
       const error_description = `Error while decoding access token: ${decode_error.message}`
-      // Which one is more appropriate? UnauthorizedError or InvalidTokenError?
-      // throw new UnauthorizedError({ error_description })
       const err = new InvalidTokenError({ error_description })
       return reply.errorResponse(
         err.statusCode,
@@ -180,14 +179,14 @@ export const defRefreshAccessTokenStart = (config: Config) => {
     }
 
     request.session.set('claims', claims)
-    request.log.debug(`${log_prefix}set access token decoded claims in session`)
+    request.log.debug(
+      `${log_prefix}set decoded claims of refreshed access token in session`
+    )
 
     if (res_body.refresh_token) {
       request.session.set('refresh_token', res_body.refresh_token)
       request.log.debug(`${log_prefix}set refresh token in session`)
     }
-
-    // return reply.send(res_body)
 
     request.log.debug(`${log_prefix}redirect to ${redirect_path_on_success}`)
     return reply.redirect(redirect_path_on_success)

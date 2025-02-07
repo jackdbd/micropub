@@ -1,17 +1,29 @@
-// import crypto from 'node:crypto'
 import fastifyCsrf from '@fastify/csrf-protection'
 import formbody from '@fastify/formbody'
 import oauth2 from '@fastify/oauth2'
 import { applyToDefaults } from '@hapi/hoek'
-import { client_metadata } from '@jackdbd/indieauth'
+import canonicalUrl from '@jackdbd/canonical-url'
+import { defLogClaims } from '@jackdbd/fastify-hooks'
+import { client_metadata, unixTimestampInSeconds } from '@jackdbd/indieauth'
+import {
+  InvalidRequestError,
+  ServerError
+} from '@jackdbd/oauth2-error-responses'
 import { throwWhenNotConform } from '@jackdbd/schema-validators'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import { FastifyPluginCallback } from 'fastify'
 import fp from 'fastify-plugin'
+
 import { DEFAULT, NAME } from './constants.js'
 import { errorResponse, successResponse } from './decorators/index.js'
-import { defRedirectWhenNotAuthenticated } from './hooks/redirect-when-not-authenticated.js'
+// import { defRedirectWhenNotAuthenticated } from './hooks/redirect-when-not-authenticated.js'
+import {
+  defSetClaimsInRequestContext,
+  defValidateClaim,
+  defValidateNotRevoked,
+  defValidateScope
+} from './hooks/index.js'
 import { defAuthenticate } from './routes/authenticate-start.js'
 import { defAuthorizationEmailStart } from './routes/auth-email-start.js'
 import { defAuthorizationCallback as defGitHubCallback } from './routes/auth-github-callback.js'
@@ -94,6 +106,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     isAccessTokenRevoked,
     issuer,
     logPrefix: log_prefix,
+    me,
     micropubEndpoint: micropub_endpoint,
     redirectUris: redirect_uris,
     reportAllAjvErrors: report_all_ajv_errors,
@@ -152,22 +165,6 @@ const micropubClient: FastifyPluginCallback<Options> = (
       //   prompt: 'consent' // forces the consent screen to appear every time
     },
     pkce: 'S256'
-    // generateStateFunction: (request) => {
-    //   const state = crypto.randomBytes(16).toString('base64url')
-    //   request.session.set('state', state)
-    //   request.log.debug(
-    //     `${log_prefix}generated state (CSRF token) and set it in session`
-    //   )
-    //   return state
-    // },
-    // checkStateFunction: (request) => {
-    //   const query = request.query as { code: string; state: string }
-    //   if (query.state !== request.session.state) {
-    //     const error_description = `Parameter 'state' found in query string does not match key 'state' found in session.`
-    //     throw new InvalidRequestError({ error_description })
-    //   }
-    //   return true
-    // }
   })
 
   // https://developers.google.com/identity/oauth2/web/guides/get-google-api-clientid
@@ -212,10 +209,51 @@ const micropubClient: FastifyPluginCallback<Options> = (
     )
   })
 
-  const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
-    isAccessTokenRevoked,
-    logPrefix: `${log_prefix}[hook] `,
+  const setClaimsInRequestContext = defSetClaimsInRequestContext({
+    logPrefix: '[micropub-client/set-claims] ',
     redirectPath: '/login'
+  })
+
+  // const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
+  //   isAccessTokenRevoked,
+  //   logPrefix: `${log_prefix}[hook] `,
+  //   redirectPath: '/login'
+  // })
+
+  const logClaims = defLogClaims({
+    logPrefix: '[micropub-client/log-claims] '
+  })
+
+  const validateClaimExp = defValidateClaim(
+    {
+      claim: 'exp',
+      op: '>',
+      value: unixTimestampInSeconds
+    },
+    { logPrefix: '[micropub-client/validate-claims] ' }
+  )
+
+  const validateClaimMe = defValidateClaim(
+    {
+      claim: 'me',
+      op: '==',
+      value: canonicalUrl(me)
+    },
+    { logPrefix: '[micropub-client/validate-claims] ' }
+  )
+
+  const validateScopeCreate = defValidateScope({
+    scope: 'create',
+    logPrefix: '[micropub-client/validate-scope] '
+  })
+
+  const validateScopeProfile = defValidateScope({
+    scope: 'profile',
+    logPrefix: '[micropub-client/validate-scope] '
+  })
+
+  const validateAccessTokenNotRevoked = defValidateNotRevoked({
+    isAccessTokenRevoked
   })
 
   // === ROUTES ============================================================= //
@@ -271,7 +309,16 @@ const micropubClient: FastifyPluginCallback<Options> = (
 
   fastify.get(
     '/editor',
-    { onRequest: [redirectWhenNotAuthenticated] },
+    {
+      onRequest: [
+        setClaimsInRequestContext,
+        logClaims,
+        validateClaimExp,
+        validateClaimMe,
+        validateScopeCreate,
+        validateAccessTokenNotRevoked
+      ]
+    },
     defEditor({ submit_endpoint })
   )
 
@@ -289,8 +336,6 @@ const micropubClient: FastifyPluginCallback<Options> = (
       log_prefix
     })
   )
-
-  //   fastify.get(google_auth_redirect_path, defGoogleCallback())
 
   fastify.get(
     '/id',
@@ -314,14 +359,24 @@ const micropubClient: FastifyPluginCallback<Options> = (
 
   fastify.post(
     '/submit',
-    { onRequest: [redirectWhenNotAuthenticated] },
+    {
+      onRequest: [
+        setClaimsInRequestContext,
+        validateClaimExp,
+        validateAccessTokenNotRevoked
+      ]
+    },
     defSubmit({ include_error_description, log_prefix, micropub_endpoint })
   )
 
   fastify.get(
     '/token',
     {
-      // onRequest: [redirectWhenNotAuthenticated]
+      onRequest: [
+        setClaimsInRequestContext,
+        validateClaimExp,
+        validateAccessTokenNotRevoked
+      ]
     },
     defTokenGet({
       include_error_description,
@@ -335,7 +390,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
 
   fastify.get(
     '/refresh-access-token',
-    // { onRequest: [], schema: {} },
+    // { onRequest: [] },
     defRefreshAccessToken({
       authorization_endpoint,
       client_id,
@@ -354,9 +409,14 @@ const micropubClient: FastifyPluginCallback<Options> = (
     })
   )
 
+  // TODO: protect this route with authentication
+  // If the client type is confidential or the client was issued client
+  // credentials (or assigned other authentication requirements), the client
+  // MUST authenticate with the authorization server.
+  // https://datatracker.ietf.org/doc/html/rfc6749#section-6
   fastify.get(
     '/refresh-access-token/start',
-    // { onRequest: [], schema: {} },
+    // { onRequest: [] },
     defRefreshAccessTokenStart({
       code_verifier_length,
       include_error_description,
@@ -369,10 +429,70 @@ const micropubClient: FastifyPluginCallback<Options> = (
   fastify.get(
     '/user',
     {
-      onRequest: [redirectWhenNotAuthenticated]
+      onRequest: [
+        setClaimsInRequestContext,
+        validateClaimExp,
+        validateClaimMe,
+        validateScopeProfile,
+        validateAccessTokenNotRevoked
+      ]
     },
     defUserGet({ include_error_description, log_prefix, userinfo_endpoint })
   )
+
+  fastify.setErrorHandler((error, request, reply) => {
+    const code = error.statusCode
+
+    // Think about including these data error_description:
+    // - some JWT claims (e.g. me, scope)
+    // - jf2 (e.g. action, content, h, url)
+    // const claims = request.requestContext.get("access_token_claims");
+    // const jf2 = request.requestContext.get("jf2");
+    // console.log("=== claims ===", claims);
+    // console.log("=== jf2 ===", jf2);
+
+    if (code && code >= 400 && code < 500) {
+      request.log.warn(
+        `${log_prefix}client error (HTTP ${code}) catched by error handler: ${error.message}`
+      )
+    } else {
+      request.log.error(
+        `${log_prefix}server error (HTTP ${code}) catched by error handler: ${error.message}`
+      )
+    }
+
+    // Should we redirect to /login when the access token is expired or revoked?
+    if (code === 401) {
+      request.log.warn(`${log_prefix}TODO: redirect to /login?`)
+      // return reply.redirect('/login')
+    }
+
+    // Should we redirect to /login when the access token has insufficient scopes?
+    if (code === 403) {
+      request.log.warn(`${log_prefix}TODO: redirect to /login?`)
+      // return reply.redirect('/login')
+    }
+
+    if (error.validation && error.validationContext) {
+      if (code && code >= 400 && code < 500) {
+        const messages = error.validation.map((ve) => {
+          return `${error.validationContext}${ve.instancePath} ${ve.message}`
+        })
+        const error_description = messages.join('; ')
+        const err = new InvalidRequestError({ error_description })
+        return reply.errorResponse(
+          err.statusCode,
+          err.payload({ include_error_description })
+        )
+      }
+    }
+
+    const err = new ServerError({ error_description: error.message })
+    return reply.errorResponse(
+      err.statusCode,
+      err.payload({ include_error_description })
+    )
+  })
 
   done()
 }

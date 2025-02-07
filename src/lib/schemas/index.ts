@@ -11,8 +11,3 @@ export {
 export { info, type Info } from './info.js'
 
 export { storage, type Introspection } from './introspection.js'
-
-export const message = Type.String({ minLength: 1 })
-
-export { websiteUrlToStoreLocation } from './syndication.js'
-export type { WebsiteUrlToStoreLocation } from './syndication.js'

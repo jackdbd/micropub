@@ -7,7 +7,8 @@ export interface Config {
 export const defEditor = (config: Config) => {
   const { submit_endpoint } = config
 
-  const editor: RouteHandler = (_request, reply) => {
+  const editor: RouteHandler = (request, reply) => {
+    request.log.debug(`render editor.njk`)
     return reply.view('editor.njk', {
       description: 'Editor page',
       submit_endpoint,

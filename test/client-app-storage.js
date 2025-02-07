@@ -1,6 +1,6 @@
 import assert from 'node:assert'
 import { describe, it, beforeEach } from 'node:test'
-import { unixTimestampInSeconds } from '../dist/lib/date.js'
+import { unixTimestampInSeconds } from '@jackdbd/indieauth'
 import {
   CLIENT_ID,
   ME,

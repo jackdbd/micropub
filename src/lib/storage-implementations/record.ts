@@ -1,5 +1,5 @@
+import { unixTimestampInMs } from '@jackdbd/indieauth'
 import { nanoid } from 'nanoid'
-import { unixTimestampInMs } from '../date.js'
 import type { BaseProps } from '../storage-api/index.js'
 
 export const createdRecord = <Props extends BaseProps = BaseProps>(
