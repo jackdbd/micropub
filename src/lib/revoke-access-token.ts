@@ -2,8 +2,8 @@ import {
   secondsToUTCString,
   verify,
   unixTimestampInSeconds
-} from '@jackdbd/oauth2-tokens'
-import type { AccessTokenClaims, JWKSPublicURL } from '@jackdbd/oauth2-tokens'
+} from '@jackdbd/indieauth'
+import type { AccessTokenClaims, JWKSPublicURL } from '@jackdbd/indieauth'
 import type {
   RetrieveRecord,
   SelectQuery,

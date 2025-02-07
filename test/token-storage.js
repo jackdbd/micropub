@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { describe, it, beforeEach } from 'node:test'
 import { nanoid } from 'nanoid'
-import { unixTimestampInSeconds } from '@jackdbd/oauth2-tokens'
+import { unixTimestampInSeconds } from '@jackdbd/indieauth'
 import {
   accessTokenAPI,
   assertNoAccessTokenIsRevoked,

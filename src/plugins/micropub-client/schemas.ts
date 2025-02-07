@@ -1,23 +1,23 @@
 import {
+  authorization_endpoint,
   client_id,
   issuer,
   client_name,
   client_uri,
-  isAccessTokenRevoked,
-  type IsAccessTokenRevoked,
+  introspection_endpoint,
   logo_uri,
   me_before_url_canonicalization,
   me_after_url_canonicalization,
   redirect_uris,
+  revocation_endpoint,
+  token_endpoint,
   userinfo_endpoint
 } from '@jackdbd/indieauth/schemas/index'
-import { micropub_endpoint } from '@jackdbd/micropub/schemas/index'
 import {
-  authorization_endpoint,
-  introspection_endpoint,
-  revocation_endpoint,
-  token_endpoint
-} from '@jackdbd/oauth2'
+  isAccessTokenRevoked,
+  type IsAccessTokenRevoked
+} from '@jackdbd/indieauth/schemas/user-provided-functions'
+import { micropub_endpoint } from '@jackdbd/micropub/schemas/index'
 import { code_verifier_length } from '@jackdbd/pkce'
 import { Static, Type } from '@sinclair/typebox'
 import type Ajv from 'ajv'

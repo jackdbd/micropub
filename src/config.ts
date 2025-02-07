@@ -1,5 +1,8 @@
+import type {
+  JWKSPrivate,
+  JWKSPublicURL
+} from '@jackdbd/indieauth/schemas/index'
 import type { SyndicateToItem } from '@jackdbd/micropub/syndicate-to'
-import type { JWKSPrivate, JWKSPublicURL } from '@jackdbd/oauth2-tokens'
 import * as DEFAULT from './defaults.js'
 
 const REQUIRED_ENV_VARS = [

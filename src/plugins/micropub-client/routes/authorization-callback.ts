@@ -1,15 +1,14 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
+import type { AuthorizationResponseQuerystring } from '@jackdbd/fastify-authorization-endpoint'
 import { AccessTokenResponseBodySuccess } from '@jackdbd/fastify-token-endpoint'
+import { errorResponseFromJSONResponse, safeDecode } from '@jackdbd/indieauth'
+import type { AccessTokenClaims } from '@jackdbd/indieauth'
 import {
   InvalidRequestError,
   InvalidTokenError,
   ServerError,
   UnauthorizedError
 } from '@jackdbd/oauth2-error-responses'
-import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
-import { safeDecode, type AccessTokenClaims } from '@jackdbd/oauth2-tokens'
-import type { AuthorizationResponseQuerystring } from '@jackdbd/fastify-authorization-endpoint'
-// import type { RevocationResponseBodySuccess } from '../../revocation-endpoint/index.js'
 
 export interface Config {
   client_id: string

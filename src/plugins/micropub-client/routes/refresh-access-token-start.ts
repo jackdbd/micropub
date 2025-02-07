@@ -6,9 +6,8 @@ import {
   InvalidRequestError,
   InvalidTokenError
 } from '@jackdbd/oauth2-error-responses'
-import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
-import { safeDecode } from '@jackdbd/oauth2-tokens'
-import type { AccessTokenClaims } from '@jackdbd/oauth2-tokens'
+import { errorResponseFromJSONResponse, safeDecode } from '@jackdbd/indieauth'
+import type { AccessTokenClaims } from '@jackdbd/indieauth'
 
 export interface Config {
   code_verifier_length: number

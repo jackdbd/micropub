@@ -1,5 +1,5 @@
 import { IntrospectionResponseBodySuccess } from '@jackdbd/fastify-introspection-endpoint'
-import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
+import { errorResponseFromJSONResponse } from '@jackdbd/indieauth'
 import type { RouteHandler } from 'fastify'
 
 export interface Config {

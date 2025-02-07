@@ -1,10 +1,5 @@
 import assert from 'node:assert'
-import {
-  // randomKid,
-  // safeDecode,
-  // sign,
-  unixTimestampInSeconds
-} from '@jackdbd/oauth2-tokens'
+import { unixTimestampInSeconds } from '@jackdbd/indieauth'
 import { code_challenge, code_challenge_method } from '@jackdbd/pkce'
 import { unwrapP } from '@jackdbd/unwrap'
 import { defStorage } from '../dist/lib/storage-implementations/index.js'

@@ -1,10 +1,10 @@
 import type { RouteGenericInterface, RouteHandler } from 'fastify'
+import { errorResponseFromJSONResponse } from '@jackdbd/indieauth'
 import {
   InvalidRequestError,
   ServerError,
   UnauthorizedError
 } from '@jackdbd/oauth2-error-responses'
-import { errorResponseFromJSONResponse } from '@jackdbd/oauth2'
 
 interface RouteGeneric extends RouteGenericInterface {
   Querystring: {
