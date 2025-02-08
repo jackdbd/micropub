@@ -292,15 +292,15 @@ export const defConfig = async (): Promise<Config> => {
     secure_session_key_two_buf: DEFAULT.SECURE_SESSION_KEY_TWO!,
     should_media_endpoint_ignore_filename:
       DEFAULT.SHOULD_MEDIA_ENDPOINT_IGNORE_FILENAME,
-    soft_delete: DEFAULT.SHOULD_USE_SOFT_DELETE,
+    soft_delete: DEFAULT.USE_SOFT_DELETE,
     submit_endpoint,
     syndicate_to,
     telegram_chat_id: DEFAULT.TELEGRAM_CHAT_ID!,
     telegram_token: DEFAULT.TELEGRAM_TOKEN!,
     token_endpoint,
-    use_development_error_handler: DEFAULT.SHOULD_USE_DEVELOPMENT_ERROR_HANDLER,
+    use_development_error_handler: DEFAULT.USE_DEVELOPMENT_ERROR_HANDLER,
     use_secure_flag_for_session_cookie:
-      DEFAULT.SHOULD_USE_SECURE_FLAG_FOR_SESSION_COOKIE,
+      DEFAULT.USE_SECURE_FLAG_FOR_SESSION_COOKIE,
     userinfo_endpoint,
     NODE_ENV: process.env.NODE_ENV || 'production'
   }
