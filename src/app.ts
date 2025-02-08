@@ -272,6 +272,12 @@ export async function defFastify(config: Config) {
 
   const sessionName = 'session'
 
+  const cookie = {
+    path: '/',
+    httpOnly: true,
+    maxAge: secure_session_expiration,
+    secure: use_secure_flag_for_session_cookie
+  }
   fastify.register(secureSession, {
     key: [
       Buffer.from(secure_session_key_one_buf, 'hex'),
@@ -279,16 +285,13 @@ export async function defFastify(config: Config) {
     ],
     sessionName,
     expiry: secure_session_expiration,
-    cookie: {
-      path: '/',
-      httpOnly: true,
-      secure: use_secure_flag_for_session_cookie
-    }
+    cookie
   })
   fastify.log.debug(
     {
       sessionName,
-      expiry: secure_session_expiration
+      expiry: secure_session_expiration,
+      cookie
     },
     `${LOG_PREFIX}registered plugin: @fastify/secure-session`
   )
