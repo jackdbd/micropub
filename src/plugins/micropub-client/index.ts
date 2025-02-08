@@ -23,6 +23,7 @@ import fp from 'fastify-plugin'
 import { DEFAULT, NAME } from './constants.js'
 import { errorResponse, successResponse } from './decorators/index.js'
 import {
+  defRefreshTokensIfNeeded,
   defSetClaimsInRequestContext,
   defValidateClaim,
   defValidateNotRevoked,
@@ -220,6 +221,13 @@ const micropubClient: FastifyPluginCallback<Options> = (
   //   redirectPath: '/login'
   // })
 
+  const refreshTokensIfNeeded = defRefreshTokensIfNeeded({
+    clientId: client_id,
+    isAccessTokenRevoked,
+    logPrefix: `[${NAME}/refresh-tokens-if-needed] `,
+    tokenEndpoint: token_endpoint
+  })
+
   const setClaimsInRequestContext = defSetClaimsInRequestContext({
     logPrefix: `[${NAME}/set-claims] `,
     redirectPath: '/login'
@@ -258,7 +266,8 @@ const micropubClient: FastifyPluginCallback<Options> = (
   })
 
   const validateAccessTokenNotRevoked = defValidateNotRevoked({
-    isAccessTokenRevoked
+    isAccessTokenRevoked,
+    logPrefix: `[${NAME}/validate-not-revoked] `
   })
 
   // === ROUTES ============================================================= //
@@ -336,6 +345,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     '/editor',
     {
       onRequest: [
+        refreshTokensIfNeeded,
         setClaimsInRequestContext,
         logClaims,
         validateClaimExp,
@@ -386,6 +396,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     '/submit',
     {
       onRequest: [
+        refreshTokensIfNeeded,
         setClaimsInRequestContext,
         validateClaimExp,
         validateAccessTokenNotRevoked
@@ -398,6 +409,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     '/token',
     {
       onRequest: [
+        refreshTokensIfNeeded,
         setClaimsInRequestContext,
         validateClaimExp,
         validateAccessTokenNotRevoked
@@ -452,6 +464,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     '/user',
     {
       onRequest: [
+        refreshTokensIfNeeded,
         setClaimsInRequestContext,
         validateClaimExp,
         validateClaimMe,
