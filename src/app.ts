@@ -210,6 +210,15 @@ export async function defFastify(config: Config) {
     `${LOG_PREFIX}storage backend ${backend} [${environment}] initialized`
   )
 
+  const authorization_code_log = {
+    debug: (message: string) => {
+      fastify.log.debug(`[app/authorization-code-storage] ${message}`)
+    },
+    error: (message: string) => {
+      fastify.log.error(`[app/authorization-code-storage] ${message}`)
+    }
+  }
+
   const token_log = {
     debug: (message: string) => {
       fastify.log.debug(`[app/token-storage] ${message}`)
@@ -232,14 +241,17 @@ export async function defFastify(config: Config) {
   })
 
   const onAuthorizationCodeVerified = defOnAuthorizationCodeVerified({
+    log: authorization_code_log,
     storage: storage.authorization_code
   })
 
   const onUserApprovedRequest = defOnUserApprovedRequest({
+    log: authorization_code_log,
     storage: storage.authorization_code
   })
 
   const retrieveAuthorizationCode = defRetrieveAuthorizationCode({
+    log: authorization_code_log,
     storage: storage.authorization_code
   })
 

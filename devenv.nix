@@ -126,6 +126,13 @@ in {
       # Then attach to the running Node.js server using the configuration that
       # has "request": "attach" in launch.json
     '';
+    "debug:prod".exec = ''
+      npm run clean
+      npm run build
+      NODE_ENV=production NODE_OPTIONS='--inspect' PINO_LOG_LEVEL=debug node dist/server.js | npx pino-pretty
+      # Then attach to the running Node.js server using the configuration that
+      # has "request": "attach" in launch.json
+    '';
     dev.exec = ''
       npm run watch
     '';

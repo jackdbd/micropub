@@ -225,6 +225,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
     clientId: client_id,
     isAccessTokenRevoked,
     logPrefix: `[${NAME}/refresh-tokens-if-needed] `,
+    redirectPath: '/login',
     tokenEndpoint: token_endpoint
   })
 

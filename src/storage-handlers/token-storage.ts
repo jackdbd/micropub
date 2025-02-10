@@ -31,7 +31,6 @@ export const defIsAccessTokenRevoked = (config: RetrieveConfig) => {
 
   const isAccessTokenRevoked: IsAccessTokenRevoked = async (jti) => {
     log.debug(`retrieve access token jti=${jti} from storage`)
-    // throw new Error(`test exception in isAccessTokenRevoked`)
     const record = await unwrapP(
       storage.retrieveOne({
         where: [{ key: 'jti', op: '==', value: jti }]
@@ -51,7 +50,6 @@ export const defRetrieveAccessToken = (config: RetrieveConfig) => {
 
   const retrieveAccessToken: RetrieveAccessToken = async (jti) => {
     log.debug(`retrieve access token jti=${jti} from storage`)
-    // throw new Error(`test exception in retrieveAccessToken`)
     const record = await unwrapP(
       storage.retrieveOne({
         where: [{ key: 'jti', op: '==', value: jti }]
