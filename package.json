@@ -68,7 +68,7 @@
     "@jackdbd/fastify-token-endpoint": "1.3.0-canary.17",
     "@jackdbd/fastify-userinfo-endpoint": "1.3.0-canary.16",
     "@jackdbd/fastify-webc": "0.2.0-canary.7",
-    "@jackdbd/github-content-store": "0.2.0-canary.9",
+    "@jackdbd/github-content-store": "0.2.0-canary.10",
     "@jackdbd/indieauth": "0.2.0-canary.10",
     "@jackdbd/notifications": "^1.0.3",
     "@jackdbd/r2-media-store": "0.2.0-canary.14",
