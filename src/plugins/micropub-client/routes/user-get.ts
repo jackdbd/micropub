@@ -9,9 +9,9 @@ interface RouteGeneric extends RouteGenericInterface {
 }
 
 export interface Config {
-  include_error_description: boolean
-  log_prefix: string
-  userinfo_endpoint: string
+  includeErrorDescription: boolean
+  logPrefix: string
+  userinfoEndpoint: string
 }
 
 /**
@@ -20,7 +20,11 @@ export interface Config {
  * @see [Userinfo Information - IndieAuth](https://indieauth.spec.indieweb.org/#user-information)
  */
 export const defUserGet = (config: Config) => {
-  const { include_error_description, log_prefix, userinfo_endpoint } = config
+  const {
+    includeErrorDescription: include_error_description,
+    logPrefix,
+    userinfoEndpoint
+  } = config
 
   const userGet: RouteHandler<RouteGeneric> = async (request, reply) => {
     // const { provider } = request.query
@@ -46,8 +50,7 @@ export const defUserGet = (config: Config) => {
       )
     }
 
-    // const response = await fetch(`${userinfo_endpoint}?provider=${provider}`, {
-    const response = await fetch(userinfo_endpoint, {
+    const response = await fetch(userinfoEndpoint, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -76,14 +79,14 @@ export const defUserGet = (config: Config) => {
       )
     }
 
-    request.log.debug(`${log_prefix}render user profile`)
+    request.log.debug(`${logPrefix}render user profile`)
 
     return reply.successResponse(200, {
       title: 'User',
       description: `User's profile page.`,
       // description: `Profile page for the user authenticated with ${provider}.`,
       // summary: `Info from your authentication provider (${provider}).`,
-      summary: `Info retrieved from the userinfo endpoint ${userinfo_endpoint}.`,
+      summary: `Info retrieved from the userinfo endpoint ${userinfoEndpoint}.`,
       payload
     })
   }

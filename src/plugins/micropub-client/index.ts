@@ -112,13 +112,13 @@ const micropubClient: FastifyPluginCallback<Options> = (
     issuer,
     logPrefix: log_prefix,
     me,
-    micropubEndpoint: micropub_endpoint,
+    micropubEndpoint,
     redirectUris: redirect_uris,
     reportAllAjvErrors: report_all_ajv_errors,
     revocationEndpoint: revocation_endpoint,
-    submitEndpoint: submit_endpoint,
+    submitEndpoint,
     tokenEndpoint: token_endpoint,
-    userinfoEndpoint: userinfo_endpoint
+    userinfoEndpoint
   } = config
 
   let ajv: Ajv
@@ -213,13 +213,6 @@ const micropubClient: FastifyPluginCallback<Options> = (
       `${log_prefix}registered route ${routeOptions.method} ${routeOptions.url}`
     )
   })
-
-  // Probably I don't need this hook
-  // const redirectWhenNotAuthenticated = defRedirectWhenNotAuthenticated({
-  //   isAccessTokenRevoked,
-  //   logPrefix: `[${NAME}/redirect-not-authenticated] `,
-  //   redirectPath: '/login'
-  // })
 
   const refreshTokensIfNeeded = defRefreshTokensIfNeeded({
     clientId: client_id,
@@ -355,7 +348,7 @@ const micropubClient: FastifyPluginCallback<Options> = (
         validateAccessTokenNotRevoked
       ]
     },
-    defEditor({ submit_endpoint })
+    defEditor({ submitEndpoint })
   )
 
   fastify.get('/accepted', postAccepted)
@@ -403,7 +396,11 @@ const micropubClient: FastifyPluginCallback<Options> = (
         validateAccessTokenNotRevoked
       ]
     },
-    defSubmit({ include_error_description, log_prefix, micropub_endpoint })
+    defSubmit({
+      includeErrorDescription: include_error_description,
+      logPrefix: log_prefix,
+      micropubEndpoint
+    })
   )
 
   fastify.get(
@@ -473,7 +470,11 @@ const micropubClient: FastifyPluginCallback<Options> = (
         validateAccessTokenNotRevoked
       ]
     },
-    defUserGet({ include_error_description, log_prefix, userinfo_endpoint })
+    defUserGet({
+      includeErrorDescription: include_error_description,
+      logPrefix: log_prefix,
+      userinfoEndpoint
+    })
   )
 
   fastify.setErrorHandler((error, request, reply) => {

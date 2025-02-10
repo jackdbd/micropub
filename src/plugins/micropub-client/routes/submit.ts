@@ -1,15 +1,37 @@
+import { errorResponseFromJSONResponse } from '@jackdbd/indieauth'
+import { UnauthorizedError } from '@jackdbd/oauth2-error-responses'
 import type { RouteHandler } from 'fastify'
 import stringify from 'fast-safe-stringify'
-import { UnauthorizedError } from '@jackdbd/oauth2-error-responses'
 
-export interface Config {
-  include_error_description: boolean
-  log_prefix: string
-  micropub_endpoint: string
+export interface Options {
+  includeErrorDescription?: boolean
+  logPrefix?: string
+  micropubEndpoint: string
+  redirectPathOnAccepted?: string
+  redirectPathOnCreated?: string
 }
 
-export const defSubmit = (config: Config) => {
-  const { include_error_description, log_prefix, micropub_endpoint } = config
+const defaults: Partial<Options> = {
+  includeErrorDescription: false,
+  logPrefix: '[submit] ',
+  redirectPathOnAccepted: '/accepted',
+  redirectPathOnCreated: '/created'
+}
+
+export const defSubmit = (options: Options) => {
+  const config = Object.assign({}, defaults, options) as Required<Options>
+
+  const {
+    includeErrorDescription: include_error_description,
+    logPrefix,
+    micropubEndpoint,
+    redirectPathOnAccepted,
+    redirectPathOnCreated
+  } = config
+
+  if (!micropubEndpoint) {
+    throw new Error('micropubEndpoint is required')
+  }
 
   const submit: RouteHandler = async (request, reply) => {
     const access_token = request.session.get('access_token')
@@ -23,9 +45,9 @@ export const defSubmit = (config: Config) => {
       )
     }
 
-    request.log.debug(`${log_prefix}access token extracted from session`)
+    request.log.debug(`${logPrefix}access token extracted from session`)
 
-    const response = await fetch(micropub_endpoint, {
+    const response = await fetch(micropubEndpoint, {
       method: 'POST',
       body: stringify(request.body),
       headers: {
@@ -34,20 +56,28 @@ export const defSubmit = (config: Config) => {
       }
     })
 
+    if (!response.ok) {
+      const err = await errorResponseFromJSONResponse(response)
+      return reply.errorResponse(
+        err.statusCode,
+        err.payload({ include_error_description })
+      )
+    }
+
     const data = await response.json()
 
     if (response.status === 202) {
       const location = response.headers.get('Location')
-      request.log.debug(`${log_prefix}Redirecting to /accepted`)
-      const uri = `/accepted?data=${encodeURIComponent(
+      request.log.debug(`${logPrefix}redirecting to ${redirectPathOnAccepted}`)
+      const uri = `${redirectPathOnAccepted}?data=${encodeURIComponent(
         stringify({ ...data, location }, undefined, 2)
       )}`
 
       return reply.redirect(uri)
     } else {
-      request.log.debug(`${log_prefix}Redirecting to /created`)
+      request.log.debug(`${logPrefix}redirecting to ${redirectPathOnCreated}`)
 
-      const uri = `/created?data=${encodeURIComponent(
+      const uri = `${redirectPathOnCreated}?data=${encodeURIComponent(
         stringify(data, undefined, 2)
       )}`
       return reply.redirect(uri)
