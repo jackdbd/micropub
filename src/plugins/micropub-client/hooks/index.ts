@@ -1,5 +1,3 @@
-export { defRedirectWhenNotAuthenticated } from './redirect-when-not-authenticated.js'
-
 export { defRefreshTokensIfNeeded } from './refresh-tokens-if-needed.js'
 
 export { defSetClaimsInRequestContext } from './set-claims-in-request-context.js'
