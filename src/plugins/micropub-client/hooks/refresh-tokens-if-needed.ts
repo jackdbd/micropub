@@ -187,8 +187,7 @@ export const defRefreshTokensIfNeeded = (options: Options) => {
       request.log.warn(
         `${logPrefix}${payload.error}: ${payload.error_description}`
       )
-      throw err
-      // return reply.errorResponse(err.statusCode, payload)
+      return reply.errorResponse(err.statusCode, payload)
     }
 
     let refreshed_access_token: string | undefined
