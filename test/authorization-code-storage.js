@@ -28,7 +28,7 @@ describe('Authorization Codes', () => {
 
     const { error, value: record } = await storage.storeOne({
       client_id: CLIENT_ID,
-      code: nanoid(),
+      code: nanoid(32),
       code_challenge,
       code_challenge_method: method,
       exp,

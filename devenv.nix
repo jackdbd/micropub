@@ -76,10 +76,10 @@ in {
   scripts = {
     build.exec = ''
       clean
-      npx tsc -p tsconfig.json
+      npm run build
     '';
     clean.exec = ''
-      rm -rfv dist/
+      npm run clean
     '';
     container-build.exec = ''
       clean
@@ -132,6 +132,11 @@ in {
       NODE_ENV=production NODE_OPTIONS='--inspect' PINO_LOG_LEVEL=debug node dist/server.js | npx pino-pretty
       # Then attach to the running Node.js server using the configuration that
       # has "request": "attach" in launch.json
+    '';
+    "debug:test".exec = ''
+      echo "debug test file $1.js"
+      echo "Don't forget to set some breakpoints and attach to the Node.js process using the configuration that has \"request\": \"attach\" in launch.json"
+      NODE_ENV=test node --inspect-brk --test test/$1.js
     '';
     dev.exec = ''
       npm run watch

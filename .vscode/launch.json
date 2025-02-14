@@ -29,8 +29,13 @@
       "outFiles": ["${workspaceFolder}/dist/**/*"]
     },
     {
-      // First, launch the server with NODE_OPTIONS='--inspect'. Then attach to it.
-      "name": "Attach to local Micropub server",
+      // First, launch the Node.js application with one of:
+      // * node --inspect
+      // * node --inspect-brk
+      // * NODE_OPTIONS='--inspect' node
+      // * NODE_OPTIONS='--inspect-brk' node
+      // Then attach to it.
+      "name": "Attach to Node.js process",
       "request": "attach",
       "type": "node",
       "port": 9229,
