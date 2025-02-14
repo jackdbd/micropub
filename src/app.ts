@@ -1,7 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Fastify from 'fastify'
-// import multipart from '@fastify/multipart'
 import type { OAuth2Namespace } from '@fastify/oauth2'
 import fastifyRequestContext from '@fastify/request-context'
 import secureSession from '@fastify/secure-session'
@@ -14,7 +13,8 @@ import type { PluginOptions as AuthorizationEndpointPluginOptions } from '@jackd
 import introspection from '@jackdbd/fastify-introspection-endpoint'
 import media from '@jackdbd/fastify-media-endpoint'
 import type { PluginOptions as MediaEndpointPluginOptions } from '@jackdbd/fastify-media-endpoint'
-import micropub from '@jackdbd/fastify-micropub-endpoint'
+// import micropub from '@jackdbd/fastify-micropub-endpoint'
+import micropub from './plugins/micropub-endpoint/index.js'
 import type { PluginOptions as MicropubEndpointPluginOptions } from '@jackdbd/fastify-micropub-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
 import syndicate from '@jackdbd/fastify-syndicate-endpoint'
@@ -563,21 +563,6 @@ export async function defFastify(config: Config) {
   }
 
   fastify.register(micropub, micropubOptions)
-
-  // REMOVE FROM HERE... ///////////////////////////////////////////////////////
-  // fastify.register(multipart, {
-  //   attachFieldsToBody: 'keyValues',
-  //   limits: {
-  //     fileSize: multipartFormDataMaxFileSize
-  //   }
-  // })
-
-  // fastify.post('/micropub', function (request, reply) {
-  //   console.log('=== /micropub request.headers ===', request.headers)
-  //   console.log('=== /micropub request.body ===', request.body)
-  //   return reply.send({ message: 'fake micropub response' })
-  // })
-  // ...TO HERE ////////////////////////////////////////////////////////////////
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {
