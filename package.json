@@ -62,7 +62,7 @@
     "@jackdbd/fastify-authorization-endpoint": "1.3.0-canary.16",
     "@jackdbd/fastify-introspection-endpoint": "1.3.0-canary.18",
     "@jackdbd/fastify-media-endpoint": "0.2.0-canary.16",
-    "@jackdbd/fastify-micropub-endpoint": "0.2.0-canary.18",
+    "@jackdbd/fastify-micropub-endpoint": "0.2.0-canary.20",
     "@jackdbd/fastify-revocation-endpoint": "1.3.0-canary.16",
     "@jackdbd/fastify-syndicate-endpoint": "0.2.0-canary.14",
     "@jackdbd/fastify-token-endpoint": "1.3.0-canary.18",
