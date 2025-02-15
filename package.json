@@ -37,8 +37,8 @@
     "script:mf2": "tsm ./scripts/microformats/mf2.ts",
     "secure-session-keys": "node scripts/secure-session-keys.js",
     "start": "NODE_ENV=production node ./dist/server.js",
-    "test": "NODE_ENV=test PINO_LOG_LEVEL=warn node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info --test-reporter=spec --test-reporter-destination=stdout",
-    "test:ci": "NODE_ENV=test node --test",
+    "test": "NODE_ENV=test PINO_LOG_LEVEL=warn node --test",
+    "test:coverage": "NODE_ENV=test PINO_LOG_LEVEL=warn node --test --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout",
     "watch": "find ./src -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run dev",
     "watch:njk": "find ./src/templates/* -type f -printf '%T@ %p\n' | sort -nr | cut -d\\  -f2- | entr -r npm run compile:njk",
     "watch:src": "run-p watch:ts watch:njk --print-label",
@@ -88,6 +88,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^9.4.0",
+    "@reporters/github": "^1.7.2",
     "@thi.ng/transclude": "^1.1.2",
     "@types/better-queue": "^3.8.6",
     "@types/better-sqlite3": "^7.6.12",

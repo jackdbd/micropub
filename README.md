@@ -1,6 +1,8 @@
 # Micropub
 
 [![CI workflow](https://github.com/jackdbd/micropub/actions/workflows/ci.yaml/badge.svg)](https://github.com/jackdbd/micropub/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/jackdbd/micropub/graph/badge.svg?token=eAuWdpNKuN)](https://codecov.io/gh/jackdbd/micropub)
+[![codecov (develop)](https://codecov.io/gh/jackdbd/micropub/branch/develop/graph/badge.svg?token=eAuWdpNKuN)](https://codecov.io/gh/jackdbd/micropub)
 
 Packages for implementing an authorization server that supports the [IndieAuth protocol](https://indieauth.spec.indieweb.org/), a [Micropub](https://micropub.spec.indieweb.org/) server and a Micropub client.
 

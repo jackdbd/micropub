@@ -28,9 +28,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           # https://github.com/nodejs/Release/blob/main/CODENAMES.md
-          node-version: lts/Iron
+          node-version: lts/Jod
 
-      - run: npm ci --include dev --include prod
+      - name: ⬇️ Install dependencies
+        run: npm ci --include dev --include prod
 
       - name: 🛡️ Audit security
         continue-on-error: true
@@ -61,11 +62,26 @@ jobs:
           SECURE_SESSION_KEY_TWO: ${{ secrets.SECURE_SESSION_KEY_TWO }}
           TELEGRAM_CHAT_ID: ${{ fromJSON(secrets.TELEGRAM).chat_id }}
           TELEGRAM_TOKEN: ${{ fromJSON(secrets.TELEGRAM).token }}
-        run: node --test
+        run: >
+          node --test --experimental-test-coverage
+          --test-reporter=lcov --test-reporter-destination=lcov.info
+          --test-reporter=@reporters/github --test-reporter-destination=stdout
+
+      - name: ⬆️ Upload test coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        # https://docs.codecov.com/docs/codecov-tokens#uploading-without-a-token
+        # For most Codecov uploads, we do need a token.
+        # A token is not required when uploading from an "unprotected" branch.
+        # An "unprotected" branch is any branch with a colon-separated prefix.
+        with:
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
 
       - uses: superfly/flyctl-actions/setup-flyctl@1
 
-      - name: Deploy to Fly
+      - name: 🚀 Deploy to Fly
         id: fly_deploy
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

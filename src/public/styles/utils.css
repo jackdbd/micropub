@@ -1,6 +1,15 @@
-.error {
-  background-color: red;
+/* .error {
+} */
+
+.error-description {
+  color: red;
 }
+
+/* .error-uri {
+} */
+
+/* .state {
+} */
 
 /*
  * See the CSS variables of MVP.css

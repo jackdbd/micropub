@@ -27,6 +27,7 @@ in {
     CLOUDFLARE_R2_ACCESS_KEY_ID = cloudflare_r2.personal.access_key_id;
     CLOUDFLARE_R2_BUCKET_NAME = "giacomodebidda-content";
     CLOUDFLARE_R2_SECRET_ACCESS_KEY = cloudflare_r2.personal.secret_access_key;
+    CODECOV_TOKEN = builtins.readFile /run/secrets/codecov/token;
     DEBUG = "micropub:*";
     FLY_API_TOKEN = fly_micropub.deploy_token;
     GITHUB_OAUTH_APP_CLIENT_ID = micropub.github_oauth_app_client_id_dev;
