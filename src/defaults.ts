@@ -27,6 +27,9 @@ export const JWKS_PUBLIC_URL =
 export const LOG_LEVEL = process.env.PINO_LOG_LEVEL || 'info'
 
 export const ME = 'https://giacomodebidda.com/'
+export const INDIEAUTH_METADATA_DOCUMENT_URL = `${ME}.well-known/oauth-authorization-server`
+// issuer MUST be a prefix of the IndieAuth metadata document URL
+export const ISSUER = ME
 
 export const MEDIA_PUBLIC_BASE_URL = 'https://content.giacomodebidda.com/'
 

@@ -110,6 +110,12 @@ export interface Config {
    * query or fragment components as defined in RFC9207. It MUST also be a
    * prefix of the indieauth-metadata URL.
    *
+   * The `iss` parameter of the authorization response needs to match the
+   * `issuer` found the IndieAuth metadata document. and must be a prefix of the
+   * IndieAuth metadata document URL itself.
+   * Read [this issue](https://github.com/gRegorLove/indiebookclub/issues/24#issuecomment-2661174584)
+   * for the complete explanation.
+   *
    * @see [Issuer Identifier](https://indieauth.spec.indieweb.org/#issuer-identifier)
    * @see [OAuth 2.0 Authorization Server Issuer Identification](https://www.rfc-editor.org/rfc/rfc9207)
    */
@@ -214,8 +220,6 @@ export const defConfig = async (): Promise<Config> => {
   const indieauth_client_uri = base_url
   const indieauth_client_redirect_uris = [`${base_url}/auth/callback`]
 
-  const issuer = base_url
-
   // ENDPOINTS /////////////////////////////////////////////////////////////////
   const authorization_endpoint = `${base_url}/auth`
 
@@ -274,7 +278,7 @@ export const defConfig = async (): Promise<Config> => {
     indieauth_client_uri,
     indieauth_client_redirect_uris,
     introspection_endpoint,
-    issuer,
+    issuer: DEFAULT.ISSUER,
     jwks,
     jwks_url: new URL(DEFAULT.JWKS_PUBLIC_URL),
     log_level: DEFAULT.LOG_LEVEL,
