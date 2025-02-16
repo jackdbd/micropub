@@ -51,6 +51,7 @@ import * as nunjucks_globals from './nunjucks/globals.js'
 import { defSQLiteUtils } from './sqlite-utils.js'
 import {
   defIsAccessTokenRevoked,
+  defIsRefreshTokenRevoked,
   defOnAuthorizationCodeVerified,
   defOnIssuedTokens,
   defOnUserApprovedRequest,
@@ -261,6 +262,11 @@ export async function defFastify(config: Config) {
     storage: storage.access_token
   })
 
+  const isRefreshTokenRevoked = defIsRefreshTokenRevoked({
+    log: token_log,
+    storage: storage.refresh_token
+  })
+
   const retrieveAccessToken = defRetrieveAccessToken({
     storage: storage.access_token
   })
@@ -392,6 +398,7 @@ export async function defFastify(config: Config) {
     ajv,
     includeErrorDescription,
     isAccessTokenRevoked,
+    isRefreshTokenRevoked,
     issuer,
     jwksUrl: jwks_url,
     me,

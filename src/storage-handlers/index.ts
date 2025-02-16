@@ -6,6 +6,7 @@ export {
 
 export {
   defIsAccessTokenRevoked,
+  defIsRefreshTokenRevoked,
   defOnIssuedTokens,
   defRetrieveAccessToken,
   defRetrieveRefreshToken,

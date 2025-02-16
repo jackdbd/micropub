@@ -3,6 +3,7 @@ import type {
   AccessTokenImmutableRecord,
   AccessTokenMutableRecord,
   IsAccessTokenRevoked,
+  IsRefreshTokenRevoked,
   OnIssuedTokens,
   RefreshTokenProps,
   RefreshTokenImmutableRecord,
@@ -42,6 +43,27 @@ export const defIsAccessTokenRevoked = (config: RetrieveConfig) => {
   }
 
   return isAccessTokenRevoked
+}
+
+export const defIsRefreshTokenRevoked = (config: RetrieveConfig) => {
+  const { storage } = config
+  const log = config.log ?? default_log
+
+  const isRefreshTokenRevoked: IsRefreshTokenRevoked = async (
+    refresh_token
+  ) => {
+    log.debug(`retrieve refresh token ${refresh_token} from storage`)
+    const record = await unwrapP(
+      storage.retrieveOne({
+        where: [{ key: 'refresh_token', op: '==', value: refresh_token }]
+      })
+    )
+
+    log.debug(`check whether refresh token ${refresh_token} is revoked or not`)
+    return record.revoked ? true : false
+  }
+
+  return isRefreshTokenRevoked
 }
 
 export const defRetrieveAccessToken = (config: RetrieveConfig) => {

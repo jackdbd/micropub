@@ -1,4 +1,7 @@
-import { IntrospectionResponseBodySuccess } from '@jackdbd/fastify-introspection-endpoint'
+import {
+  IntrospectionResponseBodyWhenTokenIsRetrieved,
+  IntrospectionResponseBodyWhenTokenIsNotRetrieved
+} from '@jackdbd/fastify-introspection-endpoint'
 import { errorResponseFromJSONResponse } from '@jackdbd/indieauth'
 import { UnauthorizedError } from '@jackdbd/oauth2-error-responses'
 import type { RouteHandler } from 'fastify'
@@ -58,7 +61,9 @@ export const defTokenGet = (config: TokenGetConfig) => {
         .send(err.payload({ include_error_description }))
     }
 
-    const payload: IntrospectionResponseBodySuccess = await response.json()
+    const payload:
+      | IntrospectionResponseBodyWhenTokenIsRetrieved
+      | IntrospectionResponseBodyWhenTokenIsNotRetrieved = await response.json()
 
     return reply.successResponse(200, {
       title: 'Token',
