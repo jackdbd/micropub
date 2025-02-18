@@ -14,10 +14,10 @@ import introspection from '@jackdbd/fastify-introspection-endpoint'
 import media from '@jackdbd/fastify-media-endpoint'
 import type { PluginOptions as MediaEndpointPluginOptions } from '@jackdbd/fastify-media-endpoint'
 import micropub from '@jackdbd/fastify-micropub-endpoint'
-// import micropub from './plugins/micropub-endpoint/index.js'
 import type { PluginOptions as MicropubEndpointPluginOptions } from '@jackdbd/fastify-micropub-endpoint'
 import revocation from '@jackdbd/fastify-revocation-endpoint'
 import syndicate from '@jackdbd/fastify-syndicate-endpoint'
+import type { PluginOptions as SyndicateEndpointPluginOptions } from '@jackdbd/fastify-syndicate-endpoint'
 import token from '@jackdbd/fastify-token-endpoint'
 import type { PluginOptions as TokenEndpointPluginOptions } from '@jackdbd/fastify-token-endpoint'
 import userinfo from '@jackdbd/fastify-userinfo-endpoint'
@@ -496,12 +496,10 @@ export async function defFastify(config: Config) {
   const publication = defDefaultPublication({ domain, subdomain: 'www' })
 
   const github = defGitHub({
-    // This doesn't work. It errors with: this[writeSym] is not a function
-    // log: { debug: fastify.log.debug, error: fastify.log.error },
     log: {
-      debug: (message: string) => {
-        return fastify.log.debug(`[app/github-store] ${message}`)
-      },
+      debug: fastify.log.debug.bind(fastify.log),
+      info: fastify.log.info.bind(fastify.log),
+      warn: fastify.log.warn.bind(fastify.log),
       error: (message: string) => {
         return fastify.log.error(`[app/github-store] ${message}`)
       }
@@ -516,6 +514,10 @@ export async function defFastify(config: Config) {
       email: 'giacomo@giacomodebidda.com'
     }
   })
+  fastify.log.debug(
+    github.info,
+    `[app] created content store '${github.info.name}'`
+  )
 
   const r2 = defR2({
     account_id: cloudflare_account_id,
@@ -527,55 +529,71 @@ export async function defFastify(config: Config) {
     ignore_filename: should_media_endpoint_ignore_filename,
     public_base_url: media_public_base_url
   })
+  fastify.log.debug(r2.info, `[app] created media store '${r2.info.name}'`)
 
-  const mediaOptions: MediaEndpointPluginOptions = {
-    ajv,
-    delete: r2.delete,
+  const mediaEndpointOptions: MediaEndpointPluginOptions = {
+    // ajv,
+    deleteMedia: r2.delete,
     includeErrorDescription,
     isAccessTokenRevoked,
+    logPrefix: '[media-endpoint] ',
     me,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
-    upload: r2.upload
+    uploadMedia: r2.upload
   }
 
-  fastify.register(media, mediaOptions)
+  fastify.register(media, mediaEndpointOptions)
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {
       route: '/media/config',
-      pluginOptions: mediaOptions,
-      exclude: ['ajv']
+      pluginOptions: mediaEndpointOptions,
+      exclude: ['ajv', 'deleteMedia', 'isAccessTokenRevoked', 'uploadMedia']
     })
   }
 
-  const micropubOptions: MicropubEndpointPluginOptions = {
-    create: github.create,
-    delete: github.delete,
+  const micropubEndpointOptions: MicropubEndpointPluginOptions = {
+    // NOTE 1: it's problematic to pass ajv here, because the fastify-micropub-plugin
+    // needs an instance of ajv that has been compiled with many microformats2
+    // schemas. Most likely it's better for the fastify-micropub-plugin to NOT
+    // allow the user to pass a custom ajv instance.
+    // NOTE 2: the fastify-micropub-plugin needs an instance of ajv because it
+    // has to perform some peculiar schema validation in the POST /micropub
+    // request handler. I don't think it's enough to use the Fastify built-in
+    // validation like `const validate = request.getValidationFunction('body')`
+    // ajv,
+    createPost: github.create,
+    deletePost: github.delete,
     includeErrorDescription,
     isAccessTokenRevoked,
+    jf2ToLocation: github.jf2ToLocation,
+    logPrefix: '[micropub-endpoint] ',
     me,
     mediaEndpoint,
     micropubEndpoint,
     multipartFormDataMaxFileSize,
     reportAllAjvErrors,
     syndicateTo: syndicate_to,
-    // undelete: async (url) => {
-    //   const value = await github.undelete!(url)
-    //   console.log(`undeleted post at url ${url}`, value)
-    //   return value
-    // },
-    undelete: github.undelete,
-    update: github.update
+    undeletePost: github.undelete,
+    updatePost: github.update
   }
 
-  fastify.register(micropub, micropubOptions)
+  fastify.register(micropub, micropubEndpointOptions)
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {
       route: '/micropub/config',
-      pluginOptions: micropubOptions,
-      exclude: ['ajv']
+      pluginOptions: micropubEndpointOptions,
+      exclude: [
+        'ajv',
+        'createPost',
+        'deletePost',
+        'isAccessTokenRevoked',
+        'jf2ToLocation',
+        'undeletePost',
+        'updatePost'
+      ]
     })
   }
 
@@ -587,25 +605,31 @@ export async function defFastify(config: Config) {
     uid
   })
 
-  const syndicateOptions = {
+  const syndicateEndpointOptions: SyndicateEndpointPluginOptions = {
     ajv,
-    get: github.retrieveContent,
     includeErrorDescription,
     isAccessTokenRevoked,
     me,
-    publishedUrlToStorageLocation: github.websiteUrlToStoreLocation,
+    retrievePost: github.retrieveContent,
     syndicators: { [uid]: telegram_syndicator },
     reportAllAjvErrors,
-    update: github.update
+    updatePost: github.update,
+    websiteUrlToStoreLocation: github.websiteUrlToStoreLocation
   }
 
-  fastify.register(syndicate, syndicateOptions)
+  fastify.register(syndicate, syndicateEndpointOptions)
 
   if (process.env.NODE_ENV === 'development') {
     fastify.register(renderConfig, {
       route: '/syndication/config',
-      pluginOptions: syndicateOptions,
-      exclude: ['ajv']
+      pluginOptions: syndicateEndpointOptions,
+      exclude: [
+        'ajv',
+        'isAccessTokenRevoked',
+        'retrievePost',
+        'updatePost',
+        'websiteUrlToStoreLocation'
+      ]
     })
   }
 

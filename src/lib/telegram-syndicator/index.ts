@@ -1,6 +1,9 @@
+import type { JF2 } from '@jackdbd/micropub'
+// import type { JF2 } from '@jackdbd/micropub/schemas' // This is not working
+// import type { JF2 } from '@jackdbd/micropub/schemas/index'
+// import type { JF2 } from '@jackdbd/micropub/schemas/jf2'
 import { Syndicator } from '@jackdbd/micropub/syndicator'
 import { send } from '@jackdbd/notifications/telegram'
-import { Jf2 } from '@paulrobertlloyd/mf2tojf2'
 
 export const EMOJI = {
   AUDIO: '🎵',
@@ -26,24 +29,25 @@ export interface Config {
 export const defSyndicator = (config: Config): Syndicator => {
   const { chat_id, token, uid } = config
 
-  const syndicate = async (url: string, jf2: Jf2) => {
-    const h = jf2.h || 'entry'
+  const syndicate = async (url: string, jf2: JF2) => {
+    const post_type = jf2.type || 'entry'
+
     let title: string
-    switch (h) {
+    switch (post_type) {
       case 'card': {
-        title = `${EMOJI.CARD} <b>Micropub ${h}</b>`
+        title = `${EMOJI.CARD} <b>Micropub ${post_type}</b>`
         break
       }
       case 'cite': {
-        title = `${EMOJI.CITE} <b>Micropub ${h}</b>`
+        title = `${EMOJI.CITE} <b>Micropub ${post_type}</b>`
         break
       }
       case 'event': {
-        title = `${EMOJI.EVENT} <b>Micropub ${h}</b>`
+        title = `${EMOJI.EVENT} <b>Micropub ${post_type}</b>`
         break
       }
       default: {
-        title = `${EMOJI.ENTRY} <b>Micropub ${h}</b>`
+        title = `${EMOJI.ENTRY} <b>Micropub ${post_type}</b>`
       }
     }
 
@@ -53,7 +57,8 @@ export const defSyndicator = (config: Config): Syndicator => {
     // audio/photo/video
     // https://jf2.spec.indieweb.org/#multiple-urls
     if (jf2.photo) {
-      // console.log('=== jf2.photo ===', jf2.photo)
+      console.log('=== jf2.photo ===')
+      console.log(JSON.stringify(jf2.photo, null, 2))
       const xs = Array.isArray(jf2.photo) ? jf2.photo : [jf2.photo]
       xs.forEach((x) => {
         if (typeof x === 'string') {
@@ -65,7 +70,8 @@ export const defSyndicator = (config: Config): Syndicator => {
     }
 
     if (jf2.audio) {
-      // console.log('=== jf2.audio ===', jf2.audio)
+      console.log('=== jf2.audio ===')
+      console.log(JSON.stringify(jf2.audio, null, 2))
       const xs = Array.isArray(jf2.audio) ? jf2.audio : [jf2.audio]
       xs.forEach((x) => {
         lines.push(`${EMOJI.AUDIO} <a href="${x}">${x}</a>`)
@@ -73,7 +79,8 @@ export const defSyndicator = (config: Config): Syndicator => {
     }
 
     if (jf2.video) {
-      // console.log('=== jf2.video ===', jf2.video)
+      console.log('=== jf2.video ===')
+      console.log(JSON.stringify(jf2.video, null, 2))
       const xs = Array.isArray(jf2.video) ? jf2.video : [jf2.video]
       xs.forEach((x) => {
         lines.push(`${EMOJI.VIDEO} <a href="${x}">${x}</a>`)
@@ -94,20 +101,47 @@ export const defSyndicator = (config: Config): Syndicator => {
 
     if (jf2.content) {
       if (typeof jf2.content === 'string') {
-        lines.push(jf2.content)
+        if (jf2.content !== '') {
+          // TODO: maybe allow the user to configure what to do in this case: throw / log / ignore / use a default
+          console.warn('=== jf2.content is empty ===')
+          console.log(JSON.stringify(jf2, null, 2))
+        } else {
+          lines.push(jf2.content)
+        }
       } else {
-        lines.push(jf2.content.text)
+        if (jf2.content.text) {
+          if (jf2.content.text !== '') {
+            lines.push(jf2.content.text)
+          } else {
+            console.warn('=== jf2.content.text is empty ===')
+            console.log(JSON.stringify(jf2, null, 2))
+          }
+        } else if (jf2.content.html) {
+          if (jf2.content.html !== '') {
+            // TODO: sanitize the HTML and convert it to a format supported by
+            // the medium where we syndicate this content to (e.g. simple HTML
+            // if we are syndicating to Telegram, plain text for LinkedIn, etc).
+            lines.push(jf2.content.html)
+          } else {
+            console.warn('=== jf2.content.html is empty ===')
+            console.log(JSON.stringify(jf2, null, 2))
+          }
+        } else {
+          console.warn('=== neither jf2.content.text nor jf2.content.html ===')
+          console.log(JSON.stringify(jf2, null, 2))
+        }
       }
     }
 
-    if (jf2.location) {
-      if (typeof jf2.location === 'string') {
-        const lat_long_alt = jf2.location.split('geo:')[1]
+    // TODO: remove any when @jackdbd/micropub is updated
+    if ((jf2 as any).location) {
+      if (typeof (jf2 as any).location === 'string') {
+        const lat_long_alt = (jf2 as any).location.split('geo:')[1]
         const lat_long = lat_long_alt.split(';')[0]
         const href = `https://www.google.com/maps?q=${lat_long}`
         lines.push(`${EMOJI.LOCATION} <a href="${href}">Location</a>`)
       } else {
-        const { latitude, longitude } = jf2.location
+        const { latitude, longitude } = (jf2 as any).location
         if (latitude && longitude) {
           const href = `https://www.google.com/maps?q=${latitude},${longitude}`
           lines.push(`${EMOJI.LOCATION} <a href="${href}">Location</a>`)
@@ -116,9 +150,12 @@ export const defSyndicator = (config: Config): Syndicator => {
     }
 
     if (jf2.category) {
-      // Assuming the caller has normalized the JF2, so category is an array of
-      // strings and not a single string.
-      const tags = jf2.category.join(', ')
+      let tags: string
+      if (typeof jf2.category === 'string') {
+        tags = jf2.category
+      } else {
+        tags = jf2.category.join(', ')
+      }
       lines.push(`Tags: ${tags}`)
     }
 
